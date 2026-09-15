@@ -87,6 +87,23 @@ std::shared_ptr<RuntimeContext> RuntimeInstaller::installedContext(
            : nullptr;
 }
 
+void RuntimeInstaller::uninstall(
+    jsi::Runtime &runtime,
+    const RuntimeContext *context) {
+  auto value = runtime.global().getProperty(runtime, "expo");
+  if (!value.isObject()) {
+    return;
+  }
+
+  auto object = value.getObject(runtime);
+  if (!object.hasNativeState<RuntimeContextNativeState>(runtime) || object.getNativeState<RuntimeContextNativeState>(runtime)->context().get() != context) {
+    return;
+  }
+
+  auto global = runtime.global();
+  expo::common::defineProperty(runtime, &global, "expo", {.configurable = true, .enumerable = true, .writable = true, .value = jsi::Value::undefined()});
+}
+
 bool RuntimeInstaller::install(
     jsi::Runtime &runtime,
     const std::shared_ptr<RuntimeContext> &context,
@@ -171,7 +188,7 @@ bool RuntimeInstaller::install(
         "__expo_harmony_runtime_context__",
         true,
         false);
-    expo::common::defineProperty(runtime, &global, "expo", {.configurable = false, .enumerable = true, .writable = false, .value = jsi::Value(runtime, expoObject)});
+    expo::common::defineProperty(runtime, &global, "expo", {.configurable = true, .enumerable = true, .writable = false, .value = jsi::Value(runtime, expoObject)});
 
     return true;
   } catch (const CodedError &error) {

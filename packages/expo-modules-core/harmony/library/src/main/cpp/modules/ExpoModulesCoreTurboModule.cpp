@@ -8,8 +8,6 @@
 
 #include <jsi/JSIDynamic.h>
 
-#include <RNOH/Performance/RNOHMarker.h>
-
 #include <hilog/log.h>
 
 #include "common/EventEmitter.h"
@@ -28,29 +26,6 @@ namespace jsi = facebook::jsi;
 namespace react = facebook::react;
 
 namespace expo::harmony {
-
-class ContentAppearedMarkerListener final
-    : public rnoh::RNOHMarker::RNOHMarkerListener {
-public:
-  using Handler = std::function<void(size_t)>;
-
-  explicit ContentAppearedMarkerListener(Handler handler)
-      : handler_(std::move(handler)) {}
-
-  void onMarkerReceived(
-      rnoh::RNOHMarker::RNOHMarkerId markerId,
-      size_t rnInstanceId,
-      const std::string &,
-      double,
-      uint64_t) override {
-    if (markerId == rnoh::RNOHMarker::RNOHMarkerId::CONTENT_APPEARED) {
-      handler_(rnInstanceId);
-    }
-  }
-
-private:
-  Handler handler_;
-};
 
 namespace {
 
@@ -153,16 +128,11 @@ ExpoModulesCoreTurboModule::ExpoModulesCoreTurboModule(
 
 ExpoModulesCoreTurboModule::~ExpoModulesCoreTurboModule() noexcept {
   // Clean up JSI state on the owning JS executor.
-  std::shared_ptr<ContentAppearedMarkerListener> contentAppearedListener;
   {
     std::scoped_lock lock(contextsMutex_);
-    contentAppearedListener = std::move(contentAppearedListener_);
     activeRuntimeContext_.reset();
     contentAppearedRuntime_.reset();
     contexts_.clear();
-  }
-  if (contentAppearedListener) {
-    rnoh::RNOHMarker::removeListener(contentAppearedListener);
   }
 }
 
@@ -243,26 +213,6 @@ void ExpoModulesCoreTurboModule::activateRuntimeContext(
   std::scoped_lock lock(contextsMutex_);
   contexts_[&runtime] = context;
   activeRuntimeContext_ = context;
-}
-
-void ExpoModulesCoreTurboModule::ensureContentAppearedListener() {
-  std::shared_ptr<ContentAppearedMarkerListener> listener;
-  {
-    std::scoped_lock lock(contextsMutex_);
-    if (contentAppearedListener_) {
-      return;
-    }
-
-    auto weakSelf = weak_from_this();
-    listener = std::make_shared<ContentAppearedMarkerListener>(
-        [weakSelf](size_t rnInstanceId) {
-          if (auto self = weakSelf.lock()) {
-            self->handleContentAppeared(rnInstanceId);
-          }
-        });
-    contentAppearedListener_ = listener;
-  }
-  rnoh::RNOHMarker::addListener(std::move(listener));
 }
 
 void ExpoModulesCoreTurboModule::handleContentAppeared(size_t rnInstanceId) {
@@ -350,7 +300,6 @@ jsi::Value ExpoModulesCoreTurboModule::install(jsi::Runtime &runtime) {
   }
   // Only the JS runtime selects the View target.
   activateRuntimeContext(runtime, context);
-  ensureContentAppearedListener();
 
   return jsi::Value(true);
 }

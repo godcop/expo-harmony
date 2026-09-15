@@ -42,8 +42,6 @@ if(NOT TARGET rnoh)
 endif()
 
 set(EXPO_WORKLETS_ENABLED OFF)
-set(EXPO_WORKLETS_SOURCE_PATH
-  "${EXPO_OH_MODULES_DIR}/@react-native-ohos/react-native-worklets/src/main/cpp")
 if(TARGET rnoh_worklets)
   set(EXPO_WORKLETS_ENABLED ON)
 endif()

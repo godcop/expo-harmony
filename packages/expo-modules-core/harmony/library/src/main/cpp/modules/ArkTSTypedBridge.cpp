@@ -25,6 +25,7 @@
 #include "common/JSI/RecordProperty.h"
 #include "errors/CodedError.h"
 #include "runtime/RuntimeContext.h"
+#include "runtime/RuntimeInstaller.h"
 
 namespace jsi = facebook::jsi;
 namespace react = facebook::react;
@@ -33,7 +34,6 @@ namespace expo::harmony {
 namespace {
 
 constexpr size_t kMaximumTransportDepth = 64;
-constexpr size_t kMaximumErrorCauseDepth = 4;
 
 struct UndefinedValue final {};
 
@@ -183,57 +183,75 @@ std::optional<std::string> readNapiStringProperty(
 ArkTSErrorValue readNapiErrorValue(
     napi_env env,
     napi_value value,
-    std::string fallbackMessage,
-    size_t depth = 0) {
-  ArkTSErrorValue result{
-      readNapiStringProperty(env, value, "code").value_or("ERR_ARKTS_MODULE"),
-      readNapiStringProperty(env, value, "message").value_or(std::move(fallbackMessage)),
-      readNapiStringProperty(env, value, "path"),
-      nullptr};
+    std::string fallbackMessage) {
+  ArkTSErrorValue result;
+  auto *current = &result;
+  std::vector<napi_value> visited;
+  while (true) {
+    *current = ArkTSErrorValue{
+        readNapiStringProperty(env, value, "code").value_or("ERR_ARKTS_MODULE"),
+        readNapiStringProperty(env, value, "message").value_or(fallbackMessage),
+        readNapiStringProperty(env, value, "path"),
+        nullptr};
+    visited.push_back(value);
 
-  if (depth >= kMaximumErrorCauseDepth) {
-    return result;
+    napi_value cause = nullptr;
+    napi_valuetype type = napi_undefined;
+    if (napi_get_named_property(env, value, "cause", &cause) != napi_ok || cause == nullptr || napi_typeof(env, cause, &type) != napi_ok || (type != napi_object && type != napi_function)) {
+      break;
+    }
+    if (visited.size() >= kMaximumTransportDepth) {
+      current->cause = std::make_shared<ArkTSErrorValue>(ArkTSErrorValue{
+          "ERR_CAUSE_DEPTH", "The native error cause exceeds the transport depth limit.", std::nullopt, nullptr});
+      break;
+    }
+    bool cyclic = false;
+    for (auto previous : visited) {
+      bool equal = false;
+      if (napi_strict_equals(env, previous, cause, &equal) == napi_ok && equal) {
+        cyclic = true;
+        break;
+      }
+    }
+    if (cyclic) {
+      current->cause = std::make_shared<ArkTSErrorValue>(ArkTSErrorValue{
+          "ERR_CYCLIC_CAUSE", "The native error cause refers to an earlier error.", std::nullopt, nullptr});
+      break;
+    }
+
+    current->cause = std::make_shared<ArkTSErrorValue>();
+    current = current->cause.get();
+    value = cause;
+    fallbackMessage = "An ArkTS Expo module error was caused by another error.";
   }
-
-  napi_value cause = nullptr;
-  napi_valuetype causeType = napi_undefined;
-  if (napi_get_named_property(env, value, "cause", &cause) == napi_ok && cause != nullptr && napi_typeof(env, cause, &causeType) == napi_ok && (causeType == napi_object || causeType == napi_function)) {
-    result.cause = std::make_shared<ArkTSErrorValue>(readNapiErrorValue(
-        env,
-        cause,
-        "An ArkTS Expo module error was caused by another error.",
-        depth + 1));
-  }
-
   return result;
 }
 
 std::shared_ptr<const CodedError> codedCauseFromArkTS(
     const std::shared_ptr<ArkTSErrorValue> &cause) {
-  if (!cause) {
-    return nullptr;
+  std::vector<const ArkTSErrorValue *> chain;
+  for (auto current = cause.get(); current; current = current->cause.get()) {
+    chain.push_back(current);
   }
-
-  return std::make_shared<CodedError>(
-      cause->code,
-      cause->message,
-      cause->path,
-      codedCauseFromArkTS(cause->cause));
+  std::shared_ptr<const CodedError> result;
+  for (auto current = chain.rbegin(); current != chain.rend(); ++current) {
+    result = std::make_shared<CodedError>(
+        (*current)->code, (*current)->message, (*current)->path, std::move(result));
+  }
+  return result;
 }
 
-ArkTSErrorValue arkTSErrorFromCodedError(
-    const CodedError &error,
-    size_t depth = 0) {
-  std::shared_ptr<ArkTSErrorValue> cause;
-  if (error.cause() && depth < kMaximumErrorCauseDepth) {
-    cause = std::make_shared<ArkTSErrorValue>(
-        arkTSErrorFromCodedError(*error.cause(), depth + 1));
+ArkTSErrorValue arkTSErrorFromCodedError(const CodedError &error) {
+  ArkTSErrorValue result;
+  auto *target = &result;
+  for (auto current = &error; current; current = current->cause().get()) {
+    *target = ArkTSErrorValue{current->code(), current->what(), current->path(), nullptr};
+    if (current->cause()) {
+      target->cause = std::make_shared<ArkTSErrorValue>();
+      target = target->cause.get();
+    }
   }
-  return ArkTSErrorValue{
-      error.code(),
-      error.what(),
-      error.path(),
-      std::move(cause)};
+  return result;
 }
 
 [[noreturn]] void throwNapiMethodFailure(
@@ -757,11 +775,7 @@ jsi::Value toJSI(jsi::Runtime &runtime, TypedPlatformValue value) {
         } else if constexpr (std::is_same_v<Value, std::string>) {
           return jsi::Value(jsi::String::createFromUtf8(runtime, stored));
         } else if constexpr (std::is_same_v<Value, ArkTSErrorValue>) {
-          CodedJSError error(runtime, CodedError(
-              std::move(stored.code),
-              std::move(stored.message),
-              std::move(stored.path),
-              codedCauseFromArkTS(stored.cause)));
+          CodedJSError error(runtime, CodedError(std::move(stored.code), std::move(stored.message), std::move(stored.path), codedCauseFromArkTS(stored.cause)));
 
           return jsi::Value(runtime, error.value());
         } else if constexpr (std::is_same_v<Value, TypedPlatformValue::Array>) {
@@ -1210,7 +1224,11 @@ public:
          typedArguments = std::move(typedArguments)](
             jsi::Runtime &setupRuntime,
             std::shared_ptr<react::Promise> promise) mutable {
-          react::LongLivedObjectCollection::get(setupRuntime).add(promise);
+          auto context = RuntimeInstaller::installedContext(setupRuntime);
+          if (!context) {
+            throw CodedError("ERR_RUNTIME_DESTROYED", "Cannot retain an ArkTS Promise without an active Expo runtime.");
+          }
+          context->retainLongLivedObject(promise);
           std::shared_ptr<AsyncSettlementState> settlement;
           try {
             settlement = std::make_shared<AsyncSettlementState>(

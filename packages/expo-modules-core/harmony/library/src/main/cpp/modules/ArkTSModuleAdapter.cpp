@@ -15,8 +15,6 @@
 
 #include <jsi/JSIDynamic.h>
 
-#include <react/bridging/LongLivedObject.h>
-
 #include "api/Promise.h"
 #include "common/JSI/RecordProperty.h"
 #include "common/SharedObject.h"
@@ -492,28 +490,6 @@ jsi::Value decodeTypedResult(
     jsi::Value result) {
   return decodeTypedValueGraph(context, result);
 }
-
-class ArkTSTypedResultHolder final : public react::LongLivedObject {
-public:
-  ArkTSTypedResultHolder(jsi::Runtime &runtime, jsi::Value value)
-      : react::LongLivedObject(runtime), value_(std::move(value)) {}
-
-  jsi::Value take() {
-    if (!value_) {
-      throw CodedError(
-          "ERR_ARKTS_MODULE_VALUE",
-          "The ArkTS Promise result has already been consumed.");
-    }
-
-    auto result = std::move(*value_);
-    value_.reset();
-    allowRelease();
-    return result;
-  }
-
-private:
-  std::optional<jsi::Value> value_;
-};
 
 std::shared_ptr<ArkTSSharedObject> requireArkTSObject(
     const std::shared_ptr<NativeSharedObject> &object,
@@ -1119,12 +1095,10 @@ void adoptArkTSPromise(
           auto value = count == 0
                          ? jsi::Value::undefined()
                          : jsi::Value(callbackRuntime, arguments[0]);
-          auto holder = std::make_shared<ArkTSTypedResultHolder>(
-              callbackRuntime, std::move(value));
-          react::LongLivedObjectCollection::get(callbackRuntime).add(holder);
+          auto holder = context->retainValue(std::move(value));
           auto accepted = promise->tryResolve(
               [context,
-               weakHolder = std::weak_ptr<ArkTSTypedResultHolder>(holder)](
+               weakHolder = std::weak_ptr<jsi::Value>(holder)](
                   jsi::Runtime &) {
                 auto resultHolder = weakHolder.lock();
                 if (!resultHolder) {
@@ -1132,10 +1106,10 @@ void adoptArkTSPromise(
                       "ERR_RUNTIME_DESTROYED",
                       "The ArkTS Promise result was released with its JavaScript runtime.");
                 }
-                return decodeTypedResult(context, resultHolder->take());
+                return decodeTypedResult(context, context->takeValue(resultHolder));
               });
           if (!accepted) {
-            holder->allowRelease();
+            (void)context->takeValue(holder);
           }
         } catch (const std::exception &error) {
           promise->reject(
@@ -1395,6 +1369,7 @@ ModuleDefinition ArkTSModuleAdapter::definition() {
     }
 
     const auto async = requireBoolean(function, "async", path);
+    const auto enumerable = !function.count("enumerable") || requireBoolean(function, "enumerable", path);
     const auto writableIndices = writableArgumentIndices(function, arity, async, path);
     if (!functionNames.insert(name).second) {
       throw CodedError(
@@ -1407,6 +1382,7 @@ ModuleDefinition ArkTSModuleAdapter::definition() {
           .arity = arity,
           .requiredArity = requiredArity,
           .async = true,
+          .enumerable = enumerable,
           .asyncBody = [moduleName, name](
                            Invocation &invocation,
                            const std::shared_ptr<Promise> &promise) {
@@ -1433,6 +1409,7 @@ ModuleDefinition ArkTSModuleAdapter::definition() {
           .name = name,
           .arity = arity,
           .requiredArity = requiredArity,
+          .enumerable = enumerable,
           .body = [moduleName, name, writableIndices](Invocation &invocation) {
             auto context = invocation.sharedContext();
             auto &runtime = invocation.runtime();
@@ -1495,6 +1472,7 @@ ModuleDefinition ArkTSModuleAdapter::definition() {
           return decodeTypedResult(context, std::move(result));
         },
     };
+    definition.enumerable = !property.count("enumerable") || requireBoolean(property, "enumerable", modulePath);
     if (writable) {
       definition.setter = [moduleName, name](
                               Invocation &invocation,
@@ -1652,6 +1630,7 @@ ModuleDefinition ArkTSModuleAdapter::definition() {
       }
 
       const auto async = requireBoolean(function, "async", memberPath);
+      const auto enumerable = !function.count("enumerable") || requireBoolean(function, "enumerable", memberPath);
       if (!memberNames.insert(name).second) {
         throw CodedError(
             "ERR_ARKTS_MODULE_DESCRIPTOR", memberPath + " is duplicated.");
@@ -1662,6 +1641,7 @@ ModuleDefinition ArkTSModuleAdapter::definition() {
           .arity = arity,
           .requiredArity = requiredArity,
           .async = async,
+          .enumerable = enumerable,
       };
       if (async) {
         definition.asyncBody = [moduleName, className, name](
@@ -1729,6 +1709,7 @@ ModuleDefinition ArkTSModuleAdapter::definition() {
       }
 
       const auto async = requireBoolean(function, "async", memberPath);
+      const auto enumerable = !function.count("enumerable") || requireBoolean(function, "enumerable", memberPath);
       if (!staticNames.insert(name).second) {
         throw CodedError(
             "ERR_ARKTS_MODULE_DESCRIPTOR", memberPath + " is duplicated.");
@@ -1739,6 +1720,7 @@ ModuleDefinition ArkTSModuleAdapter::definition() {
           .arity = arity,
           .requiredArity = requiredArity,
           .async = async,
+          .enumerable = enumerable,
       };
       if (async) {
         definition.asyncBody = [moduleName, className, name](
@@ -1814,6 +1796,7 @@ ModuleDefinition ArkTSModuleAdapter::definition() {
             return decodeTypedResult(context, std::move(result));
           },
       };
+      definition.enumerable = !property.count("enumerable") || requireBoolean(property, "enumerable", classPath);
       if (writable) {
         definition.setter = [moduleName, className, name](
                                 Invocation &invocation,

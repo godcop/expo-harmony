@@ -145,7 +145,6 @@ export class ExpoFunctionSpec<Body> {
   }
 }
 
-/** Typed fixed-arity function helpers. */
 export class ExpoFunction {
   static typed0<Result>(body: ExpoFunction0<Result>): ExpoFunctionSpec<ExpoFunction0<Result>> {
     return typedFunctionSpec(body, [], 0);
@@ -462,6 +461,7 @@ export class ExpoValueType<Value> {
   readonly isOmittable: boolean;
   /** Explicit copy-back contract for a synchronous module binary argument. */
   readonly isWritable: boolean;
+  readonly fillsUndefined: boolean;
   private readonly decoder: ExpoValueDecoder<Value>;
   private readonly encoder: ExpoValueEncoder<Value>;
 
@@ -472,6 +472,7 @@ export class ExpoValueType<Value> {
     acceptsUndefined: boolean = false,
     isOmittable: boolean = false,
     isWritable: boolean = false,
+    fillsUndefined: boolean = false,
   ) {
     this.expectedType = expectedType;
     this.decoder = decoder;
@@ -479,6 +480,7 @@ export class ExpoValueType<Value> {
     this.acceptsUndefined = acceptsUndefined;
     this.isOmittable = isOmittable;
     this.isWritable = isWritable;
+    this.fillsUndefined = fillsUndefined;
   }
 
   /** @internal */
@@ -497,14 +499,14 @@ export class ExpoValueType<Value> {
    * Argument encoders do not participate in write-back.
    */
   writable(): ExpoValueType<Value> {
-    return new ExpoValueType<Value>(this.expectedType, this.decoder, this.encoder, this.acceptsUndefined, this.isOmittable, true);
+    return new ExpoValueType<Value>(this.expectedType, this.decoder, this.encoder, this.acceptsUndefined, this.isOmittable, true, this.fillsUndefined);
   }
 
   optional(): ExpoValueType<Value | undefined> {
     return new ExpoValueType<Value | undefined>(
-      `${this.expectedType} or undefined`,
+      `${this.expectedType} or null/undefined`,
       (value: ESObject, path: string): Value | undefined => {
-        if (value === undefined) return undefined;
+        if (value === undefined || value === null) return undefined;
         return this.decode(value, path);
       },
       (value: Value | undefined, path: string): ESObject | void => {
@@ -519,12 +521,13 @@ export class ExpoValueType<Value> {
 
   defaulted(defaultValue: Value): ExpoValueType<Value> {
     return new ExpoValueType<Value>(
-      `${this.expectedType} or undefined`,
-      (value: ESObject, path: string): Value => (value === undefined ? defaultValue : this.decode(value, path)),
+      `${this.expectedType} or null/undefined`,
+      (value: ESObject, path: string): Value => (value === undefined || value === null ? defaultValue : this.decode(value, path)),
       (value: Value, path: string): ESObject | void => this.encode(value, path),
       true,
       true,
       this.isWritable,
+      true,
     );
   }
 
@@ -545,7 +548,6 @@ export class ExpoValueType<Value> {
     );
   }
 
-  /** Accepts either this value type or another one. */
   or<Other>(other: ExpoValueType<Other>): ExpoValueType<Value | Other> {
     return new ExpoValueType<Value | Other>(
       `${this.expectedType} or ${other.expectedType}`,
@@ -683,22 +685,39 @@ export class ExpoEitherOfFour<First, Second, Third, Fourth> {
 
 class ExpoRecordField {
   readonly name: string;
+  readonly key: string;
   readonly type: ExpoValueType<ESObject>;
+  readonly required: boolean;
 
-  constructor(name: string, type: ExpoValueType<ESObject>) {
+  constructor(name: string, type: ExpoValueType<ESObject>, key: string, required: boolean) {
     this.name = name;
+    this.key = key;
     this.type = type;
+    this.required = required;
   }
+}
+
+/** Optional wire-name and presence rules for a shaped record field. */
+export interface ExpoRecordFieldOptions {
+  readonly key?: string;
+  readonly required?: boolean;
 }
 
 /** Runtime field schema for ArkTS records and classes. */
 export class ExpoRecordShape {
   private readonly fields: Map<string, ExpoValueType<ESObject>> = new Map<string, ExpoValueType<ESObject>>();
+  private readonly fieldOptions: Map<string, ExpoRecordFieldOptions> = new Map<string, ExpoRecordFieldOptions>();
 
-  field<Value>(name: string, type: ExpoValueType<Value>): ExpoRecordShape {
+  field<Value>(name: string, type: ExpoValueType<Value>, options: ExpoRecordFieldOptions = {}): ExpoRecordShape {
     if (name.length === 0) throw new Error('Expo record field names cannot be empty.');
+
+    const key = options.key ?? name;
+    if (key.length === 0) throw new Error('Expo record field keys cannot be empty.');
     if (this.fields.has(name)) throw new Error(`Expo record field '${name}' was declared more than once.`);
+
     this.fields.set(name, type as ExpoValueType<ESObject>);
+    this.fieldOptions.set(name, { key, required: options.required === true });
+
     return this;
   }
 
@@ -706,7 +725,8 @@ export class ExpoRecordShape {
   fieldValues(): ExpoRecordField[] {
     const values: ExpoRecordField[] = [];
     this.fields.forEach((type: ExpoValueType<ESObject>, name: string): void => {
-      values.push(new ExpoRecordField(name, type));
+      const options: ExpoRecordFieldOptions = this.fieldOptions.get(name) ?? {};
+      values.push(new ExpoRecordField(name, type, options.key ?? name, options.required === true));
     });
     return values;
   }
@@ -726,7 +746,6 @@ export type ExpoNumericTypedArray =
   | BigInt64Array
   | BigUint64Array;
 
-/** Common reusable type tokens. */
 export class ExpoValueTypes {
   static callback(): ExpoValueType<ExpoJavaScriptCallback> {
     return new ExpoValueType<ExpoJavaScriptCallback>(
@@ -766,8 +785,13 @@ export class ExpoValueTypes {
         const decoded: Record<string, ESObject> = {};
 
         fields.forEach((field: ExpoRecordField): void => {
-          const fieldValue: ESObject = hasOwnExpoRecordKey(input, field.name) ? input[field.name] : undefined;
-          defineExpoRecordValue(decoded, field.name, field.type.decode(fieldValue, `${path}.${field.name}`));
+          const present = hasOwnExpoRecordKey(input, field.key);
+          if (!present) {
+            if (field.required) throw new ExpoModuleError('ERR_FIELD_REQUIRED', `${path}.${field.key} is required.`);
+            if (field.type.fillsUndefined) defineExpoRecordValue(decoded, field.name, field.type.decode(undefined, `${path}.${field.key}`));
+            return;
+          }
+          defineExpoRecordValue(decoded, field.name, field.type.decode(input[field.key], `${path}.${field.key}`));
         });
 
         return decoder(decoded);
@@ -779,8 +803,12 @@ export class ExpoValueTypes {
         const encoded: Record<string, ESObject> = {};
 
         fields.forEach((field: ExpoRecordField): void => {
-          const fieldValue: ESObject = hasOwnExpoRecordKey(input, field.name) ? input[field.name] : undefined;
-          defineExpoRecordValue(encoded, field.name, field.type.encode(fieldValue, `${path}.${field.name}`) as ESObject);
+          const present = hasOwnExpoRecordKey(input, field.name);
+          if (!present) {
+            if (field.required) throw new ExpoModuleError('ERR_FIELD_REQUIRED', `${path}.${field.key} is required.`);
+            return;
+          }
+          defineExpoRecordValue(encoded, field.key, field.type.encode(input[field.name], `${path}.${field.key}`) as ESObject);
         });
 
         return encoded;
@@ -951,18 +979,36 @@ export class ExpoValueTypes {
   }
 
   static enumerable<Value>(name: string, values: Record<string, Value>): ExpoValueType<Value> {
+    const keys: string[] = Object.keys(values);
+    const rawValues: ESObject[] = [];
+    for (let index = 0; index < keys.length; index += 1) {
+      const rawValue: ESObject = values[keys[index]] as ESObject;
+      if (typeof rawValue !== 'string' && typeof rawValue !== 'number') {
+        throw new Error(`${name} values must be strings or numbers.`);
+      }
+      if (typeof rawValue === 'number' && !Number.isFinite(rawValue)) {
+        throw new Error(`${name} numeric values must be finite.`);
+      }
+
+      const rawStringValue: string = typeof rawValue === 'string' ? rawValue : '';
+      const reverseNumericKey =
+        typeof rawValue === 'string' &&
+        typeof values[rawStringValue] === 'number' &&
+        String(values[rawStringValue]) === keys[index];
+      if (!reverseNumericKey) rawValues.push(rawValue);
+    }
+
     return new ExpoValueType<Value>(
       name,
       (value: ESObject, path: string): Value => {
-        if (typeof value !== 'string' || !Object.keys(values).includes(value)) {
-          throw new ExpoArgumentTypeError(path, name, value);
+        for (let index = 0; index < rawValues.length; index += 1) {
+          if (rawValues[index] === value) return rawValues[index] as Value;
         }
-        return values[value];
+        throw new ExpoArgumentTypeError(path, name, value);
       },
       (value: Value, path: string): ESObject => {
-        const keys: string[] = Object.keys(values);
-        for (let index = 0; index < keys.length; index += 1) {
-          if (values[keys[index]] === value) return keys[index];
+        for (let index = 0; index < rawValues.length; index += 1) {
+          if (rawValues[index] === value) return rawValues[index];
         }
         throw new ExpoModuleError('ERR_INVALID_RETURN_VALUE', `${path} returned an unknown ${name} value.`);
       },
@@ -1051,7 +1097,6 @@ export class ExpoValueTypes {
   }
 }
 
-/** Converts values across the common JS/ArkTS boundary. */
 export class ExpoValueConverter {
   static fromBridge<Value>(value: ESObject, type?: ExpoValueType<Value>, path: string = 'value'): Value {
     if (type !== undefined) {
@@ -1069,8 +1114,8 @@ export class ExpoValueConverter {
       }
     }
 
-    validateCopyValue(value, path, 0);
-
+    // The runtime-scoped registry has already decoded and validated untyped values.
+    // Preserve its SharedObject instances for module callbacks.
     return value as Value;
   }
 
@@ -1094,11 +1139,9 @@ export class ExpoValueConverter {
       }
     }
 
-    const bridgeValue: ESObject = value as ESObject;
-
-    validateCopyValue(bridgeValue, path, 0);
-
-    return bridgeValue;
+    // The runtime-scoped registry owns the final encoding boundary. In particular,
+    // it must see untyped SharedObject instances before recursively encoding records.
+    return value as ESObject;
   }
 
   static actualType(value: ESObject): string {

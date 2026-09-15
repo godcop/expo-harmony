@@ -18,7 +18,8 @@ import {
   EXPO_LIFECYCLE_JAVASCRIPT_BUNDLE_LOADED,
 } from './protocol/Protocol';
 import { ensureDirectoryUri } from './appcontext/FileUri';
-import { ExpoHostReload } from './appcontext/ExpoHostReload';
+import { ExpoReloadRegistry } from './appcontext/ExpoReloadRegistry';
+import { installRnohBundleBarrier, waitForRnohBundle } from './appcontext/RnohBundle';
 import { installRnohDestroyBarrier } from './appcontext/RnohDestroyAdapter';
 
 const DESTROY_ACK_WARNING_MS: number = 5000;
@@ -31,6 +32,7 @@ export class ExpoModulesCoreTurboModule extends EtsUITurboModule {
   private readonly coreContext: UITurboModuleContext;
   private readonly modules: ExpoModulesRegistry;
   private lastAppLifecycleEvent?: string = undefined;
+  private contentAppeared: boolean = false;
   private destroyStarted: boolean = false;
   private destroyFinished: boolean = false;
 
@@ -87,27 +89,28 @@ export class ExpoModulesCoreTurboModule extends EtsUITurboModule {
           throw new Error('The Expo modules Host is already being destroyed.');
         }
 
-        await ExpoHostReload.require(this.coreContext.rnInstance.getId())(reason);
+        await ExpoReloadRegistry.require(this.coreContext.rnInstance.getId())(reason);
       },
       (): void => {
         if (this.destroyStarted) {
           throw new Error('The Expo modules Host is already being destroyed.');
         }
-        ExpoHostReload.require(this.coreContext.rnInstance.getId());
+        ExpoReloadRegistry.require(this.coreContext.rnInstance.getId());
       },
     );
 
     this.unsubscribeLifecycle.push(hostState.bindHost(hostBinding, this));
     this.unsubscribeLifecycle.push(
-      coreContext.rnInstance.subscribeToLifecycleEvents('FOREGROUND', () => this.dispatchExpoModuleLifecycle(EXPO_LIFECYCLE_FOREGROUND)),
-      coreContext.rnInstance.subscribeToLifecycleEvents('BACKGROUND', () => this.dispatchExpoModuleLifecycle(EXPO_LIFECYCLE_BACKGROUND)),
-      coreContext.rnInstance.subscribeToLifecycleEvents('JS_BUNDLE_EXECUTION_FINISH', (): void => {
-        if (this.destroyStarted) return;
-        this.dispatchExpoModuleLifecycle(EXPO_LIFECYCLE_JAVASCRIPT_BUNDLE_LOADED, readJavaScriptBundleDurationSeconds(coreContext));
-        // RNOH drops foreground/background events while BEFORE_CREATE and only
-        // emits bundle completion when it becomes READY. Replay the Ability's
-        // current state, since the bundle may have finished in the background.
-        this.dispatchExpoModuleLifecycle(coreContext.getUIAbilityState() === 'FOREGROUND' ? EXPO_LIFECYCLE_FOREGROUND : EXPO_LIFECYCLE_BACKGROUND);
+      coreContext.rnInstance.subscribeToLifecycleEvents('FOREGROUND', (): void => {
+        this.dispatchExpoModuleLifecycle(EXPO_LIFECYCLE_FOREGROUND);
+      }),
+      coreContext.rnInstance.subscribeToLifecycleEvents('BACKGROUND', (): void => {
+        this.dispatchExpoModuleLifecycle(EXPO_LIFECYCLE_BACKGROUND);
+      }),
+      coreContext.rnInstance.cppEventEmitter.subscribe('RNOH::ROOT_COMPONENT_DIMENSIONS_CHANGED', (payload: ESObject): void => {
+        if (this.destroyStarted || this.contentAppeared || !(payload.width > 0 && payload.height > 0)) return;
+        this.contentAppeared = true;
+        coreContext.rnInstance.postMessageToCpp(EXPO_LIFECYCLE_EVENT, { eventName: EXPO_LIFECYCLE_CONTENT_APPEARED, payload: {} });
       }),
       coreContext.rnInstance.cppEventEmitter.subscribe(EXPO_CONTENT_APPEARED, (payload: ESObject): void => {
         if (this.destroyStarted) return;
@@ -118,6 +121,13 @@ export class ExpoModulesCoreTurboModule extends EtsUITurboModule {
     );
 
     installRnohDestroyBarrier(coreContext.rnInstance, (): Promise<void> => this.prepareForDestroy());
+    installRnohBundleBarrier(coreContext.rnInstance);
+    waitForRnohBundle(coreContext.rnInstance).then((): void => {
+      if (this.destroyStarted) return;
+      this.dispatchExpoModuleLifecycle(EXPO_LIFECYCLE_JAVASCRIPT_BUNDLE_LOADED, readJavaScriptBundleDurationSeconds(coreContext));
+      // RNOH 0.84.1 can enter READY before evaluation. Replay the current Ability state only after the first bundle succeeds.
+      this.dispatchExpoModuleLifecycle(coreContext.getUIAbilityState() === 'FOREGROUND' ? EXPO_LIFECYCLE_FOREGROUND : EXPO_LIFECYCLE_BACKGROUND);
+    }, (): void => {});
   }
 
   bindExpoModuleRuntime(runtimeEpoch: string): void {
@@ -336,6 +346,8 @@ export class ExpoModulesCoreTurboModule extends EtsUITurboModule {
   private async prepareForDestroy(): Promise<void> {
     if (this.destroyFinished) return;
     this.destroyStarted = true;
+    await this.modules.prepareForDestroy();
+
     // RNOH must retain its native instance and JS executor through the ACK.
     // The owning destruction promise retains this Host without a global map.
     await this.beginNativeDestroyHandshake();

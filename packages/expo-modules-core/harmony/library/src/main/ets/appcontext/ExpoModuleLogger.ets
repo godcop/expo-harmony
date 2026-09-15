@@ -1,38 +1,25 @@
 import type { RNOHLogger } from '@rnoh/react-native-openharmony';
+import { Logger, LogHandler, LogType } from '../logging/Logger';
+import { describeLogError } from '../logging/LogHandlers';
 
-/** Author-facing logger scoped to one Expo Module instance. */
-export interface ExpoModuleLogger {
-  debug(message: string): void;
-  info(message: string): void;
-  warn(message: string): void;
-  error(message: string): void;
+export type ExpoModuleLogger = Logger;
+
+export function createExpoModuleLogger(logger: RNOHLogger, moduleName: string, debug: boolean): ExpoModuleLogger {
+  return new Logger([new RNOHLogHandler(logger.clone(['ExpoModules', moduleName]))], debug);
 }
 
-/** @internal */
-export function createExpoModuleLogger(logger: RNOHLogger, moduleName: string): ExpoModuleLogger {
-  return new RNOHExpoModuleLogger(logger.clone(['ExpoModules', moduleName]));
-}
-
-class RNOHExpoModuleLogger implements ExpoModuleLogger {
+class RNOHLogHandler implements LogHandler {
   private readonly logger: RNOHLogger;
+  constructor(logger: RNOHLogger) { this.logger = logger; }
 
-  constructor(logger: RNOHLogger) {
-    this.logger = logger;
-  }
-
-  debug(message: string): void {
-    this.logger.debug(message);
-  }
-
-  info(message: string): void {
-    this.logger.info(message);
-  }
-
-  warn(message: string): void {
-    this.logger.warn(message);
-  }
-
-  error(message: string): void {
-    this.logger.error(message);
+  log(type: LogType, message: string, cause?: Error): void {
+    const text = cause === undefined ? message : `${message}\n${describeLogError(cause)}`;
+    switch (type) {
+      case 'info': this.logger.info(text); break;
+      case 'warn': this.logger.warn(text); break;
+      case 'error': this.logger.error(text); break;
+      case 'fatal': this.logger.fatal(text); break;
+      default: this.logger.debug(text);
+    }
   }
 }

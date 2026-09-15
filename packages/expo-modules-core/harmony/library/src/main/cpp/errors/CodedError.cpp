@@ -6,12 +6,9 @@ namespace expo::harmony {
 
 namespace {
 
-constexpr size_t kMaximumErrorCauseDepth = 4;
-
 jsi::Object makeCodedErrorObject(
     jsi::Runtime &runtime,
-    const CodedError &error,
-    size_t depth) {
+    const CodedError &error) {
   jsi::Object result(runtime);
   auto codedError = runtime.global().getProperty(
       runtime, "ExpoModulesCore_CodedError");
@@ -83,13 +80,18 @@ jsi::Object makeCodedErrorObject(
     }
     result.setProperty(runtime, "nativeStack", std::move(nativeStack));
   }
-  if (error.cause() && depth < kMaximumErrorCauseDepth) {
-    result.setProperty(
-        runtime,
-        "cause",
-        makeCodedErrorObject(runtime, *error.cause(), depth + 1));
-  }
 
+  return result;
+}
+
+jsi::Object makeCodedErrorChain(jsi::Runtime &runtime, const CodedError &error) {
+  auto result = makeCodedErrorObject(runtime, error);
+  auto target = jsi::Value(runtime, result).getObject(runtime);
+  for (auto cause = error.cause(); cause; cause = cause->cause()) {
+    auto child = makeCodedErrorObject(runtime, *cause);
+    target.setProperty(runtime, "cause", jsi::Value(runtime, child));
+    target = std::move(child);
+  }
   return result;
 }
 
@@ -101,7 +103,7 @@ CodedJSError::CodedJSError(
     : jsi::JSError(
           runtime,
           [&runtime, &error]() -> jsi::Value {
-            return jsi::Value(makeCodedErrorObject(runtime, error, 0));
+            return jsi::Value(makeCodedErrorChain(runtime, error));
           }()) {}
 
 CodedJSError::CodedJSError(

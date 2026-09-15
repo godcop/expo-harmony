@@ -17,7 +17,8 @@
   },
   "homepage": "https://github.com/renbaoshuo/expo-harmony/tree/master/packages/expo-modules-core#readme",
   "bugs": "https://github.com/renbaoshuo/expo-harmony/issues",
-  "main": "src/index.ts",
+  "main": "index.js",
+  "react-native": "src/index.ts",
   "types": "index.d.ts",
   "scripts": {
     "harmony:clean": "expo-harmony-module prepare --clean-only",

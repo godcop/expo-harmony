@@ -85,26 +85,16 @@ CoreModule::CoreModule(std::shared_ptr<RuntimeContext> context)
 
 ModuleDefinition CoreModule::definition() {
   auto weakContext = context_;
-  auto cachedCacheDirectory = std::make_shared<std::optional<std::string>>();
-  auto cachedDocumentsDirectory = std::make_shared<std::optional<std::string>>();
   ModuleDefinitionBuilder builder("ExpoModulesCore");
   builder.property({.name = "expoModulesCoreVersion",
                     .getter = versionObject});
   builder.property({.name = "cacheDir",
-                    .getter = [weakContext, cachedCacheDirectory](Invocation &invocation) {
-                      if (!*cachedCacheDirectory) {
-                        *cachedCacheDirectory = platformDirectory(
-                            requireContext(weakContext), "getCacheDirectory");
-                      }
-                      return stringValue(invocation, **cachedCacheDirectory);
+                    .getter = [weakContext](Invocation &invocation) {
+                      return stringValue(invocation, platformDirectory(requireContext(weakContext), "getCacheDirectory"));
                     }});
   builder.property({.name = "documentsDir",
-                    .getter = [weakContext, cachedDocumentsDirectory](Invocation &invocation) {
-                      if (!*cachedDocumentsDirectory) {
-                        *cachedDocumentsDirectory = platformDirectory(
-                            requireContext(weakContext), "getDocumentsDirectory");
-                      }
-                      return stringValue(invocation, **cachedDocumentsDirectory);
+                    .getter = [weakContext](Invocation &invocation) {
+                      return stringValue(invocation, platformDirectory(requireContext(weakContext), "getDocumentsDirectory"));
                     }});
   builder.function({.name = "uuidv4",
                     .arity = 0,
@@ -152,6 +142,7 @@ ModuleDefinition CoreModule::definition() {
                       if (view->usesGenericFabricComponent) {
                         validAttributes.setProperty(runtime, protocol::kViewModuleNameProp, true);
                         validAttributes.setProperty(runtime, protocol::kViewNameProp, true);
+                        validAttributes.setProperty(runtime, protocol::kViewRevisionProp, true);
                       }
                       jsi::Object directEventTypes(runtime);
                       for (const auto &event : view->events) {

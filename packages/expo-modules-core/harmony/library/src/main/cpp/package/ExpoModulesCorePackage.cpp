@@ -61,7 +61,7 @@ std::string normalizeEventName(std::string name) {
 
 // Unlike a TurboModule observer, a package handler exists before JS first uses
 // Expo. Route teardown on JS so lazy module creation cannot race installation.
-class ExpoDestroyMessageHandler final : public rnoh::ArkTSMessageHandler {
+class ExpoLifecycleMessageHandler final : public rnoh::ArkTSMessageHandler {
 public:
   void handleArkTSMessage(const Context &context) override {
     if (context.messageName != protocol::kLifecycleEvent || !context.messagePayload.isObject()) {
@@ -70,12 +70,13 @@ public:
 
     const auto eventName = context.messagePayload.getDefault("eventName", "");
     const auto payload = context.messagePayload.getDefault("payload", nullptr);
-    if (!eventName.isString() || eventName.asString() != protocol::kLifecycleDestroy || !payload.isObject()) {
+    if (!eventName.isString() || (eventName.asString() != protocol::kLifecycleDestroy && eventName.asString() != protocol::kLifecycleContentAppeared) || !payload.isObject()) {
       return;
     }
 
+    const bool appeared = eventName.asString() == protocol::kLifecycleContentAppeared;
     const auto requestId = payload.getDefault("requestId", "");
-    if (!requestId.isString() || requestId.asString().empty()) {
+    if (!requestId.isString() || (!appeared && requestId.asString().empty())) {
       return;
     }
 
@@ -87,7 +88,7 @@ public:
     // RNOH 0.84 exposes its executor through RNInstanceInternal.
     instance->getTaskExecutor()->runTask(
         rnoh::TaskThread::JS,
-        [weakInstance = context.rnInstance, requestId = requestId.asString()] {
+        [weakInstance = context.rnInstance, appeared, requestId = requestId.asString()] {
           auto instance = weakInstance.lock();
           if (!instance) {
             return;
@@ -95,7 +96,11 @@ public:
 
           auto core = instance->getTurboModule<ExpoModulesCoreTurboModule>("ExpoModulesCore");
           if (core) {
-            core->beginDestroy(requestId);
+            if (appeared) {
+              core->handleContentAppeared(instance->getId());
+            } else {
+              core->beginDestroy(requestId);
+            }
           }
         });
   }
@@ -230,7 +235,11 @@ ExpoModulesCorePackage::createEventEmitRequestHandlers() {
 
 std::vector<rnoh::ArkTSMessageHandler::Shared>
 ExpoModulesCorePackage::createArkTSMessageHandlers() {
-  return {std::make_shared<ExpoDestroyMessageHandler>()};
+  return {std::make_shared<ExpoLifecycleMessageHandler>(), createBundleHandler(bundle_)};
+}
+
+rnoh::GlobalJSIBinders ExpoModulesCorePackage::createGlobalJSIBinders(const rnoh::GlobalJSIBinder::Context &context) {
+  return createBundleBinders(context, bundle_);
 }
 
 }  // namespace expo::harmony

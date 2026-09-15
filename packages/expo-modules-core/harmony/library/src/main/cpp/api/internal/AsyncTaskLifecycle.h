@@ -62,6 +62,9 @@ private:
 // Converts discarded executor callbacks into one-shot releases without touching JSI off-thread.
 class ScheduledCallbackGuard final {
 public:
+  explicit ScheduledCallbackGuard(std::function<void()> onDropped)
+      : droppedRelease_(std::make_shared<OneShotReleaseState>(std::move(onDropped))) {}
+
   explicit ScheduledCallbackGuard(
       std::shared_ptr<OneShotReleaseState> droppedRelease)
       : droppedRelease_(std::move(droppedRelease)) {}

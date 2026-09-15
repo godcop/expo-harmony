@@ -528,20 +528,6 @@ void defineSharedProperty(
         return jsi::Value::undefined();
       });
     };
-  } else {
-    setter = [context, path, moduleName, className](
-                 jsi::Runtime &rt, jsi::Object receiver, jsi::Value) {
-      translateErrors(rt, context, path, false, [&]() -> jsi::Value {
-        auto receiverValue = jsi::Value(rt, receiver);
-        (void)context->getNativeSharedObject(
-            requireSharedObjectId(rt, receiverValue, className),
-            moduleName,
-            className);
-        throw CodedError(
-            "ERR_PROPERTY_READ_ONLY",
-            "Cannot assign to read-only Expo SharedObject property '" + path + "'.");
-      });
-    };
   }
   expo::common::defineProperty(
       runtime,

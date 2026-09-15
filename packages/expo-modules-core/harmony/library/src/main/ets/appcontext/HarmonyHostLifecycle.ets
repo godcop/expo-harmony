@@ -1,8 +1,6 @@
-import type { ExpoServiceClass } from './ExpoServicesRegistry';
-import type { ExpoHarmonyLifecycleDispatcher } from './ExpoHarmonyLifecycleDispatcher';
+import { copyWant } from './ExpoWant';
 import type { Want } from '@kit.AbilityKit';
 import { common } from '@kit.AbilityKit';
-import type { ExpoModuleRegistration } from '../modules/ExpoModule';
 import { ExpoRuntimeSession } from './ExpoRuntimeSession';
 import {
   EXPO_LIFECYCLE_ACTIVITY_DESTROY,
@@ -139,7 +137,7 @@ export class ExpoHarmonyHostState {
 
   dispatchWant(binding: ExpoHarmonyHostBinding, want: Want): void {
     const state = this.requireBinding(binding);
-    state.lifecycle.dispatchToHost(binding.runtimeId, EXPO_LIFECYCLE_NEW_INTENT, JSON.parse(JSON.stringify(want)) as Want);
+    state.lifecycle.dispatchToHost(binding.runtimeId, EXPO_LIFECYCLE_NEW_INTENT, copyWant(want));
   }
 
   getHostBinding(context: common.UIAbilityContext, runtimeId: number): ExpoHarmonyHostBinding | undefined {
@@ -203,11 +201,4 @@ export class ExpoHarmonyHostState {
 
     return state;
   }
-}
-
-export interface ExpoHarmonyHostProvider {
-  readonly lifecycle: ExpoHarmonyLifecycleDispatcher;
-  readonly expoServices: ExpoServiceClass[];
-  readonly expoModules: ExpoModuleRegistration[];
-  readonly hostState: ExpoHarmonyHostState;
 }

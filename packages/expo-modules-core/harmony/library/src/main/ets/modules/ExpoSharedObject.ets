@@ -40,11 +40,13 @@ export interface ExpoSharedObjectFunctionDescriptor {
   readonly arity: number;
   readonly requiredArity: number;
   readonly async: boolean;
+  readonly enumerable?: boolean;
 }
 
 export interface ExpoSharedObjectPropertyDescriptor {
   readonly name: string;
   readonly writable: boolean;
+  readonly enumerable?: boolean;
 }
 
 export interface ExpoSharedObjectClassDescriptor {
@@ -579,6 +581,56 @@ export class ExpoSharedObjectClassDefinition<ObjectType extends ExpoSharedObject
   asyncFunction(name: string, body: ExpoOwnedAsyncFunction<ObjectType>): ExpoSharedObjectClassDefinition<ObjectType> {
     this.registerFunction(name, ownedFunctionArity(body), true, undefined, body);
     return this;
+  }
+
+  /** Controls whether a declared instance/static function or property appears in metadata. */
+  enumerable(name: string, value: boolean): ExpoSharedObjectClassDefinition<ObjectType> {
+    const functionRegistration = this.functionValues.get(name);
+    if (functionRegistration !== undefined) {
+      const descriptor = functionRegistration.descriptor;
+      this.functionValues.set(name, {
+        descriptor: {
+          name: descriptor.name,
+          arity: descriptor.arity,
+          requiredArity: descriptor.requiredArity,
+          async: descriptor.async,
+          enumerable: value,
+        },
+        syncBody: functionRegistration.syncBody,
+        asyncBody: functionRegistration.asyncBody,
+      });
+      return this;
+    }
+
+    const staticFunctionRegistration = this.staticFunctionValues.get(name);
+    if (staticFunctionRegistration !== undefined) {
+      const descriptor = staticFunctionRegistration.descriptor;
+      this.staticFunctionValues.set(name, {
+        descriptor: {
+          name: descriptor.name,
+          arity: descriptor.arity,
+          requiredArity: descriptor.requiredArity,
+          async: descriptor.async,
+          enumerable: value,
+        },
+        syncBody: staticFunctionRegistration.syncBody,
+        asyncBody: staticFunctionRegistration.asyncBody,
+      });
+      return this;
+    }
+
+    const propertyRegistration = this.propertyValues.get(name);
+    if (propertyRegistration !== undefined) {
+      const descriptor = propertyRegistration.descriptor;
+      this.propertyValues.set(name, {
+        descriptor: { name: descriptor.name, writable: descriptor.writable, enumerable: value },
+        getter: propertyRegistration.getter,
+        setter: propertyRegistration.setter,
+      });
+      return this;
+    }
+
+    throw new ExpoModuleError('ERR_SHARED_OBJECT_MEMBER_NOT_FOUND', `Cannot set enumerable for unknown SharedObject member '${this.className}.${name}'.`);
   }
 
   staticSyncFunction<Result>(name: string, body: ExpoFunction1<ExpoModuleContext, Result>): ExpoSharedObjectClassDefinition<ObjectType>;

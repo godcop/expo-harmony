@@ -1,3 +1,4 @@
+import { waitForRnohBundle } from '../appcontext/RnohBundle';
 import { AbilityConstant, abilityAccessCtrl, common, PermissionRequestResult, Permissions, Want } from '@kit.AbilityKit';
 import { window } from '@kit.ArkUI';
 import { lang } from '@kit.ArkTS';
@@ -7,7 +8,7 @@ import type { ExpoRuntimeSession } from '../appcontext/ExpoRuntimeSession';
 import { ExpoPermissionStatus, ExpoPermissionRequestResult, ExpoRuntimePermissionsKey } from '../appcontext/ExpoRuntimePermissions';
 import { ExpoAppDirectories, ExpoRuntimeDirectoriesKey } from '../appcontext/ExpoRuntimeDirectories';
 import { ExpoServiceClass, ExpoServiceContext, ExpoServicesRegistry } from '../appcontext/ExpoServicesRegistry';
-import { ExpoFileAccessMode, ExpoFileAccessKey } from '../appcontext/ExpoFileAccess';
+import { ExpoFileAccessMode, ExpoFileAccessKey, ExpoFileAccessRegistry } from '../appcontext/ExpoFileAccess';
 import fs from '@ohos.file.fs';
 import { LifecycleState, UITurboModuleContext } from '@rnoh/react-native-openharmony';
 import {
@@ -131,11 +132,13 @@ export interface ExpoModuleFunctionDescriptor {
   readonly requiredArity: number;
   readonly async: boolean;
   readonly writableArguments: number[];
+  readonly enumerable?: boolean;
 }
 
 export interface ExpoModulePropertyDescriptor {
   readonly name: string;
   readonly writable: boolean;
+  readonly enumerable?: boolean;
 }
 
 /** Copy-value metadata consumed by the common C++ Host adapter. */
@@ -420,7 +423,7 @@ export class ExpoModuleContext {
     this.sharedObjects = sharedObjects;
     this.typedEvents = typedEvents;
     this.moduleResolver = moduleResolver;
-    this.scopedLogger = createExpoModuleLogger(this.coreContext.logger, name);
+    this.scopedLogger = createExpoModuleLogger(this.coreContext.logger, name, this.coreContext.uiAbilityContext.applicationInfo.debug);
   }
 
   /** Stable identity for this RuntimeContext generation. */
@@ -444,6 +447,12 @@ export class ExpoModuleContext {
   /** Debug state of the consuming RNOH application, not the prebuilt module HAR. */
   get isHeadless(): boolean {
     return this.serviceRegistry.isHeadless;
+  }
+
+  async waitForJavaScriptBundle(): Promise<void> {
+    this.assertValid();
+    await waitForRnohBundle(this.coreContext.rnInstance);
+    this.assertValid();
   }
 
   get isDebug(): boolean {
@@ -590,9 +599,16 @@ export class ExpoModuleContext {
     );
   }
 
-  assertFileAccess(path: string, mode: ExpoFileAccessMode = 'read'): void {
+  assertFileAccess(path: string, mode: ExpoFileAccessMode = 'read'): boolean {
     this.assertValid();
-    this.services.get(ExpoFileAccessKey)?.assertAccess(path, mode);
+    const policy = this.services.get(ExpoFileAccessKey);
+    const granted = ExpoFileAccessRegistry.check(this.runtimeId, path, mode, policy);
+    if (granted === false) throw new Error('The file access policy denied this operation.');
+    if (granted === true) return true;
+
+    policy?.assertAccess(path, mode);
+
+    return policy !== undefined;
   }
 
   filePathForRead(value: string): string {
@@ -639,7 +655,7 @@ export class ExpoModuleContext {
     return result;
   }
 
-  /** Requests one Host reload after every scoped module prepared for teardown. */
+  /** Requests a Host reload; resource teardown follows actual instance destruction. */
   async reloadAppAsync(reason: string = 'Reload from ExpoModuleContext'): Promise<void> {
     this.assertValid();
     await this.reloadRuntime(reason);
@@ -995,6 +1011,40 @@ export class ExpoModuleDefinition {
   asyncFunction(name: string, body: ExpoAsyncFunction): ExpoModuleDefinition {
     this.registerFunction(name, functionArity(body), true, undefined, body);
     return this;
+  }
+
+  /** Controls whether a declared function/property appears in generated metadata. */
+  enumerable(name: string, value: boolean): ExpoModuleDefinition {
+    const functionRegistration = this.functionValues.get(name);
+    if (functionRegistration !== undefined) {
+      const descriptor = functionRegistration.descriptor;
+      this.functionValues.set(name, {
+        descriptor: {
+          name: descriptor.name,
+          arity: descriptor.arity,
+          requiredArity: descriptor.requiredArity,
+          async: descriptor.async,
+          writableArguments: descriptor.writableArguments,
+          enumerable: value,
+        },
+        syncBody: functionRegistration.syncBody,
+        asyncBody: functionRegistration.asyncBody,
+      });
+      return this;
+    }
+
+    const propertyRegistration = this.propertyValues.get(name);
+    if (propertyRegistration !== undefined) {
+      const descriptor = propertyRegistration.descriptor;
+      this.propertyValues.set(name, {
+        descriptor: { name: descriptor.name, writable: descriptor.writable, enumerable: value },
+        getter: propertyRegistration.getter,
+        setter: propertyRegistration.setter,
+      });
+      return this;
+    }
+
+    throw new ExpoModuleError('ERR_MODULE_MEMBER_NOT_FOUND', `Cannot set enumerable for unknown Expo module member '${name}'.`);
   }
 
   property<Value>(name: string, getter: ExpoFunction0<Value>): ExpoModuleDefinition;
@@ -1706,10 +1756,9 @@ class ExpoModulesRuntimeScope implements ExpoLifecycleSink {
   }
 
   async prepareForReload(): Promise<void> {
-    this.assertValid();
+    if (!this.valid) return;
 
-    // Preparation may permanently close author resources. Once started, always
-    // visit every module and proceed to replace this runtime.
+    // Teardown remains required after the session stops admitting new calls.
     for (let index = 0; index < this.order.length; index += 1) {
       const entry = this.order[index];
       if (!entry.created) continue;
@@ -1794,7 +1843,7 @@ export class ExpoModulesRegistry {
   private reloadHost?: ExpoRuntimeReload = undefined;
   private assertReloadAvailable?: () => void = undefined;
   private reloadInProgress: boolean = false;
-  private reloadFailed: boolean = false;
+  private retirement?: Promise<void>;
   private abilityDestroyed: boolean = false;
   private valid: boolean = true;
 
@@ -1873,7 +1922,7 @@ export class ExpoModulesRegistry {
     );
   }
 
-  /** @internal Binds the owning TurboModule's cleanup-aware reload operation. */
+  /** @internal Binds the owning TurboModule's Host reload delegate. */
   configureReloadHost(reloadHost: ExpoRuntimeReload, assertAvailable?: () => void): void {
     this.assertValid();
 
@@ -1990,14 +2039,21 @@ export class ExpoModulesRegistry {
     scope.dispatchLifecycle(eventName, payload);
   }
 
-  async prepareForReload(): Promise<void> {
-    this.assertValid();
+  /** @internal Called by the owning RNInstance destruction barrier. */
+  prepareForDestroy(): Promise<void> {
+    if (this.retirement !== undefined) return this.retirement;
+    if (!this.valid) return Promise.resolve();
 
     const scopes = Array.from(this.scopes.values());
+    // Close admission before running hooks that may permanently release resources.
+    this.retirement = Promise.resolve().then(async (): Promise<void> => {
+      for (const scope of scopes) {
+        try { await scope.prepareForReload(); }
+        catch (error) { reportModuleLifecycleFailure('ExpoModulesRegistry', 'prepareForDestroy', error); }
+      }
+    });
 
-    for (let index = 0; index < scopes.length; index += 1) {
-      await scopes[index].prepareForReload();
-    }
+    return this.retirement;
   }
 
   /** @internal Shared implementation for JS Core and ArkTS AppContext reloads. */
@@ -2013,16 +2069,10 @@ export class ExpoModulesRegistry {
 
     this.assertReloadAvailable?.();
     this.reloadInProgress = true;
-    try {
-      await this.prepareForReload();
 
-      this.assertValid();
+    try {
       await reloadHost(reason);
     } catch (error) {
-      // Close public admission, but retain resources until the native destroy
-      // acknowledgement (or per-runtime retirement) permits final cleanup.
-      this.reloadFailed = true;
-
       if (error instanceof ExpoModuleError) {
         throw new ExpoModuleError(error.code, error.message, error.cause, error.path);
       }
@@ -2030,6 +2080,8 @@ export class ExpoModulesRegistry {
         throw new Error(error.message);
       }
       throw new Error(errorMessage(error));
+    } finally {
+      this.reloadInProgress = false;
     }
   }
 
@@ -2210,8 +2262,8 @@ export class ExpoModulesRegistry {
   }
 
   private assertValid(): void {
-    if (!this.valid || this.reloadFailed) {
-      throw new Error('The ArkTS Expo modules scope has been invalidated or its Host reload failed.');
+    if (!this.valid || this.retirement !== undefined) {
+      throw new Error('The ArkTS Expo modules scope is retiring or has been invalidated.');
     }
     this.session?.assertOpen();
   }

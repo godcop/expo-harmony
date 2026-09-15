@@ -2,6 +2,9 @@
 
 namespace expo::harmony::protocol {
 
+inline constexpr const char kBundleWait[] = "EXPO_BUNDLE_WAIT";
+inline constexpr const char kBundleCancel[] = "EXPO_BUNDLE_CANCEL";
+inline constexpr const char kBundleReady[] = "EXPO_BUNDLE_READY";
 inline constexpr const char kViewEvent[] = "EXPO_VIEW_EVENT";
 inline constexpr const char kLifecycleEvent[] = "EXPO_LIFECYCLE_EVENT";
 inline constexpr const char kLifecycleDestroyAck[] = "EXPO_LIFECYCLE_DESTROY_ACK";
@@ -17,6 +20,7 @@ inline constexpr const char kViewNameProp[] = "expoViewName";
 inline constexpr const char kViewPhaseCreate[] = "CREATE";
 inline constexpr const char kViewPhaseProps[] = "PROPS";
 inline constexpr const char kViewPhaseDestroy[] = "DESTROY";
+inline constexpr const char kLifecycleContentAppeared[] = "CONTENT_APPEARED";
 inline constexpr const char kLifecycleDestroy[] = "DESTROY";
 
 }  // namespace expo::harmony::protocol

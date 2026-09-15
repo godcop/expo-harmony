@@ -13,10 +13,12 @@
 #include <hilog/log.h>
 
 #include "api/Promise.h"
+#include "api/internal/AsyncTaskLifecycle.h"
 #include "errors/CodedError.h"
 #include "modules/ExpoModulesCoreTurboModule.h"
 #include "modules/internal/ModuleDefinition.h"
 #include "runtime/ModuleRegistry.h"
+#include "runtime/RuntimeInstaller.h"
 
 namespace jsi = facebook::jsi;
 
@@ -26,41 +28,6 @@ namespace {
 
 constexpr unsigned int kExpoModulesLogDomain = 0xD003900;
 constexpr const char *kExpoModulesLogTag = "ExpoModulesCore";
-
-// invokeAsync may silently discard callbacks during teardown.
-class ScheduledCallbackGuard final {
-public:
-  explicit ScheduledCallbackGuard(std::function<void()> onDropped)
-      : onDropped_(std::move(onDropped)) {}
-
-  ~ScheduledCallbackGuard() noexcept {
-    if (delivered_.load(std::memory_order_acquire) || !onDropped_) {
-      return;
-    }
-    try {
-      onDropped_();
-    } catch (...) {
-    }
-  }
-
-  void markDelivered() noexcept {
-    delivered_.store(true, std::memory_order_release);
-  }
-
-private:
-  std::atomic_bool delivered_{false};
-  std::function<void()> onDropped_;
-};
-
-void logModulesExecutorError(std::string message) noexcept {
-  OH_LOG_Print(
-      LOG_APP,
-      LOG_ERROR,
-      kExpoModulesLogDomain,
-      kExpoModulesLogTag,
-      "Expo Modules executor task failed: %{public}s",
-      message.c_str());
-}
 
 void logSharedObjectReleaseError(
     long objectId,
@@ -208,8 +175,7 @@ RuntimeContext::RuntimeContext(
       jsInvoker_(std::move(jsInvoker)),
       taskExecutor_(std::move(taskExecutor)),
       turboModule_(std::move(turboModule)),
-      runtimeThread_(std::this_thread::get_id()),
-      modulesExecutor_(logModulesExecutorError) {}
+      runtimeThread_(std::this_thread::get_id()) {}
 
 RuntimeContext::~RuntimeContext() {
   invalidate();
@@ -388,69 +354,13 @@ void RuntimeContext::invalidateAfterViewTeardown() noexcept {
     return;
   }
 
+  bool ready = false;
   {
     std::scoped_lock lock(mutex_);
     if (invalidationViewTeardownCompleted_) {
       return;
     }
     invalidationViewTeardownCompleted_ = true;
-  }
-
-  auto context = invalidationLease_;
-  auto invoker = jsInvoker_;
-  const bool stopped = modulesExecutor_.shutdown(
-      std::chrono::milliseconds(250),
-      [context = std::move(context), invoker = std::move(invoker)]() noexcept {
-        if (!context || !invoker) {
-          return;
-        }
-
-        try {
-          auto delivery = std::make_shared<ScheduledCallbackGuard>([] {
-            OH_LOG_Print(
-                LOG_APP,
-                LOG_ERROR,
-                kExpoModulesLogDomain,
-                kExpoModulesLogTag,
-                "Expo modules executor stopped, but its JS teardown continuation was discarded");
-          });
-          invoker->invokeAsync(
-              [context, delivery = std::move(delivery)](jsi::Runtime &) {
-                delivery->markDelivered();
-                context->continueInvalidationAfterExecutorStop();
-              });
-        } catch (...) {
-          OH_LOG_Print(
-              LOG_APP,
-              LOG_ERROR,
-              kExpoModulesLogDomain,
-              kExpoModulesLogTag,
-              "Unable to schedule Expo modules executor teardown continuation");
-        }
-      });
-  if (stopped) {
-    continueInvalidationAfterExecutorStop();
-  }
-}
-
-void RuntimeContext::continueInvalidationAfterExecutorStop() noexcept {
-  if (!isRuntimeThread()) {
-    OH_LOG_Print(
-        LOG_APP,
-        LOG_ERROR,
-        kExpoModulesLogDomain,
-        kExpoModulesLogTag,
-        "Expo modules executor teardown resumed on the wrong thread");
-    return;
-  }
-
-  bool ready = false;
-  {
-    std::scoped_lock lock(mutex_);
-    if (invalidationExecutorStopped_) {
-      return;
-    }
-    invalidationExecutorStopped_ = true;
     ready = runtimeInvocations_.requestDrain();
   }
   if (ready) {
@@ -466,7 +376,7 @@ void RuntimeContext::continueInvalidationAfterDispatchedInvocations() noexcept {
   {
     std::scoped_lock lock(mutex_);
     invalidationContinuationScheduled_ = false;
-    if (!invalidationExecutorStopped_ || !runtimeInvocations_.isReady()) {
+    if (!invalidationViewTeardownCompleted_ || !runtimeInvocations_.isReady()) {
       return;
     }
   }
@@ -481,7 +391,7 @@ void RuntimeContext::scheduleInvalidationAfterDispatchedInvocations() noexcept {
   std::shared_ptr<facebook::react::CallInvoker> invoker;
   try {
     std::scoped_lock lock(mutex_);
-    if (!invalidating_.load(std::memory_order_acquire) || !invalidationExecutorStopped_ || !runtimeInvocations_.isReady() || invalidationContinuationScheduled_) {
+    if (!invalidating_.load(std::memory_order_acquire) || !invalidationViewTeardownCompleted_ || !runtimeInvocations_.isReady() || invalidationContinuationScheduled_) {
       return;
     }
     invalidationContinuationScheduled_ = true;
@@ -528,7 +438,7 @@ void RuntimeContext::maybeFinishInvalidationAfterSharedObjects() noexcept {
   {
     std::scoped_lock lock(mutex_);
     invalidationWaitingForSharedObjects_ = !nativeSharedObjects_.empty();
-    if (!invalidationFinishing_ && invalidationExecutorStopped_ && runtimeInvocations_.isReady() && !invalidationWaitingForSharedObjects_ && !sharedObjectInvocations_.hasFinalizing() && !sharedObjectReleaseSweepActive_) {
+    if (!invalidationFinishing_ && invalidationViewTeardownCompleted_ && runtimeInvocations_.isReady() && !invalidationWaitingForSharedObjects_ && !sharedObjectInvocations_.hasFinalizing() && !sharedObjectReleaseSweepActive_) {
       invalidationFinishing_ = true;
       shouldFinish = true;
     }
@@ -580,6 +490,7 @@ void RuntimeContext::finishInvalidation() noexcept {
   }
   try {
     clearJSIReferences();
+    RuntimeInstaller::uninstall(runtime(), this);
   } catch (...) {
     // Do not ACK if retained JSI state was not released on its owner thread.
     OH_LOG_Print(
@@ -1918,6 +1829,13 @@ void RuntimeContext::clearJSIReferences() {
       promise->invalidate();
     }
     promises_.clear();
+    values_.clear();
+    for (auto &reference : objects_) {
+      if (auto object = reference.lock()) {
+        object->allowRelease();
+      }
+    }
+    objects_.clear();
   }
   releaseAllSharedObjects();
   {
@@ -1994,6 +1912,37 @@ void RuntimeContext::releaseAllSharedObjects() noexcept {
     sharedObjectReleaseSweepActive_ = false;
   }
   maybeFinishInvalidationAfterSharedObjects();
+}
+
+std::shared_ptr<jsi::Value> RuntimeContext::retainValue(jsi::Value value) {
+  assertRuntimeThread();
+  if (!isAlive() || !isAcceptingTasks()) {
+    throw CodedError("ERR_RUNTIME_DESTROYED", "Cannot retain a value after Expo runtime teardown has started.");
+  }
+  auto retained = std::make_shared<jsi::Value>(std::move(value));
+  values_.emplace(retained.get(), retained);
+  return retained;
+}
+
+jsi::Value RuntimeContext::takeValue(const std::shared_ptr<jsi::Value> &value) {
+  assertRuntimeThread();
+  if (!value || !values_.contains(value.get())) {
+    throw CodedError("ERR_RUNTIME_DESTROYED", "The Expo runtime value has already been released.");
+  }
+  auto result = std::move(*value);
+  values_.erase(value.get());
+  return result;
+}
+
+void RuntimeContext::retainLongLivedObject(
+    const std::shared_ptr<facebook::react::LongLivedObject> &object) {
+  assertRuntimeThread();
+  if (!isAlive() || !isAcceptingTasks()) {
+    throw CodedError("ERR_RUNTIME_DESTROYED", "Cannot retain an asynchronous object after Expo runtime teardown has started.");
+  }
+  std::erase_if(objects_, [](const auto &reference) { return reference.expired(); });
+  objects_.push_back(object);
+  facebook::react::LongLivedObjectCollection::get(runtime()).add(object);
 }
 
 void RuntimeContext::retainPromise(const std::shared_ptr<Promise> &promise) {

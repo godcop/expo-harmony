@@ -19,7 +19,6 @@ namespace expo::harmony {
 class RuntimeContext;
 class ArkTSTypedBridge;
 class SynchronousBinaryWriteBack;
-class ContentAppearedMarkerListener;
 
 class ExpoModulesCoreTurboModule final
     : public rnoh::ArkTSMessageHub::Observer,
@@ -37,6 +36,7 @@ public:
   bool hasRuntimeContext(facebook::jsi::Runtime *runtime);
   bool isDestroyScheduled() const noexcept;
   void beginDestroy(std::string requestId);
+  void handleContentAppeared(size_t rnInstanceId);
   void registerRuntimeContext(
       facebook::jsi::Runtime &runtime,
       const std::shared_ptr<RuntimeContext> &context);
@@ -52,18 +52,16 @@ public:
       const std::string &methodName,
       const facebook::jsi::Value *arguments,
       size_t argumentCount);
-  void postMessageToArkTS(
-      const std::string &name,
-      const folly::dynamic &payload);
 
   void onMessageReceived(const rnoh::ArkTSMessage &message) override;
 
 private:
+  void postMessageToArkTS(
+      const std::string &name,
+      const folly::dynamic &payload);
   void activateRuntimeContext(
       facebook::jsi::Runtime &runtime,
       const std::shared_ptr<RuntimeContext> &context);
-  void ensureContentAppearedListener();
-  void handleContentAppeared(size_t rnInstanceId);
 
   std::shared_ptr<facebook::react::CallInvoker> jsInvoker_;
   rnoh::TaskExecutor::Shared taskExecutor_;
@@ -77,7 +75,6 @@ private:
       contexts_;
   std::weak_ptr<RuntimeContext> activeRuntimeContext_;
   std::weak_ptr<RuntimeContext> contentAppearedRuntime_;
-  std::shared_ptr<ContentAppearedMarkerListener> contentAppearedListener_;
 };
 
 }  // namespace expo::harmony

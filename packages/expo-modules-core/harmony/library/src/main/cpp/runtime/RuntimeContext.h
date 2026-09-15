@@ -18,6 +18,7 @@
 
 #include <ReactCommon/CallInvoker.h>
 #include <folly/dynamic.h>
+#include <react/bridging/LongLivedObject.h>
 
 #include "common/SharedObjectClassIdentity.h"
 #include "common/SharedObjectInvocationState.h"
@@ -25,7 +26,6 @@
 #include "common/SharedObjectWrapperState.h"
 #include "runtime/RuntimeIdentity.h"
 #include "runtime/RuntimeInvocationState.h"
-#include "runtime/SerialExecutor.h"
 
 namespace expo::harmony {
 
@@ -208,6 +208,9 @@ public:
       const facebook::jsi::Object &module);
   facebook::jsi::Value getModule(const std::string &name);
   void clearJSIReferences();
+  std::shared_ptr<facebook::jsi::Value> retainValue(facebook::jsi::Value value);
+  facebook::jsi::Value takeValue(const std::shared_ptr<facebook::jsi::Value> &value);
+  void retainLongLivedObject(const std::shared_ptr<facebook::react::LongLivedObject> &object);
   void retainPromise(const std::shared_ptr<Promise> &promise);
   void releasePromise(const Promise *promise);
 
@@ -222,7 +225,6 @@ private:
       std::weak_ptr<ExpoModulesCoreTurboModule> turboModule);
   void scheduleMountedViewTeardown() noexcept;
   void invalidateAfterViewTeardown() noexcept;
-  void continueInvalidationAfterExecutorStop() noexcept;
   void continueInvalidationAfterDispatchedInvocations() noexcept;
   void scheduleInvalidationAfterDispatchedInvocations() noexcept;
   void maybeFinishInvalidationAfterSharedObjects() noexcept;
@@ -249,7 +251,6 @@ private:
   std::atomic_bool invalidationScheduled_{false};
   std::atomic_long nextObjectId_{1};
   std::thread::id runtimeThread_;
-  SerialExecutor modulesExecutor_;
   mutable std::mutex mutex_;
   std::unique_ptr<ModuleRegistry> moduleRegistry_;
   std::unordered_map<long, std::shared_ptr<facebook::jsi::WeakObject>> sharedObjects_;
@@ -265,10 +266,11 @@ private:
   std::unordered_map<std::string, std::unique_ptr<facebook::jsi::Object>> modules_;
   std::unordered_map<std::string, std::unique_ptr<facebook::jsi::Function>> classes_;
   std::unordered_map<const Promise *, std::shared_ptr<Promise>> promises_;
+  std::unordered_map<const facebook::jsi::Value *, std::shared_ptr<facebook::jsi::Value>> values_;
+  std::vector<std::weak_ptr<facebook::react::LongLivedObject>> objects_;
   std::vector<std::function<void()>> invalidationCompletions_;
   std::shared_ptr<RuntimeContext> invalidationLease_;
   bool invalidationViewTeardownCompleted_{false};
-  bool invalidationExecutorStopped_{false};
   bool invalidationContinuationScheduled_{false};
   bool invalidationWaitingForSharedObjects_{false};
   bool invalidationFinishing_{false};
