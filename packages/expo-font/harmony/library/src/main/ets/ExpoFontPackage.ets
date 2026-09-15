@@ -115,7 +115,6 @@ const FONT_RENDER_RESULT_TYPE: ExpoValueType<FontRenderResult> = new ExpoValueTy
   (value: FontRenderResult): ESObject => encodeRenderResult(value),
 );
 
-/** ArkTS author implementation of Expo's FontLoaderModule. */
 export class ExpoFontLoaderModule extends ExpoModule {
   private readonly fonts: Map<string, string[]> = new Map<string, string[]>();
   private readonly materializedFonts: Map<string, string> = new Map<string, string>();
@@ -256,13 +255,17 @@ export class ExpoFontLoaderModule extends ExpoModule {
           : this.context.filePathForRead(uri);
     }
 
-    const roots: string[] = [this.context.persistentFilesPath, this.context.cachePath, this.context.temporaryPath];
+    const granted = this.context.assertFileAccess(path);
+    const application = this.context.uiAbilityContext.getApplicationContext();
+    const roots: string[] = [
+      this.context.persistentFilesPath, this.context.cachePath, this.context.temporaryPath,
+      application.filesDir, application.cacheDir,
+    ];
     const root = roots.find((candidate: string): boolean => isInside(candidate, path));
-    if (root === undefined && this.context.services.get(ExpoFileAccessKey) === undefined) {
+    if (root === undefined && !granted) {
       throw new ExpoFontError('ERR_FONT_SOURCE_OUTSIDE_SANDBOX', 'Font URI is outside the application sandbox.');
     }
 
-    this.context.assertFileAccess(path);
     if (root !== undefined) assertNoSymlinkSegments(root, path);
 
     try {
@@ -303,7 +306,6 @@ export class ExpoFontLoaderModule extends ExpoModule {
   }
 }
 
-/** ArkTS author implementation of Expo's FontUtilsModule. */
 export class ExpoFontUtilsModule extends ExpoModule {
   private destroyed: boolean = false;
 
