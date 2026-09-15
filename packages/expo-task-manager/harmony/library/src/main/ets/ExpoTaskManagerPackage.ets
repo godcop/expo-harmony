@@ -3,9 +3,9 @@ import { preferences } from '@kit.ArkData';
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { util } from '@kit.ArkTS';
 import {
+  AppLoaderProvider,
   ExpoAppLifecycleState,
   ExpoAppLifecycleSubscriber,
-  ExpoReactHost,
   ExpoFunction,
   ExpoModule,
   ExpoModuleContext,
@@ -923,6 +923,11 @@ class ExpoTaskManagerScope {
     eventHub.on(QUEUE_EXPIRED_EVENT, this.expiryListener);
   }
 
+  async waitForReady(): Promise<void> {
+    await this.context.waitForJavaScriptBundle();
+    if (this.destroyed) throw new ExpoTaskManagerError('ERR_TASK_MANAGER_RUNTIME_UNAVAILABLE', 'The task runtime was released before loading completed.');
+  }
+
   hasActiveExecutions(): boolean {
     return this.activeExecutions.size > 0 || this.claimedIds.size > 0 || this.expirations.size > 0;
   }
@@ -1616,47 +1621,15 @@ class ExpoTaskManagerScope {
   }
 }
 
-export interface ExpoTaskManagerRuntimeLoader {
-  readonly ownerKey: string;
-  isAvailable(): boolean;
-  load(context: common.Context): Promise<void>;
-  unload?(): Promise<void>;
-}
-
-class ExpoTaskManagerHostLoader implements ExpoTaskManagerRuntimeLoader {
-  readonly ownerKey: string;
-
-  constructor(owner: string) {
-    this.ownerKey = owner;
-  }
-
-  isAvailable(): boolean {
-    return ExpoReactHost.get(this.ownerKey)?.isAvailable() === true;
-  }
-
-  async load(context: common.Context): Promise<void> {
-    const host = ExpoReactHost.get(this.ownerKey);
-    if (host === undefined) throw new ExpoTaskManagerError('ERR_TASK_MANAGER_RUNTIME_UNAVAILABLE', 'The application has no Expo React host.');
-
-    await host.load(context);
-  }
-
-  async unload(): Promise<void> {
-    await ExpoReactHost.get(this.ownerKey)?.unload();
-  }
-}
-
 export class ExpoTaskManagerLifecycleSubscriber extends ExpoAppLifecycleSubscriber {
   override onCreate(): void {
     TaskManagerStorageLock.context = this.context;
-    ExpoTaskManagerRegistry.registerRuntimeLoader(new ExpoTaskManagerHostLoader(bundleManager.getBundleInfoForSelfSync(0).name));
   }
 }
 
 export class ExpoTaskManagerRegistry {
   private static readonly consumers: Map<string, ExpoTaskConsumer> = new Map();
   private static readonly scopes: Map<number, ExpoTaskManagerScope> = new Map();
-  private static readonly loaders: Map<string, ExpoTaskManagerRuntimeLoader> = new Map();
   private static readonly attachments: Map<string, () => void> = new Map();
   private static readonly runtimeLoads: Map<string, Promise<void>> = new Map();
   private static readonly idleTimers: Map<string, number> = new Map();
@@ -1705,23 +1678,10 @@ export class ExpoTaskManagerRegistry {
     return Array.from(ExpoTaskManagerRegistry.consumers.values());
   }
 
-  static registerRuntimeLoader(loader: ExpoTaskManagerRuntimeLoader): void {
-    const owner = requireOwnerKey(loader.ownerKey);
-    if (ExpoTaskManagerRegistry.loaders.has(owner)) {
-      throw new ExpoTaskManagerError('ERR_TASK_MANAGER_DUPLICATE_LOADER', `A TaskManager runtime loader is already registered for '${owner}'.`);
-    }
-    ExpoTaskManagerRegistry.loaders.set(owner, loader);
-  }
-
-  static unregisterRuntimeLoader(loader: ExpoTaskManagerRuntimeLoader): void {
-    const owner = requireOwnerKey(loader.ownerKey);
-    if (ExpoTaskManagerRegistry.loaders.get(owner) === loader) ExpoTaskManagerRegistry.loaders.delete(owner);
-  }
-
   static canEnsureRuntime(ownerKey: string): boolean {
     const owner = requireOwnerKey(ownerKey);
     if (ExpoTaskManagerRegistry.hasRuntime(owner)) return true;
-    return ExpoTaskManagerRegistry.loaders.get(owner)?.isAvailable() === true;
+    return AppLoaderProvider.getLoader(AppLoaderProvider.reactNative)?.isAvailable() === true;
   }
 
   static canEnsureRuntimeForContext(context: ExpoModuleContext): boolean {
@@ -1731,8 +1691,8 @@ export class ExpoTaskManagerRegistry {
   }
 
   static hasRuntimeLoader(ownerKey: string): boolean {
-    const owner = requireOwnerKey(ownerKey);
-    return ExpoTaskManagerRegistry.loaders.get(owner)?.isAvailable() === true;
+    requireOwnerKey(ownerKey);
+    return AppLoaderProvider.getLoader(AppLoaderProvider.reactNative)?.isAvailable() === true;
   }
 
   static ownerKey(context: ExpoModuleContext): string {
@@ -1743,22 +1703,28 @@ export class ExpoTaskManagerRegistry {
     const owner = requireOwnerKey(ownerKey);
     const existing = ExpoTaskManagerRegistry.runtimeLoads.get(owner);
     if (existing !== undefined) await existing;
-    if (ExpoTaskManagerRegistry.hasRuntime(owner)) return;
+    const attached = ExpoTaskManagerRegistry.primary(owner) ?? Array.from(ExpoTaskManagerRegistry.scopes.values()).find(scope => scope.ownerKey() === owner);
+    if (attached !== undefined) {
+      await attached.waitForReady();
+      return;
+    }
     if (ExpoTaskManagerRegistry.runtimeLoads.has(owner)) return await ExpoTaskManagerRegistry.ensureRuntime(owner, context);
 
-    const loader = ExpoTaskManagerRegistry.loaders.get(owner);
+    const loader = AppLoaderProvider.getLoader(AppLoaderProvider.reactNative);
     if (loader === undefined || !loader.isAvailable()) {
       throw new ExpoTaskManagerError(
         'ERR_TASK_MANAGER_RUNTIME_UNAVAILABLE',
         `No live RNOH runtime or TaskManager runtime loader is available for '${owner}'.`,
       );
     }
+
     const pending = (async (): Promise<void> => {
       try {
-        await loader.load(context);
+        if (!loader.isRunning(owner)) loader.loadApp(context, { appScopeKey: owner });
+        await loader.waitForApp(owner);
         await ExpoTaskManagerRegistry.waitForRuntime(owner);
       } catch (error) {
-        await loader.unload?.();
+        await loader.invalidateAppAsync(owner);
         throw new ExpoTaskManagerError(
           'ERR_TASK_MANAGER_RUNTIME_LOAD_FAILED',
           `Unable to attach the background TaskManager runtime for '${owner}'.`,
@@ -1804,7 +1770,7 @@ export class ExpoTaskManagerRegistry {
   }
 
   static releaseIdleRuntime(context: common.Context, owner: string): void {
-    if (ExpoTaskManagerRegistry.loaders.get(owner)?.unload === undefined) return;
+    if (AppLoaderProvider.getLoader(AppLoaderProvider.reactNative) === undefined) return;
 
     ExpoTaskManagerRegistry.runtimeRequested(owner);
     const generation = ExpoTaskManagerRegistry.activity.get(owner);
@@ -1834,8 +1800,8 @@ export class ExpoTaskManagerRegistry {
       return;
     }
 
-    const loader = ExpoTaskManagerRegistry.loaders.get(owner);
-    const pending = loader?.unload?.();
+    const loader = AppLoaderProvider.getLoader(AppLoaderProvider.reactNative);
+    const pending = loader?.invalidateAppAsync(owner);
     if (pending === undefined) return;
 
     ExpoTaskManagerRegistry.runtimeLoads.set(owner, pending);
@@ -1996,7 +1962,6 @@ const TASK_COMPLETION_RESPONSE_TYPE: ExpoValueType<TaskCompletionResponse> = new
   (value: TaskCompletionResponse): ESObject => value,
 );
 
-/** ArkTS author implementation of Expo's TaskManager native module. */
 export class ExpoTaskManagerModule extends ExpoModule {
   private scope?: ExpoTaskManagerScope = undefined;
   private scopePromise?: Promise<ExpoTaskManagerScope> = undefined;
