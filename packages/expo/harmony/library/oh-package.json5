@@ -1,0 +1,24 @@
+{
+  "name": "@expo-harmony/expo",
+  "version": "55.0.26-harmony.1",
+  "description": "HarmonyOS port of expo",
+  "keywords": [
+    "react-native",
+    "expo",
+    "expo-harmony",
+    "harmonyos"
+  ],
+  "homepage": "https://github.com/renbaoshuo/expo-harmony/tree/master/packages/expo#readme",
+  "repository": "https://github.com/renbaoshuo/expo-harmony",
+  "author": {
+    "name": "Baoshuo",
+    "email": "i@baoshuo.ren",
+    "url": "https://github.com/renbaoshuo"
+  },
+  "main": "Index.ets",
+  "license": "MIT",
+  "dependencies": {
+    "@expo-harmony/expo-modules-core": "55.0.25-harmony.2",
+    "@rnoh/react-native-openharmony": "0.84.1"
+  }
+}

@@ -1,0 +1,12 @@
+export { ExpoPackage } from './src/main/ets/ExpoPackage';
+export { ExpoFetchModule } from './src/main/ets/fetch/ExpoFetchModule';
+export { ExpoReactHost, ExpoReactHostOptions } from './src/main/ets/ExpoReactHost';
+export { ExpoReactHostFactory } from './src/main/ets/ExpoReactHostFactory';
+export { ExpoRNApp, ExpoRNInstanceReplacement } from './src/main/ets/ExpoRNApp';
+export { ExpoRNAbility } from './src/main/ets/ExpoRNAbility';
+export { ExpoAbilityStage } from './src/main/ets/ExpoAbilityStage';
+export { ExpoModulesPackage, ExpoHarmonyHostProvider } from './src/main/ets/ExpoModulesPackage';
+export { ExpoHarmonyLifecycleDispatcher } from './src/main/ets/ExpoHarmonyLifecycleDispatcher';
+export { ApplicationLifecycleDispatcher } from './src/main/ets/ApplicationLifecycleDispatcher';
+export { ExpoReactRootViewFactory } from './src/main/ets/ExpoReactRootViewFactory';
+export * from '@expo-harmony/expo-modules-core';
