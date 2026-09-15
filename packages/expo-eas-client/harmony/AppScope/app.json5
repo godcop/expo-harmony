@@ -1,0 +1,8 @@
+{
+  "app": {
+    "bundleName": "dev.expo.easclient.build",
+    "vendor": "expo-harmony",
+    "versionCode": 550005,
+    "versionName": "55.0.5-harmony.1"
+  }
+}
