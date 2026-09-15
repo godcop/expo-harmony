@@ -23,6 +23,7 @@
 
 已经移植的库都发布在 `@expo-harmony/` 下，具体列表如下：
 
+- [expo](./packages/expo/)：提供 Expo 核心包的支持。
 - [expo-app-metrics](./packages/expo-app-metrics/)：采集应用启动耗时、帧率与内存使用等性能指标。
 - [expo-application](./packages/expo-application/)：获取原生应用的 ID、名称和构建版本等信息。
 - [expo-asset](./packages/expo-asset/)：下载资源并在其他库中使用。
@@ -41,7 +42,6 @@
 - [expo-contacts](./packages/expo-contacts/)：访问手机的系统联系人。
 - [expo-crypto](./packages/expo-crypto/)：通用的加密操作。
 - [expo-device](./packages/expo-device/)：获取设备硬件相关的系统信息。
-- [expo-fetch](./packages/expo-fetch/)：提供符合 WinterCG 规范的 Fetch API。
 - [expo-file-system](./packages/expo-file-system/)：访问设备上的本地文件系统。
 - [expo-font](./packages/expo-font/)：在运行时加载字体并在 React Native 组件中使用。
 - [expo-haptics](./packages/expo-haptics/)：访问系统的振动与触感反馈效果。

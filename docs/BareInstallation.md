@@ -36,10 +36,10 @@ Expo 支持在已有的 React Native 应用中按需引入工具和模块，整�
 
 ```sh
 npm install expo@55.0.26 expo-modules-core@55.0.25 expo-battery@55.0.13
-npm install @expo-harmony/cli @expo-harmony/metro-config @expo-harmony/expo-modules-autolinking @expo-harmony/expo-modules-core @expo-harmony/expo-battery
+npm install @expo-harmony/cli @expo-harmony/metro-config @expo-harmony/expo-modules-autolinking @expo-harmony/expo @expo-harmony/expo-modules-core @expo-harmony/expo-battery
 ```
 
-`expo-battery` 提供业务代码使用的 JS API，`@expo-harmony/expo-battery` 提供 HarmonyOS 原生实现，两者都需要安装。`@expo-harmony/expo-modules-core` 是 Expo Modules 的 HarmonyOS 运行时，它还依赖 Worklets。
+`expo-battery` 提供业务代码使用的 JS API，`@expo-harmony/expo-battery` 提供 HarmonyOS 原生实现，两者都需要安装。`@expo-harmony/expo` 提供原生应用宿主和生命周期接入，`@expo-harmony/expo-modules-core` 是 Expo Modules 的 HarmonyOS 运行时。
 
 再安装 RNOH 和 Worklets 相关依赖：
 
@@ -141,7 +141,7 @@ module.exports = require('@react-native-oh/react-native-harmony-cli/react-native
 
 自动链接按 `entry/src/main` 这一固定路径查找文件，因此入口模块目录必须是 `harmony/entry`。模块名和 Ability 名可以修改，但要与 `build-profile.json5` 中的模块登记以及 `module.json5` 中的 `mainElement`、`abilities` 保持对应。产品和构建目标会优先选择名为 `default` 的项；没有 `default` 时，可用的候选必须只有一个。
 
-SDK 版本在 `build-profile.json5` 中设置，示例使用最低兼容版本 API 13、目标版本 API 24。添加其他原生模块时，还需要满足这些模块的最低 API 要求。
+SDK 版本在 `build-profile.json5` 中设置，示例使用最低兼容版本 API 20、目标版本 API 24。添加其他原生模块时，还需要满足这些模块的最低 API 要求。
 
 ### 接入 C++ 和 ArkTS 包注册
 
@@ -162,8 +162,8 @@ SDK 版本在 `build-profile.json5` 中设置，示例使用最低兼容版本 A
 [`EntryAbility.ets`](../apps/bare/harmony/entry/src/main/ets/entryability/EntryAbility.ets) 继承 `ExpoRNAbility`，提供页面、宿主扩展和 Worker 入口：
 
 ```ts
-import type { ExpoHarmonyHostProvider } from '@expo-harmony/expo-modules-core/Autolinking';
-import { ExpoRNAbility } from '@expo-harmony/expo-modules-core/Autolinking';
+import type { ExpoHarmonyHostProvider } from '@expo-harmony/expo';
+import { ExpoRNAbility } from '@expo-harmony/expo';
 import { expoHarmonyHostProvider } from '../generated/ExpoHarmonyHostProvider';
 
 export default class EntryAbility extends ExpoRNAbility {
@@ -181,9 +181,11 @@ export default class EntryAbility extends ExpoRNAbility {
 }
 ```
 
-请将 [`Index.ets`](../apps/bare/harmony/entry/src/main/ets/pages/Index.ets) 的页面配置合并到原生首页。该页面从 `RNOHCoreContext` 获取运行环境，用 `ExpoRNApp` 创建 RN 实例，实例配置复用 `PackageProvider.ets` 中的 `expoReactHost`，`appKey` 为 `BareBattery`；页面中还包含生成的 `ExpoHarmonyRootView`，供模块挂载宿主 UI。
+请将 [`Index.ets`](../apps/bare/harmony/entry/src/main/ets/pages/Index.ets) 的页面配置合并到原生首页。该页面从 `RNOHCoreContext` 获取运行环境，通过 `ExpoRNApp` 请求宿主启动运行时并绑定 root，实例配置复用 `PackageProvider.ets` 中的 `expoReactHost`，`appKey` 为 `BareBattery`；页面中还包含生成的 `ExpoHarmonyRootView`，供模块挂载宿主 UI。
 
-`PackageProvider.ets` 中的 `ExpoReactHost` 集中声明内嵌 bundle 路径、Worker 脚本和 RN 实例的完整配置。Debug 运行时从 Metro 开发服务加载 JS；Release 和后台冷启动读取的是同一份内嵌 bundle（`hermes_bundle.hbc`）。`ExpoAbilityStage` 会在初始化生命周期订阅器之前先初始化 `ExpoReactHost`，因此只启动后台 ExtensionAbility 的进程也能加载 bundle。
+`PackageProvider.ets` 通过 `@expo-harmony/expo` 的 `ExpoReactHostFactory` 创建默认的 `ExpoReactHost`，由它集中声明内嵌 bundle 路径、Worker 脚本和 RN 实例的完整配置。Debug 运行时从 Metro 开发服务加载 JS；Release 和后台冷启动读取的是同一份内嵌 bundle（`hermes_bundle.hbc`）。`ExpoAbilityStage` 会在初始化生命周期订阅器之前先初始化 `ExpoReactHost`，因此只启动后台 ExtensionAbility 的进程也能加载 bundle。
+
+在同一个 Expo 宿主和 RNOH coordinator 中，managed root 共享运行时：由第一个 root 完成配置，后续 root 绑定同一个实例，不会重新配置。需要使用不同的实例选项时，可以显式创建实例并通过 unmanaged `rnInstance` 传入，实例的替换和销毁由它的实际所有者负责。移除 root 只解绑页面，不会销毁宿主运行时，最终清理由 Ability 的销毁屏障完成。`onSetUp` 会在 root 首次展示实例之前执行；初次启动会先安装宿主绑定与异常观察，再执行 `onSetUp` 并加载 bundle，加载期间加入的 root 也会在展示前完成各自的 `onSetUp`。如果进程由后台 ExtensionAbility 先启动，它的 coordinator 不会自动迁移给之后的 UIAbility。
 
 Worker 使用 [`RNOHWorker.ets`](../apps/bare/harmony/entry/src/main/ets/workers/RNOHWorker.ets)，通过 `setupRNOHWorker` 接入同一份包列表。请确认 `module.json5` 的 `abilities[].srcEntry`、页面路由和 Ability 中的 Worker 路径都指向这些文件。
 
