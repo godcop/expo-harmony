@@ -63,10 +63,6 @@ function normalizeConfig(raw, pkg) {
     packageVersion: typeof pkg.version === 'string' ? pkg.version : undefined,
   });
 
-  if (Object.values(config).every(declarations => declarations.length === 0)) {
-    throw new TypeError('harmony must declare at least one module, service, root view component, or lifecycle subscriber.');
-  }
-
   return config;
 }
 
@@ -144,9 +140,9 @@ async function loadBuildConfig(root, manifest) {
   throw new TypeError(`${manifest.name} must declare an Expo Harmony module or a Harmony RNOH package.`);
 }
 
-function projectPaths(root, config) {
+function projectPaths(root) {
   const paths = modulePaths(root);
-  if (Object.values(config).every(declarations => declarations.length === 0)) {
+  if (!fs.existsSync(path.join(root, 'expo-module.config.json'))) {
     paths.bundledHar = inside(root, `harmony/${paths.moduleName}.har`, 'Bundled HAR');
   }
 
@@ -158,7 +154,7 @@ export async function loadModuleProject(root = process.cwd()) {
   const pkg = await readJson(path.join(packageRoot, 'package.json'));
 
   const config = await loadBuildConfig(packageRoot, pkg);
-  const paths = projectPaths(packageRoot, config);
+  const paths = projectPaths(packageRoot);
 
   await assertExistingAncestorInside(packageRoot, paths.projectRoot, 'Harmony project');
 
@@ -205,7 +201,7 @@ export async function inspectModule(root = process.cwd()) {
   const pkg = await readJson(path.join(packageRoot, 'package.json'));
 
   const config = await loadBuildConfig(packageRoot, pkg);
-  const paths = projectPaths(packageRoot, config);
+  const paths = projectPaths(packageRoot);
 
   return {
     config,
@@ -269,7 +265,7 @@ export function resolveModuleCommand(command, args, env = process.env) {
 function spawnCommand(command, args, options = {}) {
   return new Promise((resolve, reject) => {
     if (options.signal?.aborted) {
-      reject(options.signal.reason || new DOMException('This operation was aborted', 'AbortError'));
+      reject(options.signal.reason || new globalThis.DOMException('This operation was aborted', 'AbortError'));
       return;
     }
 
@@ -297,7 +293,7 @@ function spawnCommand(command, args, options = {}) {
       if (settled) return;
 
       settled = true;
-      clearTimeout(timer);
+      globalThis.clearTimeout(timer);
       options.signal?.removeEventListener('abort', abort);
 
       if (failure) reject(failure);
@@ -308,7 +304,7 @@ function spawnCommand(command, args, options = {}) {
     const abort = () => {
       if (stopping || settled) return;
 
-      failure = options.signal.reason || new DOMException('This operation was aborted', 'AbortError');
+      failure = options.signal.reason || new globalThis.DOMException('This operation was aborted', 'AbortError');
       stopping = Promise.resolve().then(() => terminateProcess(child, 'SIGTERM'));
       if (process.platform === 'win32') {
         void finish(null);
@@ -316,7 +312,7 @@ function spawnCommand(command, args, options = {}) {
         stopping.catch(() => {
           void finish(null);
         });
-        timer = setTimeout(() => {
+        timer = globalThis.setTimeout(() => {
           stopping = terminateProcess(child, 'SIGKILL');
           stopping.catch(() => {
             void finish(null);
