@@ -1,0 +1,21 @@
+{
+  "name": "@expo-harmony/expo-structured-headers",
+  "version": "55.0.2-harmony.1",
+  "description": "HarmonyOS port of expo-structured-headers",
+  "keywords": [
+    "react-native",
+    "expo",
+    "expo-harmony",
+    "harmonyos"
+  ],
+  "homepage": "https://github.com/renbaoshuo/expo-harmony/tree/master/packages/expo-structured-headers#readme",
+  "repository": "https://github.com/renbaoshuo/expo-harmony",
+  "author": {
+    "name": "Baoshuo",
+    "email": "i@baoshuo.ren",
+    "url": "https://github.com/renbaoshuo"
+  },
+  "main": "Index.ts",
+  "license": "MIT",
+  "dependencies": {}
+}
