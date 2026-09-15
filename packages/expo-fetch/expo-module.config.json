@@ -1,6 +1,0 @@
-{
-  "platforms": ["harmony"],
-  "harmony": {
-    "modules": ["ExpoFetchModule"]
-  }
-}
