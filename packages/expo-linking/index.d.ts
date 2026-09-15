@@ -1,1 +1,1 @@
-export * from 'expo-linking';
+export {};
