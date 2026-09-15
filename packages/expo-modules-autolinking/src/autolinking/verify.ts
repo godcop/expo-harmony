@@ -357,6 +357,17 @@ async function verifyModulesAsync(options: VerifyOptions = {}): Promise<Verifica
 
   descriptors.sort(compareModuleDescriptors);
   diagnostics.push(...collectDescriptorConflicts(descriptors));
+  if (descriptors.some(module => module.packageName === '@expo-harmony/expo-modules-core')
+    && !descriptors.some(module => module.packageName === '@expo-harmony/expo')) {
+    diagnostics.push({
+      severity: 'error',
+      code: 'ERR_EXPO_HARMONY_HOST_NOT_FOUND',
+      message: 'Install @expo-harmony/expo to provide the native Expo host and module registration entry.',
+      packageName: '@expo-harmony/expo',
+      stage: 'verify',
+    });
+  }
+
 
   if (searchResult) {
     const seen = new Map();

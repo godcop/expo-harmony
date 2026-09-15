@@ -39,3 +39,6 @@ export type {
   VerificationResult,
   VerifyOptions,
 } from './src/types';
+
+export { createNativeModuleContracts } from './src/harmony/manifest/runtime';
+export { ohpmDependenciesFromManifest } from './src/harmony/manifest';

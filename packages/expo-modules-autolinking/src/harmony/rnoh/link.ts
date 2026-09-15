@@ -214,14 +214,14 @@ function patchEtsFactorySource(source, descriptors) {
   const packageTypes = 'import type { RNPackage, RNPackageContext } from \'@rnoh/react-native-openharmony\';';
   const generatedHostProvider = 'import { expoHarmonyHostProvider } from \'./generated/ExpoHarmonyHostProvider\';';
   const coreRootImport = 'import ExpoModulesCorePackage from \'@expo-harmony/expo-modules-core\';';
-  const coreAutolinkingImport = 'import ExpoModulesCorePackage, { ExpoRuntimeConfig } from \'@expo-harmony/expo-modules-core/Autolinking\';';
+  const hostImport = 'import { ExpoModulesPackage } from \'@expo-harmony/expo\';\nimport { ExpoRuntimeConfig } from \'@expo-harmony/expo-modules-core\';';
   const replacements = [
     [generated, `${packageTypes}\n${generatedHostProvider}`, 'RNOH package type import'],
-    [coreRootImport, coreAutolinkingImport, 'Expo Modules Core package import'],
+    [coreRootImport, hostImport, 'Expo Modules Core package import'],
     ['ctx: RNPackageContext): RNOHPackage[] {', 'ctx: RNPackageContext, runtimeConfig?: ExpoRuntimeConfig): RNPackage[] {', 'RNOH package factory signature'],
     [
       'new ExpoModulesCorePackage(ctx)',
-      'new ExpoModulesCorePackage(ctx, expoHarmonyHostProvider.expoModules, expoHarmonyHostProvider.hostState, runtimeConfig, expoHarmonyHostProvider.expoServices)',
+      'new ExpoModulesPackage(ctx, expoHarmonyHostProvider, runtimeConfig)',
       'Expo Modules Core zero-argument registration',
     ],
   ];

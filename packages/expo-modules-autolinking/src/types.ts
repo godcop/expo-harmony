@@ -1,3 +1,5 @@
+import type { HarmonyNativeModule } from '../runtime';
+
 export type Platform = 'harmony';
 export type BuildType = 'debug' | 'release';
 export type ModuleSource
@@ -15,6 +17,9 @@ export interface HostMetadata {
   readonly rootViewComponents: ReadonlyArray<string>;
   readonly appLifecycleSubscribers: ReadonlyArray<string>;
   readonly abilityLifecycleSubscribers: ReadonlyArray<string>;
+  readonly reactNativeHostHandlers: ReadonlyArray<string>;
+  readonly reactActivityHandlers: ReadonlyArray<string>;
+  readonly runtimeBindings: ReadonlyArray<string>;
 }
 
 export type ExpoMetadata = HostMetadata;
@@ -123,6 +128,7 @@ export interface VerificationResult {
 
 export interface Manifest {
   readonly schemaVersion: 4;
+  readonly runtimeModules?: readonly HarmonyNativeModule[];
   readonly platform: 'harmony';
   readonly buildType: BuildType;
   readonly modules: ReadonlyArray<ModuleDescriptor>;
@@ -181,6 +187,7 @@ export interface LinkOptions extends VerifyOptions {
 }
 
 export interface MaterializeLocalSourceOptions {
+  readonly dependencies?: ReadonlyArray<ModuleDescriptor>;
   readonly projectRoot: string;
   readonly module: ModuleDescriptor;
   readonly timeoutMs?: number;

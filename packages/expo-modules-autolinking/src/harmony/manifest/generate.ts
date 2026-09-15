@@ -49,6 +49,7 @@ function createManifest(modules, options: Record<string, any> = {}): Manifest {
     schemaVersion: ManifestSchemaVersion,
     platform: Platform,
     buildType,
+    ...(options.runtimeModules ? { runtimeModules: options.runtimeModules } : {}),
     modules: modules.map(descriptor => createManifestEntry(descriptor)),
     managedArtifacts: [...(options.managedArtifacts || ManagedArtifacts)],
   };

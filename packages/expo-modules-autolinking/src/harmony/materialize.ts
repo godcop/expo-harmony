@@ -1,6 +1,8 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import spawn from 'cross-spawn';
+import JSON5 from 'json5';
+import { collectOhpmDeps, resolveOhpmSpecifier } from './ohpm/dependencies';
 import { resolveHarmonyCommand } from '../utilities/toolCommand';
 import { terminateProcess } from '../utilities/terminateProcess';
 
@@ -345,8 +347,21 @@ async function materializeLocalSourceAsync(
     { packageName: module.packageName, mustExist: false }
   );
 
-  for (const step of fixedLocalSourceBuildSteps(artifact.build)) {
-    await runFixedBuildStepAsync(step, module.packageName, options);
+  const file = path.join(artifact.build.cwd, 'oh-package.json5');
+  const original = await fs.promises.readFile(file, 'utf8');
+  const config = JSON5.parse(original);
+  const dependencies = (options.dependencies ?? []).filter(value => value.artifact.kind === 'bundled');
+  const overrides = Object.fromEntries(collectOhpmDeps(dependencies).map(({ descriptor, mapping }) => [
+    mapping.ohPackageName, resolveOhpmSpecifier(descriptor, mapping, { harmonyProjectPath: artifact.build.cwd }),
+  ]));
+
+  try {
+    await fs.promises.writeFile(file, JSON.stringify({ ...config, overrides: { ...config.overrides, ...overrides } }, null, 2) + '\n');
+    for (const step of fixedLocalSourceBuildSteps(artifact.build)) {
+      await runFixedBuildStepAsync(step, module.packageName, options);
+    }
+  } finally {
+    await fs.promises.writeFile(file, original);
   }
 
   const ready = await isNonEmptyRegularHarAsync(

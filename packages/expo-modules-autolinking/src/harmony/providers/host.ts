@@ -100,15 +100,18 @@ function renderArkTsHostProviderSource(descriptors) {
   ];
 
   lines.push(
-    ...(extensions.appLifecycleSubscribers.length || extensions.abilityLifecycleSubscribers.length ? [`import type { common } from '@kit.AbilityKit';`] : []),
-    `import { ExpoHarmonyHostState, ExpoHarmonyLifecycleDispatcher } from '@expo-harmony/expo-modules-core/Autolinking';`,
+    ...(extensions.appLifecycleSubscribers.length || extensions.abilityLifecycleSubscribers.length || extensions.reactNativeHostHandlers.length || extensions.reactActivityHandlers.length || extensions.runtimeBindings.length ? [`import type { common } from '@kit.AbilityKit';`] : []),
+    `import { ExpoHarmonyHostState } from '@expo-harmony/expo-modules-core';`,
+    `import { ExpoHarmonyLifecycleDispatcher, ExpoHarmonyHostProvider } from '@expo-harmony/expo';`,
     'import type {',
-    '  ExpoHarmonyHostProvider,',
+    '  ReactNativeHostHandlerRegistration,',
+    '  ReactActivityHandlerRegistration,',
+    '  ReactRuntimeBindingRegistration,',
     ...(registrations.length > 0 ? ['  ExpoModuleContext,'] : []),
     '  ExpoModuleRegistration,',
     '  ExpoServiceClass,',
     ...(services.length > 0 ? ['  ExpoServiceContext,'] : []),
-    `} from '@expo-harmony/expo-modules-core/Autolinking';`
+    `} from '@expo-harmony/expo-modules-core';`
   );
 
   registrations.forEach((registration, index) => {
@@ -153,7 +156,25 @@ function renderArkTsHostProviderSource(descriptors) {
       '      },'
     );
   }
-  lines.push('    ],', '  );', '', '  readonly expoModules: ExpoModuleRegistration[] = [');
+  lines.push('    ],', '  );');
+  for (const [field, type] of [
+    ['reactNativeHostHandlers', 'ReactNativeHostHandlerRegistration'],
+    ['reactActivityHandlers', 'ReactActivityHandlerRegistration'],
+    ['runtimeBindings', 'ReactRuntimeBindingRegistration'],
+  ]) {
+    lines.push('', `  readonly ${field}: ${type}[] = [`);
+    for (const extension of extensions[field]) {
+      lines.push(
+        '    {',
+        `      packageName: ${JSON.stringify(extension.packageName)},`,
+        `      registrationId: ${JSON.stringify(moduleRegistrationId(extension.ohPackageName, extension.className))},`,
+        `      create: (context: common.Context) => new ${extension.alias}(context),`,
+        '    },'
+      );
+    }
+    lines.push('  ];');
+  }
+  lines.push('', '  readonly expoModules: ExpoModuleRegistration[] = [');
   for (const registration of registrations) {
     lines.push(
       '    {',

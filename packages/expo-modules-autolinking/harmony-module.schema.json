@@ -6,7 +6,9 @@
   "properties": {
     "modules": {
       "type": "array",
-      "items": { "$ref": "#/$defs/arkTsIdentifier" },
+      "items": {
+        "$ref": "#/$defs/arkTsIdentifier"
+      },
       "uniqueItems": true,
       "default": [],
       "description": "ArkTS Expo Module classes exported by the conventional Harmony library."
@@ -15,7 +17,9 @@
       "$ref": "#/$defs/arkTsIdentifiers",
       "description": "ArkTS service classes exported by the conventional Harmony library. Classes extend ExpoService and accept an ExpoServiceContext constructor argument."
     },
-    "rootViewComponents": { "$ref": "#/$defs/arkTsIdentifiers" },
+    "rootViewComponents": {
+      "$ref": "#/$defs/arkTsIdentifiers"
+    },
     "appLifecycleSubscribers": {
       "$ref": "#/$defs/arkTsIdentifiers",
       "description": "Process-owned native subscriber classes extending ExpoAppLifecycleSubscriber, constructed with ApplicationContext before RN initialization. Declaration order is preserved."
@@ -23,6 +27,18 @@
     "abilityLifecycleSubscribers": {
       "$ref": "#/$defs/arkTsIdentifiers",
       "description": "UIAbility-owned native subscriber classes extending ExpoAbilityLifecycleSubscriber, constructed with UIAbilityContext independently of ExpoModule and RN runtime lifetimes. Declaration order is preserved."
+    },
+    "reactNativeHostHandlers": {
+      "$ref": "#/$defs/arkTsIdentifiers",
+      "description": "ReactNativeHostHandler classes constructed with a native Context by the Expo host. Declaration order determines bundle and development overrides."
+    },
+    "reactActivityHandlers": {
+      "$ref": "#/$defs/arkTsIdentifiers",
+      "description": "ReactActivityHandler classes for ArkUI root containers and delaying loadApp, constructed with UIAbilityContext."
+    },
+    "runtimeBindings": {
+      "$ref": "#/$defs/arkTsIdentifiers",
+      "description": "Internal RNOH bindings installed before bundle execution and disposed with their runtime. These are separate from ReactNativeHostHandler lifecycle notifications."
     }
   },
   "$defs": {
@@ -32,7 +48,9 @@
     },
     "arkTsIdentifiers": {
       "type": "array",
-      "items": { "$ref": "#/$defs/arkTsIdentifier" },
+      "items": {
+        "$ref": "#/$defs/arkTsIdentifier"
+      },
       "uniqueItems": true,
       "default": []
     }

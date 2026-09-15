@@ -4,6 +4,7 @@ import type { LinkOptions, LinkResult, VerifyOptions } from '../types';
 import { ExpoArtifacts, ManifestArtifact, RnohArtifacts, managedArtifactsForHarmonyRoot } from '../config/constants';
 import { renderArkTsHostProviderSource } from '../harmony/providers/host';
 import { serializeManifest } from '../harmony/manifest/generate';
+import { createNativeModuleContracts } from '../harmony/manifest/runtime';
 import { HarmonyAutolinkingError } from '../errors';
 import { normalizeOptionsAsync } from '../config/options';
 import { linkRnohAsync } from '../harmony/rnoh/link';
@@ -54,6 +55,7 @@ async function linkModulesAsync(rawOptions: LinkOptions): Promise<LinkResult> {
       );
     }
     await materializeLocalSourcesAsync(pendingSource, {
+      dependencies: modules,
       projectRoot: options.projectRoot,
       timeoutMs: rawOptions.timeoutMs,
       outputLimit: rawOptions.outputLimit,
@@ -106,6 +108,7 @@ async function linkModulesAsync(rawOptions: LinkOptions): Promise<LinkResult> {
     const manifest = serializeManifest(modules, {
       buildType: options.buildType,
       managedArtifacts: managed,
+      runtimeModules: createNativeModuleContracts(modules),
     });
 
     const published = await publishArtifactsAsync({

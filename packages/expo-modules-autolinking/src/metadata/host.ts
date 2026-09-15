@@ -6,6 +6,9 @@ const HostMetadataFields = Object.freeze([
   'rootViewComponents',
   'appLifecycleSubscribers',
   'abilityLifecycleSubscribers',
+  'reactNativeHostHandlers',
+  'reactActivityHandlers',
+  'runtimeBindings',
 ]);
 
 function normalizeIdentifiers(value, field, packageName) {

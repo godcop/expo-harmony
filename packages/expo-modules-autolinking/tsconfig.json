@@ -18,7 +18,8 @@
   "include": [
     "bin/**/*.ts",
     "index.ts",
-    "src/**/*.ts"
+    "src/**/*.ts",
+    "runtime.ts"
   ],
   "exclude": ["build"]
 }
