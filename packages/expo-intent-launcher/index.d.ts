@@ -1,1 +1,1 @@
-export * from 'expo-intent-launcher';
+export {};
