@@ -2,7 +2,7 @@
 
 [**GitHub 仓库**](https://github.com/renbaoshuo/expo-harmony/tree/master/packages/expo-system-ui)
 
-为 HarmonyOS 上的 React Native 应用提供 Expo SystemUI 的原生实现，与官方同版本的 `expo-system-ui` 配套使用。支持运行时读取和设置窗口背景色，以及通过配置插件设置初始背景色和浅色、深色或跟随系统的界面模式。
+为 HarmonyOS 上的 React Native 应用提供 Expo SystemUI 的原生实现，与官方同版本的 `expo-system-ui` 配套使用。
 
 ## 安装
 
