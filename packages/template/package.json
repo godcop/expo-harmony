@@ -27,6 +27,7 @@
   "dependencies": {
     "@babel/core": "7.29.7",
     "@expo-harmony/config-plugins": "workspace:*",
+    "@expo-harmony/expo": "workspace:*",
     "@expo-harmony/expo-modules-core": "workspace:*",
     "@expo/metro-config": "55.0.26",
     "@expo/metro-runtime": "55.0.12",

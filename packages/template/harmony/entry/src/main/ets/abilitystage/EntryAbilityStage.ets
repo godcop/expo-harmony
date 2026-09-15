@@ -1,5 +1,5 @@
-import { ExpoAbilityStage } from '@expo-harmony/expo-modules-core/Autolinking';
-import type { ExpoHarmonyHostProvider, ExpoReactHost } from '@expo-harmony/expo-modules-core/Autolinking';
+import { ExpoAbilityStage } from '@expo-harmony/expo';
+import type { ExpoHarmonyHostProvider, ExpoReactHost } from '@expo-harmony/expo';
 import { expoReactHost } from '../PackageProvider';
 import { expoHarmonyHostProvider } from '../generated/ExpoHarmonyHostProvider';
 

@@ -7,7 +7,7 @@ import {
   RNOHErrorDialog,
 } from '@rnoh/react-native-openharmony';
 import type { RNInstanceOptions } from '@rnoh/react-native-openharmony';
-import { ExpoRNApp } from '@expo-harmony/expo-modules-core';
+import { ExpoRNApp } from '@expo-harmony/expo';
 import { expoReactHost } from '../PackageProvider';
 import { ExpoHarmonyRootView } from '../generated/ExpoHarmonyHostProvider';
 
@@ -18,7 +18,6 @@ struct Index {
 
   private instanceOptions(): RNInstanceOptions {
     const options = expoReactHost.createRNInstanceOptions();
-    options.enableDebugger = this.rnohCoreContext?.isDebugModeEnabled ?? false;
     return options;
   }
 
@@ -31,6 +30,7 @@ struct Index {
             RNOHErrorDialog({ ctx: this.rnohCoreContext });
           }
           ExpoRNApp({
+            reactHost: expoReactHost,
             rnInstanceConfig: this.instanceOptions(),
             appKey: 'main',
             jsBundleProvider: expoReactHost.createJSBundleProvider(

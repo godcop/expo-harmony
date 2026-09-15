@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import { hvigor } from '@ohos/hvigor';
 import { appTasks, OhosPluginId } from '@ohos/hvigor-ohos-plugin';
+import { publishHarmonyNativeRuntime } from '@expo-harmony/cli/native-build';
 import { createRNOHProjectPlugin } from '@rnoh/hvigor-plugin';
 
 import { writeStamp } from './native-inputs-stamp';
@@ -190,8 +191,11 @@ const BundlerPlugin = {
     hvigor.nodesEvaluated(() => {
       const appContext = node.getContext(OhosPluginId.OHOS_APP_PLUGIN);
       const buildMode = appContext.getBuildMode();
+      publishHarmonyNativeRuntime(ProjectRoot, buildMode === 'release' ? 'release' : 'debug');
 
-      if (buildMode !== 'release') stashBundle();
+      const config = JSON.parse(fs.readFileSync(path.join(path.dirname(EmbeddedBundle), 'expo-updates/config.json'), 'utf8'));
+      const embedded = buildMode === 'release' || config.useNativeDebug === true;
+      if (!embedded) stashBundle();
 
       node.subNodes((moduleNode) => {
         const hapContext = moduleNode.getContext(OhosPluginId.OHOS_HAP_PLUGIN);
@@ -202,7 +206,7 @@ const BundlerPlugin = {
           moduleNode.registerTask({
             name: `${targetName}@ExpoHarmonyBundle`,
             run: () => {
-              if (buildMode === 'release') bundleRelease();
+              if (embedded) bundleRelease();
             },
             dependencies: [`${targetName}@ProcessResource`],
             postDependencies: [`${targetName}@CompileResource`],
