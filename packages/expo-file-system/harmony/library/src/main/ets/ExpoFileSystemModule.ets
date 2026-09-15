@@ -1,5 +1,4 @@
 import {
-  ExpoFileAccessKey,
   ExpoFileAccessMode,
   ExpoFunction,
   ExpoEither,
@@ -1046,9 +1045,11 @@ class FileSystemState {
 
   resolve(uri: string, mustExist: boolean = false, mode: ExpoFileAccessMode = 'read'): string {
     const path = decodeFileUri(uri);
-    this.context.assertFileAccess(path, mode);
+    const granted = this.context.assertFileAccess(path, mode);
+    const application = this.context.uiAbilityContext.getApplicationContext();
 
-    let allowed = this.context.services.get(ExpoFileAccessKey) !== undefined || isInside(this.documentPath, path) || isInside(this.cachePath, path);
+    let allowed = granted || isInside(this.documentPath, path) || isInside(this.cachePath, path)
+      || isInside(application.filesDir, path) || isInside(application.cacheDir, path);
 
     if (!allowed) {
       allowed = this.capabilities.some((capability: Capability): boolean =>
