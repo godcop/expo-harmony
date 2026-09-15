@@ -1,5 +1,6 @@
 import http from 'node:http';
 
+import { readDevelopmentSessionAsync } from '../development/session';
 import { HarmonyCliError } from '../errors';
 import { formatDiagnostics, startManagedProcess, type ProcessResult } from '../process';
 import { resolveExpoCli } from '../expo';
@@ -8,13 +9,16 @@ type MetroStatus = 'free' | 'metro' | 'occupied';
 
 interface MetroOptions {
   interactive?: boolean;
+  host?: string;
   port: number;
+  privateKeyPath?: string;
   readyTimeoutMs?: number;
   resetCache?: boolean;
 }
 
 export interface MetroSession {
   owner: 'existing' | 'started';
+  development?: Awaited<ReturnType<typeof readDevelopmentSessionAsync>>;
   port: number;
   process?: ReturnType<typeof startManagedProcess>;
   stop(): Promise<unknown>;
@@ -101,6 +105,7 @@ async function startExpoMetroAsync(
 
   if (before === 'metro') {
     return {
+      development: await readDevelopmentSessionAsync(projectRoot, options.port, options.host),
       owner: 'existing',
       port: options.port,
       stop: async () => {},
@@ -118,17 +123,20 @@ async function startExpoMetroAsync(
 
   const expo = resolveExpoCli(projectRoot);
   const managed = startManagedProcess(process.execPath, [
+    require.resolve('../internal/development'),
     expo.cliPath,
     'start',
     projectRoot,
     '--dev-client',
     '--port', String(options.port),
+    ...(options.privateKeyPath ? ['--private-key-path', options.privateKeyPath] : []),
     ...(options.resetCache ? ['--clear'] : []),
   ], {
     cwd: projectRoot,
     env: {
       ...process.env,
       EXPO_METRO_TARGET: 'harmony',
+      ...(options.host ? { REACT_NATIVE_PACKAGER_HOSTNAME: options.host } : {}),
     },
     operation: 'expo-metro',
     outputLimit: 1024 * 1024,
@@ -184,6 +192,7 @@ async function startExpoMetroAsync(
 
       if (await probeMetroAsync(options.port) === 'metro') {
         return {
+          development: await readDevelopmentSessionAsync(projectRoot, options.port, options.host),
           owner: 'started',
           port: options.port,
           process: managed,

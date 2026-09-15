@@ -53,6 +53,8 @@ export function prepareHarmonyNativeBuild(root: string, mode: 'debug' | 'release
     run(ohpm.command, [...ohpm.args, 'install', '--all'], harmony);
   }
 
+  publishHarmonyNativeRuntime(root, mode);
+
   const { fingerprint } = fingerprintHarmonyNativeInputsSync({
     projectRoot: root,
     manifest: path.join(harmony, 'oh-package.json5'),
@@ -78,4 +80,9 @@ export function bundleHarmonyNativeBuild(root: string): void {
 
   const require = createRequire(path.join(root, 'package.json'));
   run(nodeExecutable(), [require.resolve('@expo-harmony/cli/bin/expo-harmony'), 'export:embed', root], root);
+}
+
+export function publishHarmonyNativeRuntime(root: string, mode: 'debug' | 'release'): void {
+  const require = createRequire(path.join(root, 'package.json'));
+  run(nodeExecutable(), [require.resolve('@expo-harmony/cli/bin/expo-harmony'), 'runtime', root, '--publish', '--variant', mode], root);
 }

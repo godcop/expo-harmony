@@ -14,6 +14,12 @@ export const command: Command = async (argv, io) => {
   });
 
   try {
+    if (metro.development) {
+      io.log(`Harmony manifest: ${metro.development.manifestUrl}`);
+      io.log(`Harmony JS bundle: ${metro.development.bundleUrl}`);
+      io.log(`Harmony launch link: ${metro.development.launchLink}`);
+    }
+
     if (metro.owner === 'existing') {
       io.log(`Expo Metro is already running on port ${metro.port}.`);
       if (options.resetCache) {

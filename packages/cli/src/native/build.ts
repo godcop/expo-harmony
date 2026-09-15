@@ -1,3 +1,4 @@
+import { getConfig } from '@expo/config';
 import path from 'node:path';
 
 import { commitHarmonyNativeBuildCacheAsync, prepareHarmonyNativeBuildCacheAsync } from './cache';
@@ -25,7 +26,8 @@ export async function buildNativeAsync(
   steps: Record<string, number>
 ): Promise<NativeBuildResult> {
   let exported: NativeBuildResult['export'] = null;
-  if (plan.buildMode === 'release') {
+  const embedded = plan.buildMode === 'release' || getConfig(root).exp.updates?.useNativeDebug === true;
+  if (embedded) {
     progress(options, 'Exporting the release Hermes bundle');
     const manifest = await timedAsync(steps, 'export', () => exportEmbedAsync(root, {
       resetCache: options.resetCache,
@@ -61,7 +63,7 @@ export async function buildNativeAsync(
       EXPO_METRO_TARGET: 'harmony',
       HERMES_V1_ENABLED: 'true',
       ...(plan.workflow === 'bare' ? { EXPO_HARMONY_NATIVE_PREPARED: '1' } : {}),
-      ...(plan.buildMode === 'release' ? { EXPO_HARMONY_BUNDLE_PREBUILT: '1' } : {}),
+      ...(embedded ? { EXPO_HARMONY_BUNDLE_PREBUILT: '1' } : {}),
       ...(tools.sdkHome && !process.env.DEVECO_SDK_HOME
         ? { DEVECO_SDK_HOME: tools.sdkHome }
         : {}),

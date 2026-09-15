@@ -40,6 +40,11 @@
       "types": "./build/internal/prebuild.d.ts",
       "require": "./build/internal/prebuild.js",
       "default": "./build/internal/prebuild.js"
+    },
+    "./internal/development": {
+      "types": "./build/internal/development.d.ts",
+      "require": "./build/internal/development.js",
+      "default": "./build/internal/development.js"
     }
   },
   "bin": {
@@ -50,6 +55,7 @@
     "@expo-harmony/expo-modules-autolinking": "workspace:*",
     "@expo-harmony/prebuild-config": "workspace:*",
     "@expo/config": "55.0.17",
+    "@expo/fingerprint": "0.16.7",
     "cross-spawn": "^7.0.6",
     "json5": "2.2.3"
   },

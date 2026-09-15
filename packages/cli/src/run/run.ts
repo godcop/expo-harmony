@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { getConfig } from '@expo/config';
 
 import {
   configureMetroPortAsync,
@@ -27,6 +28,7 @@ export interface HarmonyRunOptions {
   noBundler?: boolean;
   noInstall?: boolean;
   port?: number;
+  privateKeyPath?: string;
   resetCache?: boolean;
   sync?: boolean;
   variant?: 'debug' | 'release';
@@ -58,8 +60,8 @@ interface HarmonyRunSession {
   result: HarmonyRunResult;
 }
 
-type NormalizedRunOptions = Required<Omit<HarmonyRunSessionOptions, 'appId' | 'device'>>
-  & Pick<HarmonyRunSessionOptions, 'appId' | 'device'>;
+type NormalizedRunOptions = Required<Omit<HarmonyRunSessionOptions, 'appId' | 'device' | 'privateKeyPath'>>
+  & Pick<HarmonyRunSessionOptions, 'appId' | 'device' | 'privateKeyPath'>;
 
 const BundleName = /^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*){2,}$/u;
 
@@ -94,6 +96,7 @@ async function runHarmonyUnlockedAsync(
     noBundler: Boolean(options.noBundler),
     noInstall: Boolean(options.noInstall),
     port: options.port || 8081,
+    privateKeyPath: options.privateKeyPath,
     resetCache: Boolean(options.resetCache),
     sync: Boolean(options.sync),
     variant: options.variant || 'debug',
@@ -130,7 +133,7 @@ async function runHarmonyUnlockedAsync(
   };
 
   try {
-    if (settings.variant === 'debug') {
+    if (settings.variant === 'debug' && getConfig(root).exp.updates?.useNativeDebug !== true) {
       progress(settings, settings.noBundler
         ? 'Connecting to the existing Expo Metro server'
         : 'Starting Expo Metro');
@@ -139,6 +142,7 @@ async function runHarmonyUnlockedAsync(
         : startExpoMetroAsync(root, {
             interactive: settings.interactiveBundler,
             port: settings.port,
+            privateKeyPath: settings.privateKeyPath,
             resetCache: settings.resetCache,
           }));
 

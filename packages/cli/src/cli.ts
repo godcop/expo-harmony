@@ -4,11 +4,13 @@ import { Help } from './help';
 import type { Log } from './log';
 
 const commands: Record<string, () => Promise<{ command: Command }>> = {
+  'runtime': () => import('./runtime/index.js'),
   'start': () => import('./start/index.js'),
   'prebuild': () => import('./prebuild/index.js'),
   'build': () => import('./buildHap/index.js'),
   'doctor': () => import('./doctor/index.js'),
   'modules': () => import('./modules/index.js'),
+  'export': () => import('./updates/index.js'),
   'export:embed': () => import('./exportEmbed/index.js'),
   'run': () => import('./run/index.js'),
 };

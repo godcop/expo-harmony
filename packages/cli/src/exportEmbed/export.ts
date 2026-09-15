@@ -3,13 +3,14 @@ import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 
+import { publishEmbeddedUpdateAsync } from '../updates/export';
 import { doctorAsync } from '../doctor/doctor';
 import { resolveHarmonyEntryPoint } from '../entry';
 import { HarmonyCliError } from '../errors';
 import { withHarmonyProjectLockAsync } from '../projectLock';
 import { resolveHarmonyBuildPlanAsync } from '../native/project';
 import { formatDiagnostics, spawnAsync } from '../process';
-import { resolveExpoCli, resolveExpoHermesBuilder } from '../expo';
+import { resolveExpoHermesBuilder } from '../expo';
 import {
   assertHermesBundle, assertSourceMap, exportPaths,
   publishExportAsync, validatePublishedExportAsync,
@@ -18,6 +19,7 @@ import {
 
 export interface ExportOptions {
   check?: boolean;
+  outputDirectory?: string;
   resetCache?: boolean;
   skipDoctor?: boolean;
   timeoutMs?: number;
@@ -28,29 +30,8 @@ export interface ExportTemporary {
   bundle: string;
   javascript: string;
   metroSourceMap: string;
+  metadata: string;
   sourceMap: string;
-}
-
-function createExpoExportEmbedArgs(
-  root: string,
-  entry: string,
-  temp: ExportTemporary,
-  options: ExportOptions = {}
-) {
-  return [
-    'export:embed',
-    '--platform', 'harmony',
-    '--entry-file', entry,
-    '--bundle-output', temp.javascript,
-    '--assets-dest', temp.assets,
-    '--dev', 'false',
-    '--minify', 'false',
-    '--sourcemap-output', temp.metroSourceMap,
-    '--sourcemap-sources-root', '.',
-    '--unstable-transform-profile', 'hermes-stable',
-    ...(options.resetCache ? ['--reset-cache=true'] : []),
-    root,
-  ];
 }
 
 async function exportEmbedUnlockedAsync(
@@ -67,7 +48,13 @@ async function exportEmbedUnlockedAsync(
   }
 
   const plan = await resolveHarmonyBuildPlanAsync(root, { buildMode: 'release' });
-  const paths = exportPaths(plan);
+  const paths = options.outputDirectory
+    ? {
+        rawfileRoot: path.join(options.outputDirectory, 'embedded'), bundle: path.join(options.outputDirectory, 'embedded/hermes_bundle.hbc'),
+        metadataRoot: options.outputDirectory, manifest: path.join(options.outputDirectory, 'export-manifest.json'),
+        sourceMap: path.join(options.outputDirectory, 'hermes_bundle.hbc.map'),
+      }
+    : exportPaths(plan);
 
   if (options.check) return await validatePublishedExportAsync(paths);
 
@@ -75,6 +62,7 @@ async function exportEmbedUnlockedAsync(
   const directory = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'expo-harmony-export-'));
   const temp: ExportTemporary = {
     assets: path.join(directory, 'assets'),
+    metadata: path.join(directory, 'assets.json'),
     bundle: path.join(directory, 'hermes_bundle.hbc'),
     javascript: path.join(directory, 'index.js'),
     metroSourceMap: path.join(directory, 'index.js.map'),
@@ -84,10 +72,11 @@ async function exportEmbedUnlockedAsync(
   try {
     await fs.promises.mkdir(temp.assets, { recursive: true });
 
-    const expo = resolveExpoCli(root);
     const result = await spawnAsync(process.execPath, [
-      expo.cliPath,
-      ...createExpoExportEmbedArgs(root, entry, temp, options),
+      path.resolve(__dirname, '../internal/export.js'), root,
+      JSON.stringify({ update: !!options.outputDirectory, platform: 'harmony', entryFile: entry, bundleOutput: temp.javascript, assetsDest: temp.assets,
+        dev: false, minify: false, sourcemapOutput: temp.metroSourceMap, sourcemapSourcesRoot: '.',
+        unstableTransformProfile: 'hermes-stable', resetCache: options.resetCache }), temp.metadata,
     ], {
       capture: true,
       cwd: root,
@@ -166,7 +155,10 @@ async function exportEmbedUnlockedAsync(
     const bytecode = await assertHermesBundle(temp.bundle);
     await assertSourceMap(temp.sourceMap);
 
-    return await publishExportAsync(root, paths, temp, entry, bytecode);
+    const manifest = await publishExportAsync(root, paths, temp, entry, bytecode);
+    await publishEmbeddedUpdateAsync(root, paths, JSON.parse(await fs.promises.readFile(temp.metadata, 'utf8')));
+
+    return manifest;
   } finally {
     await fs.promises.rm(directory, { force: true, recursive: true });
   }
