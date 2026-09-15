@@ -1,5 +1,5 @@
-import type { ExpoHarmonyHostProvider } from '@expo-harmony/expo-modules-core/Autolinking';
-import { ExpoRNAbility } from '@expo-harmony/expo-modules-core/Autolinking';
+import type { ExpoHarmonyHostProvider } from '@expo-harmony/expo';
+import { ExpoRNAbility } from '@expo-harmony/expo';
 import { expoHarmonyHostProvider } from '../generated/ExpoHarmonyHostProvider';
 
 export default class EntryAbility extends ExpoRNAbility {

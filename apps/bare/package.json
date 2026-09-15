@@ -30,6 +30,7 @@
   "dependencies": {
     "@babel/core": "7.29.7",
     "@expo-harmony/cli": "workspace:*",
+    "@expo-harmony/expo": "workspace:*",
     "@expo-harmony/expo-battery": "workspace:*",
     "@expo-harmony/expo-modules-autolinking": "workspace:*",
     "@expo-harmony/expo-modules-core": "workspace:*",
