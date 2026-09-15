@@ -45,7 +45,7 @@ const Orientations = new Set([
   'auto_rotation',
 ]);
 const DeviceTypes = new Set<HarmonyDeviceType>(['phone', 'tablet', '2in1']);
-const MinimumApi = 13;
+const MinimumApi = 20;
 const TargetApi = 24;
 const SdkVersions = new Map([
   [13, '5.0.1(13)'],
@@ -336,6 +336,11 @@ function normalizeHarmonyConfig(config: HarmonyExpoConfig): NormalizedHarmonyCon
 
   if (!permissions.some(permission => permission.name === 'ohos.permission.INTERNET')) {
     permissions.unshift({ name: 'ohos.permission.INTERNET' });
+  }
+
+  if (config.updates?.checkAutomatically === 'WIFI_ONLY'
+    && !permissions.some(permission => permission.name === 'ohos.permission.GET_NETWORK_INFO')) {
+    permissions.push({ name: 'ohos.permission.GET_NETWORK_INFO' });
   }
 
   const schemes = readExpoSchemes(config);
