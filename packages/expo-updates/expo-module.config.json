@@ -1,0 +1,19 @@
+{
+  "platforms": [
+    "harmony"
+  ],
+  "harmony": {
+    "modules": [
+      "ExpoUpdatesModule"
+    ],
+    "reactNativeHostHandlers": [
+      "ExpoUpdatesReactNativeHostHandler"
+    ],
+    "reactActivityHandlers": [
+      "ExpoUpdatesReactActivityHandler"
+    ],
+    "runtimeBindings": [
+      "ExpoUpdatesRuntimeBinding"
+    ]
+  }
+}
