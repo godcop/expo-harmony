@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import type { InputConfigT } from 'metro-config';
 
 import { DefaultReactNativeHarmonyPackage, HarmonyPlatform } from './constants';
@@ -6,9 +7,7 @@ import { createResolver, getEntries, type HarmonyResolverOptions } from './resol
 import { createHarmonyPathNormalizer, getBootstrapModules } from './runtime';
 import { composeSerializer } from './serializer';
 
-/** 透传给 RNOH createHarmonyMetroConfig 的额外配置。 */
 export interface HarmonyMetroConfigOptions {
-  /** 指定 RNOH 用来替代 react-native 的包名。 */
   reactNativeHarmonyPackageName?: string;
   /** @internal */
   __reactNativeHarmonyPattern?: string;
@@ -18,32 +17,11 @@ export interface HarmonyMetroConfigOptions {
 }
 
 export interface WithHarmonyConfigOptions extends HarmonyResolverOptions {
-  /**
-   * 是否启用 Harmony 配置，默认为 true。设为 false 时原样返回 config，
-   * 且不加载 RNOH 和 metro-config peer dependencies。
-   */
   enabled?: boolean;
-  /** 项目根目录。默认依次使用 config.projectRoot 和 process.cwd()。 */
   projectRoot?: string;
-  /**
-   * 指定 RNOH 用来替代 react-native 的包名。
-   * 默认为 @react-native-oh/react-native-harmony。
-   */
   reactNativeHarmonyPackageName?: string;
-  /**
-   * 向 RNOH createHarmonyMetroConfig 透传当前 RNOH 版本支持的额外参数。
-   * 顶层 reactNativeHarmonyPackageName 会覆盖这里的同名配置。
-   */
   harmonyConfigOptions?: HarmonyMetroConfigOptions;
-  /**
-   * 追加 Harmony 平台的 package exports conditions。默认为
-   * ['harmony', 'react-native']；原有 conditions 会被保留并去重。
-   */
   conditions?: readonly string[];
-  /**
-   * 加载配置时写入 process.env 的额外变量。仅在显式配置时写入，默认
-   * 不会修改共享 Metro 进程的环境变量；也可设为 false 明确禁止修改。
-   */
   env?: false | Readonly<Record<string, string>>;
 }
 
@@ -105,8 +83,8 @@ function validateOptions(value: unknown): asserts value is WithHarmonyConfigOpti
     }
   }
 
-  for (const [moduleName, target] of getEntries(value.redirects, 'options.redirects')) {
-    if (typeof moduleName !== 'string') {
+  for (const [name, target] of getEntries(value.redirects, 'options.redirects')) {
+    if (typeof name !== 'string') {
       throw new ExpoHarmonyMetroError(
         'ERR_EXPO_HARMONY_INVALID_OPTIONS',
         'options.redirects keys must be strings.'
@@ -115,7 +93,7 @@ function validateOptions(value: unknown): asserts value is WithHarmonyConfigOpti
     if (!['string', 'function', 'object', 'undefined'].includes(typeof target) && target !== false) {
       throw new ExpoHarmonyMetroError(
         'ERR_EXPO_HARMONY_INVALID_REDIRECT',
-        `Unsupported redirect target for "${moduleName}".`
+        `Unsupported redirect target for "${name}".`
       );
     }
   }
@@ -133,28 +111,28 @@ function validateOptions(value: unknown): asserts value is WithHarmonyConfigOpti
 }
 
 function wrapRequestUrl(
-  rewriteRequestUrl: ((url: string) => string) | undefined
+  rewrite: ((url: string) => string) | undefined
 ): ((url: string) => string) | undefined {
-  if (typeof rewriteRequestUrl !== 'function') return undefined;
+  if (typeof rewrite !== 'function') return undefined;
 
-  return function rewriteHarmonyRequestUrl(requestUrl) {
+  return function rewriteHarmonyRequestUrl(request) {
     let url;
-    const relative = requestUrl.startsWith('/');
+    const relative = request.startsWith('/');
 
     try {
-      url = relative ? new URL(requestUrl, 'http://localhost') : new URL(requestUrl);
+      url = relative ? new URL(request, 'http://localhost') : new URL(request);
     } catch {
-      return rewriteRequestUrl(requestUrl);
+      return rewrite(request);
     }
 
     // RNOH requests index.bundle by convention. Expo's native clients request
     // this virtual entry so Metro can resolve package.json "main" correctly.
     if (url.pathname === '/index.bundle' && url.searchParams.get('platform') === HarmonyPlatform) {
       url = new URL(`${ExpoVirtualEntryPath}${url.search}${url.hash}`, url);
-      requestUrl = relative ? `${url.pathname}${url.search}${url.hash}` : url.toString();
+      request = relative ? `${url.pathname}${url.search}${url.hash}` : url.toString();
     }
 
-    return rewriteRequestUrl(requestUrl);
+    return rewrite(request);
   };
 }
 
@@ -166,8 +144,8 @@ function normalizeServer(
 
   let normalized = server;
   if (server?.tls === false) {
-    const { tls: _disabledTls, ...metroServer } = server;
-    normalized = metroServer;
+    const { tls: _tls, ...options } = server;
+    normalized = options;
   }
 
   return rewriteRequestUrl ? { ...normalized, rewriteRequestUrl } : normalized;
@@ -181,12 +159,12 @@ function mergeBlockLists(
     if (value === undefined || value === null) return [];
     return Array.isArray(value) ? value : [value];
   };
-  const blockList = [
+  const entries = [
     ...toArray(base),
     ...toArray(harmony),
   ];
 
-  return blockList.length > 0 ? blockList : undefined;
+  return entries.length > 0 ? entries : undefined;
 }
 
 export function createWithHarmonyConfig({
@@ -210,13 +188,13 @@ export function createWithHarmonyConfig({
     if (options.env) Object.assign(process.env, options.env);
 
     const harmonyPackage = options.reactNativeHarmonyPackageName ?? DefaultReactNativeHarmonyPackage;
-    const harmonyConfig = createHarmonyMetroConfig({
+    const native = createHarmonyMetroConfig({
       ...options.harmonyConfigOptions,
       reactNativeHarmonyPackageName: harmonyPackage,
     });
-    const mergedConfig = mergeConfig(config, harmonyConfig);
+    const merged = mergeConfig(config, native);
     const baseResolver = config.resolver?.resolveRequest;
-    const harmonyResolver = mergedConfig.resolver?.resolveRequest;
+    const harmonyResolver = merged.resolver?.resolveRequest;
     if (typeof harmonyResolver !== 'function') {
       throw new ExpoHarmonyMetroError(
         'ERR_EXPO_HARMONY_INCOMPATIBLE_PEER_DEPENDENCY',
@@ -225,16 +203,26 @@ export function createWithHarmonyConfig({
     }
 
     const conditions = options.conditions ?? ['harmony', 'react-native'];
-    const existing = mergedConfig.resolver?.unstable_conditionsByPlatform?.[HarmonyPlatform] ?? [];
-    const blockList = mergeBlockLists(config.resolver?.blockList, harmonyConfig.resolver?.blockList);
-    const projectRoot = options.projectRoot ?? mergedConfig.projectRoot ?? process.cwd();
-    const normalizePath = createHarmonyPathNormalizer(harmonyPackage, projectRoot);
-    const bootstrap = getBootstrapModules(harmonyPackage, projectRoot);
-    const rewriteRequestUrl = wrapRequestUrl(mergedConfig.server?.rewriteRequestUrl);
-    const server = normalizeServer(mergedConfig.server, rewriteRequestUrl);
-    const serializer = composeSerializer(mergedConfig.serializer, normalizePath, [
+    const existing = merged.resolver?.unstable_conditionsByPlatform?.[HarmonyPlatform] ?? [];
+    const blockList = mergeBlockLists(config.resolver?.blockList, native.resolver?.blockList);
+    const root = options.projectRoot ?? merged.projectRoot ?? process.cwd();
+    const normalizePath = createHarmonyPathNormalizer(harmonyPackage, root);
+    const bootstrap = getBootstrapModules(harmonyPackage, root);
+    const rewriteRequestUrl = wrapRequestUrl(merged.server?.rewriteRequestUrl);
+    const server = normalizeServer(merged.server, rewriteRequestUrl);
+    const reactPackage = getEntries(options.aliases, 'options.aliases').find(([name]) => name === 'react')?.[1] || 'react';
+    const fixedRuntime = !options.resolveRequest && !options.redirects && !options.emptyModules
+      && getEntries(options.aliases, 'options.aliases').every(([name]) => name === 'react');
+
+    const environment = Object.keys(process.env).filter(key => key.startsWith('EXPO_PUBLIC_')).sort()
+      .map(key => [key, process.env[key]]);
+    const cache = process.env.NODE_ENV === 'production'
+      ? `${merged.cacheVersion ?? ''}:expo-public:${crypto.createHash('sha256').update(JSON.stringify(environment)).digest('hex')}`
+      : merged.cacheVersion;
+
+    const serializer = composeSerializer(merged.serializer, normalizePath, [
       config.serializer,
-      harmonyConfig.serializer,
+      native.serializer,
     ], bootstrap);
 
     if (config.serializer && typeof serializer?.getModulesRunBeforeMainModule === 'function') {
@@ -244,29 +232,30 @@ export function createWithHarmonyConfig({
     }
 
     return {
-      ...mergedConfig,
+      ...merged,
+      cacheVersion: cache,
       serializer,
       ...(server ? { server } : {}),
       resolver: {
-        ...mergedConfig.resolver,
+        ...merged.resolver,
         ...(blockList ? { blockList } : {}),
         platforms: [...new Set([
           ...(config.resolver?.platforms ?? []),
-          ...(harmonyConfig.resolver?.platforms ?? []),
-          ...(mergedConfig.resolver?.platforms ?? []),
+          ...(native.resolver?.platforms ?? []),
+          ...(merged.resolver?.platforms ?? []),
           HarmonyPlatform,
         ])],
         unstable_conditionsByPlatform: {
-          ...mergedConfig.resolver?.unstable_conditionsByPlatform,
+          ...merged.resolver?.unstable_conditionsByPlatform,
           [HarmonyPlatform]: [...new Set([...existing, ...conditions])],
         },
-        resolveRequest: createResolver({
+        resolveRequest: Object.assign(createResolver({
           baseResolver,
           harmonyResolver,
           normalizePath,
           options,
-          projectRoot,
-        }),
+          projectRoot: root,
+        }), { harmonyRuntime: { reactPackage, harmonyPackage, fixedRuntime } }),
       },
     } as unknown as T & InputConfigT;
   };
