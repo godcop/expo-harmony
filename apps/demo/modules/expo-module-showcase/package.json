@@ -30,7 +30,10 @@
     "expo-modules-core": "^55.0.0"
   },
   "devDependencies": {
-    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-manifests": "workspace:*",
+    "@expo-harmony/expo-module-scripts": "workspace:*",
+    "@expo-harmony/expo-structured-headers": "workspace:*",
+    "@expo-harmony/expo-updates-interface": "workspace:*"
   },
   "engines": {
     "node": ">=20"

@@ -19,7 +19,8 @@
   "harmony": {
     "modules": [
       "ExpoModuleShowcaseModule",
-      "ExpoModuleShowcaseConsumerModule"
+      "ExpoModuleShowcaseConsumerModule",
+      "RuntimeDemoModule"
     ]
   }
 }
