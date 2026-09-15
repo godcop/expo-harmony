@@ -9,6 +9,12 @@ export const MODULE_CATEGORIES = [
 export type ModuleCategory = typeof MODULE_CATEGORIES[number];
 
 export const MODULES = [
+  { id: 'expo', title: 'Expo 宿主', packageName: '@expo-harmony/expo', category: '核心运行时', summary: '官方 Expo 入口、宿主重载与模块生命周期。' },
+  { id: 'eas-client', title: 'EAS 客户端', packageName: '@expo-harmony/expo-eas-client', category: '核心运行时', summary: '安装级客户端身份、确定性采样与持久化。' },
+  { id: 'manifests', title: 'Manifest 清单', packageName: '@expo-harmony/expo-manifests', category: '核心运行时', summary: '内置与远程清单的原生字段读取和校验。' },
+  { id: 'structured-headers', title: '结构化响应头', packageName: '@expo-harmony/expo-structured-headers', category: '核心运行时', summary: '字典、列表与单项响应头的原生解析和序列化。' },
+  { id: 'updates-interface', title: 'Updates 原生接口', packageName: '@expo-harmony/expo-updates-interface', category: '核心运行时', summary: '原生控制器、状态 Context 和带类型的事件订阅。' },
+  { id: 'updates', title: '应用更新', packageName: '@expo-harmony/expo-updates', category: '核心运行时', summary: '更新检查、资源下载、缓存启动、签名与回滚。' },
   { id: 'expo-modules-core', title: 'Expo Modules Core', packageName: '@expo-harmony/expo-modules-core', category: '核心运行时', summary: '原生模块注册表、事件发射器与 Expo 运行时桥接。' },
   { id: 'expo-module-showcase', title: 'Expo Modules 测试', packageName: 'modules/expo-module-showcase', category: '核心运行时', summary: '使用本地模块测试原生调用、事件、共享对象、原生组件与页面，覆盖 Android、iOS 和 HarmonyOS。' },
   { id: 'expo-router', title: 'Expo Router', packageName: 'expo-router', category: '核心运行时', summary: '基于文件的路由、类型化参数、堆栈导航与深链接。' },
@@ -35,7 +41,7 @@ export const MODULES = [
   { id: 'crypto', title: '加密', packageName: '@expo-harmony/expo-crypto', category: '设备与媒体', summary: '摘要、随机字节、UUID 与 AES-GCM 往返校验。' },
   { id: 'contacts', title: '联系人', packageName: '@expo-harmony/expo-contacts', category: '设备与媒体', summary: '通讯录权限、联系人读写、分页查询、系统选择器与 vCard 导出。' },
   { id: 'device', title: '设备信息', packageName: '@expo-harmony/expo-device', category: '设备与媒体', summary: '品牌、型号、系统版本、内存、CPU 架构、设备类型与开机时长。' },
-  { id: 'fetch', title: '网络请求', packageName: '@expo-harmony/expo-fetch', category: '设备与媒体', summary: '通过 Expo fetch 实现的流式 HTTP 与本地文件响应。' },
+  { id: 'fetch', title: '网络请求', packageName: '@expo-harmony/expo', category: '设备与媒体', summary: '通过 Expo fetch 实现的流式 HTTP 与本地文件响应。' },
   { id: 'file-system', title: '文件系统', packageName: '@expo-harmony/expo-file-system', category: '设备与媒体', summary: '文件、目录、原始句柄与系统选择器。' },
   { id: 'haptics', title: '触感反馈', packageName: '@expo-harmony/expo-haptics', category: '设备与媒体', summary: '官方反馈样式与参数校验。' },
   { id: 'keep-awake', title: '保持唤醒', packageName: '@expo-harmony/expo-keep-awake', category: '设备与媒体', summary: '带标签的屏幕常亮与 React 生命周期处理。' },

@@ -46,7 +46,20 @@ import { SplashScreenDemo } from './modules/splash-screen';
 import { SystemUIDemo } from './modules/system-ui';
 import { TemplateDemo } from './modules/template';
 
+import { UpdatesDemo } from './modules/updates';
+import { ExpoDemo } from './modules/expo';
+import { EASClientDemo } from './modules/eas-client';
+import { ManifestsDemo } from './modules/manifests';
+import { StructuredHeadersDemo } from './modules/structured-headers';
+import { UpdatesInterfaceDemo } from './modules/updates-interface';
+
 const MODULE_DEMOS = {
+  'expo': ExpoDemo,
+  'eas-client': EASClientDemo,
+  'manifests': ManifestsDemo,
+  'structured-headers': StructuredHeadersDemo,
+  'updates-interface': UpdatesInterfaceDemo,
+  'updates': UpdatesDemo,
   'app-metrics': AppMetricsDemo,
   'application': ApplicationDemo,
   'asset': AssetDemo,
