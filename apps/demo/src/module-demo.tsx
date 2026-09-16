@@ -31,6 +31,7 @@ import { FetchDemo } from './modules/fetch';
 import { FileSystemDemo } from './modules/file-system';
 import { FontDemo } from './modules/font';
 import { HapticsDemo } from './modules/haptics';
+import { ImageDemo } from './modules/image';
 import { IntentLauncherDemo } from './modules/intent-launcher';
 import { KeepAwakeDemo } from './modules/keep-awake';
 import { LinearGradientDemo } from './modules/linear-gradient';
@@ -91,6 +92,7 @@ const MODULE_DEMOS = {
   'file-system': FileSystemDemo,
   'font': FontDemo,
   'haptics': HapticsDemo,
+  'image': ImageDemo,
   'intent-launcher': IntentLauncherDemo,
   'keep-awake': KeepAwakeDemo,
   'linear-gradient': LinearGradientDemo,
