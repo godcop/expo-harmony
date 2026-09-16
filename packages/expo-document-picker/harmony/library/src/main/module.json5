@@ -1,0 +1,7 @@
+{
+  "module": {
+    "name": "expo_document_picker",
+    "type": "har",
+    "deviceTypes": ["default", "tablet", "2in1"]
+  }
+}

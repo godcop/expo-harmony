@@ -42,6 +42,7 @@
 - [expo-contacts](./packages/expo-contacts/)：访问手机的系统联系人。
 - [expo-crypto](./packages/expo-crypto/)：通用的加密操作。
 - [expo-device](./packages/expo-device/)：获取设备硬件相关的系统信息。
+- [expo-document-picker](./packages/expo-document-picker/)：通过系统界面选择文档并读取文件信息。
 - [expo-eas-client](./packages/expo-eas-client/)：提供安装级的 EAS 客户端 ID 及由其派生的采样值。
 - [expo-file-system](./packages/expo-file-system/)：访问设备上的本地文件系统。
 - [expo-font](./packages/expo-font/)：在运行时加载字体并在 React Native 组件中使用。
