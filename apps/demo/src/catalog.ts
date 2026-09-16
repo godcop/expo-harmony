@@ -21,6 +21,7 @@ export const MODULES = [
   { id: 'expo-router', title: 'Expo Router', packageName: 'expo-router', category: '核心运行时', summary: '基于文件的路由、类型化参数、堆栈导航与深链接。' },
   { id: 'expo-task-manager', title: '任务管理器', packageName: '@expo-harmony/expo-task-manager', category: '核心运行时', summary: '全局任务定义与持久化的原生注册。' },
 
+  { id: 'screen-orientation', title: '屏幕方向', packageName: '@expo-harmony/expo-screen-orientation', category: '应用', summary: '方向查询、横竖屏锁定、默认策略、变化事件与参数边界。' },
   { id: 'screen-capture', title: '截屏保护', packageName: '@expo-harmony/expo-screen-capture', category: '应用', summary: '窗口截屏与录屏保护、独立标签、截图通知与 Hooks。' },
   { id: 'app-metrics', title: '应用指标', packageName: '@expo-harmony/expo-app-metrics', category: '应用', summary: '启动耗时、会话、诊断信息与持久化指标。' },
   { id: 'application', title: '应用信息', packageName: '@expo-harmony/expo-application', category: '应用', summary: '应用包标识、版本号、显示名称与安装时间。' },
