@@ -1469,22 +1469,33 @@ __metadata:
     "@expo-harmony/expo-contacts": "workspace:*"
     "@expo-harmony/expo-crypto": "workspace:*"
     "@expo-harmony/expo-device": "workspace:*"
+    "@expo-harmony/expo-document-picker": "workspace:*"
     "@expo-harmony/expo-eas-client": "workspace:*"
     "@expo-harmony/expo-file-system": "workspace:*"
     "@expo-harmony/expo-font": "workspace:*"
     "@expo-harmony/expo-haptics": "workspace:*"
+    "@expo-harmony/expo-image": "workspace:*"
+    "@expo-harmony/expo-image-loader": "workspace:*"
+    "@expo-harmony/expo-image-picker": "workspace:*"
     "@expo-harmony/expo-intent-launcher": "workspace:*"
+    "@expo-harmony/expo-json-utils": "workspace:*"
     "@expo-harmony/expo-keep-awake": "workspace:*"
     "@expo-harmony/expo-linear-gradient": "workspace:*"
     "@expo-harmony/expo-linking": "workspace:*"
     "@expo-harmony/expo-live-photo": "workspace:*"
+    "@expo-harmony/expo-localization": "workspace:*"
     "@expo-harmony/expo-location": "workspace:*"
+    "@expo-harmony/expo-media-library": "workspace:*"
     "@expo-harmony/expo-modules-autolinking": "workspace:*"
     "@expo-harmony/expo-modules-core": "workspace:*"
     "@expo-harmony/expo-navigation-bar": "workspace:*"
     "@expo-harmony/expo-network": "workspace:*"
     "@expo-harmony/expo-print": "workspace:*"
     "@expo-harmony/expo-router": "workspace:*"
+    "@expo-harmony/expo-screen-capture": "workspace:*"
+    "@expo-harmony/expo-screen-orientation": "workspace:*"
+    "@expo-harmony/expo-secure-store": "workspace:*"
+    "@expo-harmony/expo-sensors": "workspace:*"
     "@expo-harmony/expo-sharing": "workspace:*"
     "@expo-harmony/expo-splash-screen": "workspace:*"
     "@expo-harmony/expo-system-ui": "workspace:*"
@@ -1524,21 +1535,31 @@ __metadata:
     expo-contacts: "npm:55.0.14"
     expo-crypto: "npm:55.0.15"
     expo-device: "npm:55.0.17"
+    expo-document-picker: "npm:55.0.13"
     expo-eas-client: "npm:55.0.5"
     expo-file-system: "npm:55.0.24"
     expo-font: "npm:55.0.8"
     expo-haptics: "npm:55.0.14"
+    expo-image: "npm:55.0.11"
+    expo-image-loader: "npm:55.0.1"
+    expo-image-picker: "npm:55.0.20"
     expo-intent-launcher: "npm:55.0.12"
     expo-keep-awake: "npm:55.0.8"
     expo-linear-gradient: "npm:55.0.14"
     expo-linking: "npm:55.0.16"
     expo-live-photo: "npm:55.0.15"
+    expo-localization: "npm:55.0.15"
     expo-location: "npm:55.1.10"
+    expo-media-library: "npm:55.0.17"
     expo-modules-core: "npm:55.0.25"
     expo-navigation-bar: "npm:55.0.13"
     expo-network: "npm:55.0.14"
     expo-print: "npm:55.0.15"
     expo-router: "npm:55.0.16"
+    expo-screen-capture: "npm:55.0.14"
+    expo-screen-orientation: "npm:55.0.16"
+    expo-secure-store: "npm:55.0.14"
+    expo-sensors: "npm:55.0.15"
     expo-sharing: "npm:55.0.20"
     expo-splash-screen: "npm:55.0.21"
     expo-system-ui: "npm:55.0.18"
@@ -1908,6 +1929,24 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@expo-harmony/expo-document-picker@workspace:*, @expo-harmony/expo-document-picker@workspace:packages/expo-document-picker":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-document-picker@workspace:packages/expo-document-picker"
+  dependencies:
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    expo: "npm:55.0.26"
+    expo-document-picker: "npm:55.0.13"
+    expo-modules-core: "npm:55.0.25"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    expo-document-picker: 55.0.13
+  languageName: unknown
+  linkType: soft
+
 "@expo-harmony/expo-eas-client@workspace:*, @expo-harmony/expo-eas-client@workspace:packages/expo-eas-client":
   version: 0.0.0-use.local
   resolution: "@expo-harmony/expo-eas-client@workspace:packages/expo-eas-client"
@@ -1982,6 +2021,60 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@expo-harmony/expo-image-loader@workspace:*, @expo-harmony/expo-image-loader@workspace:packages/expo-image-loader":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-image-loader@workspace:packages/expo-image-loader"
+  dependencies:
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    expo: "npm:55.0.26"
+    expo-image-loader: "npm:55.0.1"
+    expo-modules-core: "npm:55.0.25"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    expo-image-loader: 55.0.1
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo-image-picker@workspace:*, @expo-harmony/expo-image-picker@workspace:packages/expo-image-picker":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-image-picker@workspace:packages/expo-image-picker"
+  dependencies:
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    expo: "npm:55.0.26"
+    expo-image-picker: "npm:55.0.20"
+    expo-modules-core: "npm:55.0.25"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    expo-image-picker: 55.0.20
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo-image@workspace:*, @expo-harmony/expo-image@workspace:packages/expo-image":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-image@workspace:packages/expo-image"
+  dependencies:
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    expo: "npm:55.0.26"
+    expo-image: "npm:55.0.11"
+    expo-modules-core: "npm:55.0.25"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    expo-image: 55.0.11
+  languageName: unknown
+  linkType: soft
+
 "@expo-harmony/expo-intent-launcher@workspace:*, @expo-harmony/expo-intent-launcher@workspace:packages/expo-intent-launcher":
   version: 0.0.0-use.local
   resolution: "@expo-harmony/expo-intent-launcher@workspace:packages/expo-intent-launcher"
@@ -1998,6 +2091,15 @@ __metadata:
     "@expo-harmony/expo-modules-core": "workspace:*"
     expo-intent-launcher: 55.0.12
     expo-modules-core: 55.0.25
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo-json-utils@workspace:*, @expo-harmony/expo-json-utils@workspace:packages/expo-json-utils":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-json-utils@workspace:packages/expo-json-utils"
+  dependencies:
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    expo-json-utils: "npm:55.0.2"
   languageName: unknown
   linkType: soft
 
@@ -2078,6 +2180,24 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@expo-harmony/expo-localization@workspace:*, @expo-harmony/expo-localization@workspace:packages/expo-localization":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-localization@workspace:packages/expo-localization"
+  dependencies:
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    expo: "npm:55.0.26"
+    expo-localization: "npm:55.0.15"
+    expo-modules-core: "npm:55.0.25"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    expo-localization: 55.0.15
+  languageName: unknown
+  linkType: soft
+
 "@expo-harmony/expo-location@workspace:*, @expo-harmony/expo-location@workspace:packages/expo-location":
   version: 0.0.0-use.local
   resolution: "@expo-harmony/expo-location@workspace:packages/expo-location"
@@ -2105,6 +2225,24 @@ __metadata:
     expo-manifests: "npm:55.0.17"
     react: "npm:19.2.3"
     react-native: "npm:0.84.1"
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo-media-library@workspace:*, @expo-harmony/expo-media-library@workspace:packages/expo-media-library":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-media-library@workspace:packages/expo-media-library"
+  dependencies:
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    expo: "npm:55.0.26"
+    expo-media-library: "npm:55.0.17"
+    expo-modules-core: "npm:55.0.25"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    expo-media-library: 55.0.17
   languageName: unknown
   linkType: soft
 
@@ -2246,6 +2384,78 @@ __metadata:
     "@react-native-ohos/react-native-reanimated": 4.0.2-beta.1
     "@react-native-ohos/react-native-worklets": 1.0.0
     expo-router: 55.0.16
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo-screen-capture@workspace:*, @expo-harmony/expo-screen-capture@workspace:packages/expo-screen-capture":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-screen-capture@workspace:packages/expo-screen-capture"
+  dependencies:
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    expo: "npm:55.0.26"
+    expo-modules-core: "npm:55.0.25"
+    expo-screen-capture: "npm:55.0.14"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    expo-screen-capture: 55.0.14
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo-screen-orientation@workspace:*, @expo-harmony/expo-screen-orientation@workspace:packages/expo-screen-orientation":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-screen-orientation@workspace:packages/expo-screen-orientation"
+  dependencies:
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    expo: "npm:55.0.26"
+    expo-modules-core: "npm:55.0.25"
+    expo-screen-orientation: "npm:55.0.16"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    expo-screen-orientation: 55.0.16
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo-secure-store@workspace:*, @expo-harmony/expo-secure-store@workspace:packages/expo-secure-store":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-secure-store@workspace:packages/expo-secure-store"
+  dependencies:
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    expo: "npm:55.0.26"
+    expo-modules-core: "npm:55.0.25"
+    expo-secure-store: "npm:55.0.14"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    expo-secure-store: 55.0.14
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo-sensors@workspace:*, @expo-harmony/expo-sensors@workspace:packages/expo-sensors":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-sensors@workspace:packages/expo-sensors"
+  dependencies:
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    expo: "npm:55.0.26"
+    expo-modules-core: "npm:55.0.25"
+    expo-sensors: "npm:55.0.15"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    expo-sensors: 55.0.15
   languageName: unknown
   linkType: soft
 
@@ -7497,6 +7707,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"expo-document-picker@npm:55.0.13":
+  version: 55.0.13
+  resolution: "expo-document-picker@npm:55.0.13"
+  peerDependencies:
+    expo: "*"
+  checksum: 10c0/8e64fb5712415a65b3bbd10ccca4143e12a3225c1cb39f9200e34e17a1a10816e11083f77036f23ce66dfa30338d1deae26b3fb9a551b9c127da4239369678b2
+  languageName: node
+  linkType: hard
+
 "expo-eas-client@npm:55.0.5, expo-eas-client@npm:~55.0.5":
   version: 55.0.5
   resolution: "expo-eas-client@npm:55.0.5"
@@ -7574,7 +7793,27 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"expo-image@npm:^55.0.11":
+"expo-image-loader@npm:55.0.1, expo-image-loader@npm:~55.0.0":
+  version: 55.0.1
+  resolution: "expo-image-loader@npm:55.0.1"
+  peerDependencies:
+    expo: "*"
+  checksum: 10c0/a596d36bc95f1fedf63805122e21a36aee859d79f1f6726aa256b24908ba0ace8c413556fbe2a824e845f29375072d8d6144c6a6cfbc30b314a42fa88c68f686
+  languageName: node
+  linkType: hard
+
+"expo-image-picker@npm:55.0.20":
+  version: 55.0.20
+  resolution: "expo-image-picker@npm:55.0.20"
+  dependencies:
+    expo-image-loader: "npm:~55.0.0"
+  peerDependencies:
+    expo: "*"
+  checksum: 10c0/d874049dc6423d0576937fd54c793f31094ec56dff595e5ec66fbac695634f5b106b20cbbd83628534efa17ea12c3f1abcc16c2df38ef74558a52f95c8cc4a1b
+  languageName: node
+  linkType: hard
+
+"expo-image@npm:55.0.11, expo-image@npm:^55.0.11":
   version: 55.0.11
   resolution: "expo-image@npm:55.0.11"
   dependencies:
@@ -7600,7 +7839,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"expo-json-utils@npm:~55.0.2":
+"expo-json-utils@npm:55.0.2, expo-json-utils@npm:~55.0.2":
   version: 55.0.2
   resolution: "expo-json-utils@npm:55.0.2"
   checksum: 10c0/0a20a9a0cd1d66691858cc447abc021d13ac5a75be30cdda10a642b7aa03fbf1ffac83c84702bda77bb29fc43a8063582620434725ce32a7c8555a154066c24c
@@ -7652,6 +7891,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"expo-localization@npm:55.0.15":
+  version: 55.0.15
+  resolution: "expo-localization@npm:55.0.15"
+  dependencies:
+    rtl-detect: "npm:^1.0.2"
+  peerDependencies:
+    expo: "*"
+    react: "*"
+  checksum: 10c0/13e13bbb186b757a3937ec79053294ffa7bededd4a2b2d9bcd94bda90f9d019a62ff7d3905b62d17877556c06bf0f221bfd1c8a63fbd9208248238bfb6f043eb
+  languageName: node
+  linkType: hard
+
 "expo-location@npm:55.1.10":
   version: 55.1.10
   resolution: "expo-location@npm:55.1.10"
@@ -7685,10 +7936,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"expo-media-library@npm:55.0.17":
+  version: 55.0.17
+  resolution: "expo-media-library@npm:55.0.17"
+  peerDependencies:
+    expo: "*"
+    react-native: "*"
+  checksum: 10c0/3bfe4497b5cac4305349666526362b0045c42226e17fb0afa4001fb94a6c86ad8fe508278da75e894f1ff70ff38e0fbb08315eff46b751ef818415dfc7c64c60
+  languageName: node
+  linkType: hard
+
 "expo-module-showcase@workspace:apps/demo/modules/expo-module-showcase":
   version: 0.0.0-use.local
   resolution: "expo-module-showcase@workspace:apps/demo/modules/expo-module-showcase"
   dependencies:
+    "@expo-harmony/expo-image-loader": "workspace:*"
+    "@expo-harmony/expo-json-utils": "workspace:*"
     "@expo-harmony/expo-manifests": "workspace:*"
     "@expo-harmony/expo-module-scripts": "workspace:*"
     "@expo-harmony/expo-structured-headers": "workspace:*"
@@ -7840,6 +8103,47 @@ __metadata:
     react-server-dom-webpack:
       optional: true
   checksum: 10c0/9ad348281653e295564ab3d1b10a8fd6c1caada963cbba67443d457465b00c97caddcae8a9d20e59aa41c0c1f66f4cbc4f97a462d1b8f2953c44b4b97869c315
+  languageName: node
+  linkType: hard
+
+"expo-screen-capture@npm:55.0.14":
+  version: 55.0.14
+  resolution: "expo-screen-capture@npm:55.0.14"
+  peerDependencies:
+    expo: "*"
+    react: "*"
+  checksum: 10c0/a4ea4a2df4d744fa2a99fc6bf11695c116ade648161daaccd721fa700124ec6847b02cdd97c083843967c901017bb022d909d284f61f3fb4bff8b3ac8800b606
+  languageName: node
+  linkType: hard
+
+"expo-screen-orientation@npm:55.0.16":
+  version: 55.0.16
+  resolution: "expo-screen-orientation@npm:55.0.16"
+  peerDependencies:
+    expo: "*"
+    react-native: "*"
+  checksum: 10c0/6c3f2d1530f31098cf7a15e715506133766ec71443ba1f8761a0666642413b6271dad9a14539b74a4e8852b994735a7255884529d750cdcaf7fe8623f129ab9d
+  languageName: node
+  linkType: hard
+
+"expo-secure-store@npm:55.0.14":
+  version: 55.0.14
+  resolution: "expo-secure-store@npm:55.0.14"
+  peerDependencies:
+    expo: "*"
+  checksum: 10c0/c237b04bc4d6cbd893926457e9d501b32e053078553c8400825576969f815e46528e467fa15c527a5654bd9c8ca0a5fbd74daefc1f81fb46f1c6d82219d070bb
+  languageName: node
+  linkType: hard
+
+"expo-sensors@npm:55.0.15":
+  version: 55.0.15
+  resolution: "expo-sensors@npm:55.0.15"
+  dependencies:
+    invariant: "npm:^2.2.4"
+  peerDependencies:
+    expo: "*"
+    react-native: "*"
+  checksum: 10c0/8d90c5ca183fb702f9b28f0d6680a91d04e5f4324df8d83b4b51e591bc2130511f3e33608242b486d9615d274c80276f1a96f69adc6f65dbd1a76020fbc274c5
   languageName: node
   linkType: hard
 
@@ -12575,6 +12879,13 @@ __metadata:
   bin:
     rimraf: ./bin.js
   checksum: 10c0/f1e646f8c567795f2916aef7aadf685b543da6b9a53e482bb04b07472c7eef2b476045ba1e29f401c301c66b630b22b815ab31fdd60c5e1ae6566ff523debf45
+  languageName: node
+  linkType: hard
+
+"rtl-detect@npm:^1.0.2":
+  version: 1.1.2
+  resolution: "rtl-detect@npm:1.1.2"
+  checksum: 10c0/1b92888aafca1593314f837e83fdf02eb208faae3e713ab87c176804728efd3b1980d53b64f65f1fa593348087e852c5cd729b7b9372950f6e9b7be489afc0ca
   languageName: node
   linkType: hard
 

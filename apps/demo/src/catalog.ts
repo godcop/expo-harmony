@@ -52,6 +52,7 @@ export const MODULES = [
   { id: 'document-picker', title: '文档选择器', packageName: '@expo-harmony/expo-document-picker', category: '设备与媒体', summary: '系统文档选择、MIME 过滤、多选、缓存复制、取消和并发保护。' },
   { id: 'fetch', title: '网络请求', packageName: '@expo-harmony/expo', category: '设备与媒体', summary: '通过 Expo fetch 实现的流式 HTTP 与本地文件响应。' },
   { id: 'file-system', title: '文件系统', packageName: '@expo-harmony/expo-file-system', category: '设备与媒体', summary: '文件、目录、原始句柄与系统选择器。' },
+  { id: 'sensors', title: '传感器', packageName: '@expo-harmony/expo-sensors', category: '设备与媒体', summary: '硬件可用性、运动权限、实时测量、采样间隔、监听清理与计步。' },
   { id: 'haptics', title: '触感反馈', packageName: '@expo-harmony/expo-haptics', category: '设备与媒体', summary: '官方反馈样式与参数校验。' },
   { id: 'keep-awake', title: '保持唤醒', packageName: '@expo-harmony/expo-keep-awake', category: '设备与媒体', summary: '带标签的屏幕常亮与 React 生命周期处理。' },
   { id: 'linear-gradient', title: '线性渐变', packageName: '@expo-harmony/expo-linear-gradient', category: '设备与媒体', summary: '多色渐变、端点控制与圆角裁剪。' },
