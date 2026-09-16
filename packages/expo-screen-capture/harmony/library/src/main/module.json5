@@ -1,0 +1,10 @@
+{
+  "module": {
+    "name": "expo_screen_capture",
+    "type": "har",
+    "deviceTypes": ["default", "tablet", "2in1"],
+    "requestPermissions": [
+      { "name": "ohos.permission.PRIVACY_WINDOW" }
+    ]
+  }
+}
