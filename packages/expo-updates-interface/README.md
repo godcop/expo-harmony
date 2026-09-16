@@ -17,7 +17,7 @@ npm install @expo-harmony/expo-updates-interface
 ```json
 {
   "dependencies": {
-    "@expo-harmony/expo-updates-interface": "55.1.6-harmony.1"
+    "@expo-harmony/expo-updates-interface": "55.1.6-harmony.0"
   }
 }
 ```

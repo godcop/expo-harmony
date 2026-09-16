@@ -17,7 +17,7 @@ npm install @expo-harmony/expo-json-utils
 ```json
 {
   "dependencies": {
-    "@expo-harmony/expo-json-utils": "55.0.2-harmony.1"
+    "@expo-harmony/expo-json-utils": "55.0.2-harmony.0"
   }
 }
 ```

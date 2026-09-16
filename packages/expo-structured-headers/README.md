@@ -17,7 +17,7 @@ npm install @expo-harmony/expo-structured-headers
 ```json
 {
   "dependencies": {
-    "@expo-harmony/expo-structured-headers": "55.0.2-harmony.1"
+    "@expo-harmony/expo-structured-headers": "55.0.2-harmony.0"
   }
 }
 ```
