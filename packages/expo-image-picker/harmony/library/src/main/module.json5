@@ -1,0 +1,14 @@
+{
+  "module": {
+    "name": "expo_image_picker",
+    "type": "har",
+    "deviceTypes": ["default", "tablet", "2in1"],
+    "requestPermissions": [
+      {
+        "name": "ohos.permission.CAMERA",
+        "reason": "$string:expo_image_picker_camera_permission_reason",
+        "usedScene": { "abilities": ["EntryAbility"], "when": "inuse" }
+      }
+    ]
+  }
+}

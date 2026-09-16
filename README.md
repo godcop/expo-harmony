@@ -49,6 +49,7 @@
 - [expo-haptics](./packages/expo-haptics/)：访问系统的振动与触感反馈效果。
 - [expo-image](./packages/expo-image/)：显示与缓存图片，支持占位图、动画和原生图片引用。
 - [expo-image-loader](./packages/expo-image-loader/)：为 ArkTS 模块提供按地址加载图片的服务，没有 JavaScript 接口。
+- [expo-image-picker](./packages/expo-image-picker/)：调用系统界面从图库选择图片和视频，或使用相机拍照。
 - [expo-intent-launcher](./packages/expo-intent-launcher/)：启动系统 Intent。
 - [expo-keep-awake](./packages/expo-keep-awake/)：在渲染时阻止屏幕休眠的 React 组件。
 - [expo-linear-gradient](./packages/expo-linear-gradient/)：渲染渐变视图的 React 组件。
