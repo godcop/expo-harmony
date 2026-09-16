@@ -51,6 +51,7 @@
 - [expo-image-loader](./packages/expo-image-loader/)：为 ArkTS 模块提供按地址加载图片的服务，没有 JavaScript 接口。
 - [expo-image-picker](./packages/expo-image-picker/)：调用系统界面从图库选择图片和视频，或使用相机拍照。
 - [expo-intent-launcher](./packages/expo-intent-launcher/)：启动系统 Intent。
+- [expo-json-utils](./packages/expo-json-utils/)：按字段类型读取 JSON 对象中的值。
 - [expo-keep-awake](./packages/expo-keep-awake/)：在渲染时阻止屏幕休眠的 React 组件。
 - [expo-linear-gradient](./packages/expo-linear-gradient/)：渲染渐变视图的 React 组件。
 - [expo-linking](./packages/expo-linking/)：创建并打开通用深度链接。
