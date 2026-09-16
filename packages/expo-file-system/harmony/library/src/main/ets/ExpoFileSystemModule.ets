@@ -1048,8 +1048,12 @@ class FileSystemState {
     const granted = this.context.assertFileAccess(path, mode);
     const application = this.context.uiAbilityContext.getApplicationContext();
 
-    let allowed = granted || isInside(this.documentPath, path) || isInside(this.cachePath, path)
-      || isInside(application.filesDir, path) || isInside(application.cacheDir, path);
+    let allowed =
+      granted ||
+      isInside(this.documentPath, path) ||
+      isInside(this.cachePath, path) ||
+      isInside(application.filesDir, path) ||
+      isInside(application.cacheDir, path);
 
     if (!allowed) {
       allowed = this.capabilities.some((capability: Capability): boolean =>
