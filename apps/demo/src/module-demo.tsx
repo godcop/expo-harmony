@@ -54,6 +54,7 @@ import { UpdatesDemo } from './modules/updates';
 import { ExpoDemo } from './modules/expo';
 import { EASClientDemo } from './modules/eas-client';
 import { ManifestsDemo } from './modules/manifests';
+import { JSONUtilsDemo } from './modules/json-utils';
 import { StructuredHeadersDemo } from './modules/structured-headers';
 import { UpdatesInterfaceDemo } from './modules/updates-interface';
 
@@ -61,6 +62,7 @@ const MODULE_DEMOS = {
   'expo': ExpoDemo,
   'eas-client': EASClientDemo,
   'manifests': ManifestsDemo,
+  'json-utils': JSONUtilsDemo,
   'structured-headers': StructuredHeadersDemo,
   'updates-interface': UpdatesInterfaceDemo,
   'updates': UpdatesDemo,

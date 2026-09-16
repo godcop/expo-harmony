@@ -63,6 +63,7 @@
     "@expo-harmony/expo-image-loader": "workspace:*",
     "@expo-harmony/expo-image-picker": "workspace:*",
     "@expo-harmony/expo-intent-launcher": "workspace:*",
+    "@expo-harmony/expo-json-utils": "workspace:*",
     "@expo-harmony/expo-keep-awake": "workspace:*",
     "@expo-harmony/expo-linear-gradient": "workspace:*",
     "@expo-harmony/expo-linking": "workspace:*",
