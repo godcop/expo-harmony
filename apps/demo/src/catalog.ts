@@ -23,6 +23,7 @@ export const MODULES = [
 
   { id: 'screen-orientation', title: '屏幕方向', packageName: '@expo-harmony/expo-screen-orientation', category: '应用', summary: '方向查询、横竖屏锁定、默认策略、变化事件与参数边界。' },
   { id: 'screen-capture', title: '截屏保护', packageName: '@expo-harmony/expo-screen-capture', category: '应用', summary: '窗口截屏与录屏保护、独立标签、截图通知与 Hooks。' },
+  { id: 'secure-store', title: '安全存储', packageName: '@expo-harmony/expo-secure-store', category: '应用', summary: '加密键值存储、同步与异步读写、服务隔离、容量边界及生物认证。' },
   { id: 'app-metrics', title: '应用指标', packageName: '@expo-harmony/expo-app-metrics', category: '应用', summary: '启动耗时、会话、诊断信息与持久化指标。' },
   { id: 'application', title: '应用信息', packageName: '@expo-harmony/expo-application', category: '应用', summary: '应用包标识、版本号、显示名称与安装时间。' },
   { id: 'asset', title: '资源', packageName: '@expo-harmony/expo-asset', category: '应用', summary: '内置资源、本地 URI 与远程缓存行为。' },
