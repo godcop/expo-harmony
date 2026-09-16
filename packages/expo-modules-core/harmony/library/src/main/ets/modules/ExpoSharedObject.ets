@@ -490,8 +490,8 @@ export class ExpoSharedObjectClassDefinition<ObjectType extends ExpoSharedObject
     const expected: string = this.className;
     return new ExpoValueType<ObjectType>(
       expected,
-      (value: ESObject, path: string): ObjectType => {
-        const object: ExpoSharedObject = requireSharedObjectValue(value, path, expected);
+      (value: ESObject, path: string, sharedObjects?: ExpoSharedObjectRegistry): ObjectType => {
+        const object: ExpoSharedObject = requireSharedObjectValue(value, path, expected, sharedObjects);
         return object.assertValueContract(path, this.moduleNameValue(), this.className, this.refType()) as ObjectType;
       },
       (value: ObjectType, path: string): ESObject => {
@@ -630,7 +630,10 @@ export class ExpoSharedObjectClassDefinition<ObjectType extends ExpoSharedObject
       return this;
     }
 
-    throw new ExpoModuleError('ERR_SHARED_OBJECT_MEMBER_NOT_FOUND', `Cannot set enumerable for unknown SharedObject member '${this.className}.${name}'.`);
+    throw new ExpoModuleError(
+      'ERR_SHARED_OBJECT_MEMBER_NOT_FOUND',
+      `Cannot set enumerable for unknown SharedObject member '${this.className}.${name}'.`,
+    );
   }
 
   staticSyncFunction<Result>(name: string, body: ExpoFunction1<ExpoModuleContext, Result>): ExpoSharedObjectClassDefinition<ObjectType>;
@@ -1354,6 +1357,19 @@ export class ExpoSharedObjectRegistry {
     return args.map((value: ESObject): ESObject => this.decodeValue(value, 0));
   }
 
+  /** @internal Resolves the numeric identity used by upstream native view props. */
+  resolveObject(objectId: number): ExpoSharedObject {
+    this.assertValid();
+    if (!isValidSharedObjectId(objectId)) {
+      throw new ExpoModuleError('ERR_SHARED_OBJECT_IDENTITY', 'Expected a positive SharedObject ID.');
+    }
+    const object = this.objects.get(objectId);
+    if (object === undefined) {
+      throw new ExpoModuleError('ERR_SHARED_OBJECT_RELEASED', `SharedObject ${objectId} was released or belongs to another runtime.`);
+    }
+    return object.assertValueContract(`SharedObject ${objectId}`);
+  }
+
   private encodeValue(value: ESObject | void, depth: number, authorIds: number[]): ESObject {
     if (depth > MAX_COPY_VALUE_DEPTH) {
       throw new Error('Expo module return value exceeds the maximum nesting depth.');
@@ -1770,8 +1786,13 @@ function sharedObjectValueType<ObjectType extends ExpoSharedObject>(
 ): ExpoValueType<ObjectType> {
   return new ExpoValueType<ObjectType>(
     expected,
-    (value: ESObject, path: string): ObjectType =>
-      requireSharedObjectValue(value, path, expected).assertValueContract(path, expectedModule, expectedClass, expectedNativeRefType) as ObjectType,
+    (value: ESObject, path: string, sharedObjects?: ExpoSharedObjectRegistry): ObjectType =>
+      requireSharedObjectValue(value, path, expected, sharedObjects).assertValueContract(
+        path,
+        expectedModule,
+        expectedClass,
+        expectedNativeRefType,
+      ) as ObjectType,
     (value: ObjectType, path: string): ESObject => {
       const object: ExpoSharedObject = requireSharedObjectValue(value as ESObject, path, expected);
       if (object.currentBinding() !== undefined) {
@@ -1809,7 +1830,9 @@ function sharedObjectValueType<ObjectType extends ExpoSharedObject>(
   );
 }
 
-function requireSharedObjectValue(value: ESObject, path: string, expected: string): ExpoSharedObject {
+function requireSharedObjectValue(value: ESObject, path: string, expected: string, sharedObjects?: ExpoSharedObjectRegistry): ExpoSharedObject {
+  if (typeof value === 'number' && sharedObjects !== undefined) return sharedObjects.resolveObject(value);
+
   if (!(value instanceof ExpoSharedObject)) {
     throw new ExpoModuleError('ERR_INVALID_ARGUMENT_TYPE', `${path} expected ${expected}, received ${ExpoValueConverter.actualType(value)}.`);
   }

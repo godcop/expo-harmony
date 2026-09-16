@@ -28,20 +28,35 @@ export class RNHeadlessAppLoader implements HeadlessAppLoader {
   private begun = false;
   private loaded = false;
   private borrowed = false;
-  private get restarting(): boolean { return this.runtime?.isReloading ?? false; }
+  private get restarting(): boolean {
+    return this.runtime?.isReloading ?? false;
+  }
   private loading?: Promise<void>;
   private tail: Promise<void> = Promise.resolve();
 
   private readonly delegate: HeadlessAppLoaderDelegate;
-  constructor(delegate: HeadlessAppLoaderDelegate) { this.delegate = delegate; }
+  constructor(delegate: HeadlessAppLoaderDelegate) {
+    this.delegate = delegate;
+  }
 
-  isAvailable(): boolean { return this.delegate.isAvailable(); }
+  isAvailable(): boolean {
+    return this.delegate.isAvailable();
+  }
 
-  get active(): boolean { return this.context !== undefined || this.borrowed; }
+  get active(): boolean {
+    return this.context !== undefined || this.borrowed;
+  }
 
   isRunning(scope: string): boolean {
     const record = RNHeadlessAppLoader.records.get(scope);
-    return record !== undefined && !record.owner.restarting && record.started && !record.destroyed && record.failure === undefined && record.closing === undefined;
+    return (
+      record !== undefined &&
+      !record.owner.restarting &&
+      record.started &&
+      !record.destroyed &&
+      record.failure === undefined &&
+      record.closing === undefined
+    );
   }
 
   loadApp(context: common.Context, params: HeadlessAppLoaderParams, alreadyRunning?: () => void, callback?: (success: boolean) => void): void {
@@ -50,7 +65,8 @@ export class RNHeadlessAppLoader implements HeadlessAppLoader {
 
     let record = RNHeadlessAppLoader.records.get(scope);
     if (record !== undefined) {
-      if (record.failure !== undefined) throw new ExpoModuleError('ERR_REACT_HOST_LOAD', 'Invalidate the failed app scope before retrying its load.', record.failure);
+      if (record.failure !== undefined)
+        throw new ExpoModuleError('ERR_REACT_HOST_LOAD', 'Invalidate the failed app scope before retrying its load.', record.failure);
       if (record.closing !== undefined || (record.destroyed && !record.owner.restarting)) {
         throw new ExpoModuleError('ERR_REACT_HOST_SCOPE', 'Invalidate the released app scope before loading it again.');
       }
@@ -94,7 +110,7 @@ export class RNHeadlessAppLoader implements HeadlessAppLoader {
     if (record.closing !== undefined) return record.closing;
 
     record.closing = record.owner.enqueue(async (): Promise<void> => {
-      const others = Array.from(RNHeadlessAppLoader.records.values()).some(value => value !== record && value.owner === record.owner);
+      const others = Array.from(RNHeadlessAppLoader.records.values()).some((value) => value !== record && value.owner === record.owner);
       if (!others) await record.owner.stop();
       record.owner.remove(scope, record);
     });
@@ -123,8 +139,11 @@ export class RNHeadlessAppLoader implements HeadlessAppLoader {
 
   private notify(record: AppRecord, success: boolean): void {
     for (const callback of record.callbacks.splice(0)) {
-      try { callback(success); }
-      catch (error) { console.error(`Background app initialization callback failed: ${String(error)}`); }
+      try {
+        callback(success);
+      } catch (error) {
+        console.error(`Background app initialization callback failed: ${String(error)}`);
+      }
     }
   }
 
@@ -138,18 +157,27 @@ export class RNHeadlessAppLoader implements HeadlessAppLoader {
       record.failure = undefined;
       record.started = false;
       record.destroyed = false;
-      record.detach = observeRnohDestroy(instance, (): void => { record.started = false; record.destroyed = true; this.loaded = false; });
-      waitForRnohInitialization(instance).then((): void => {
-        if (record.instance !== instance || record.destroyed || RNHeadlessAppLoader.records.get(scope) !== record) return;
-        record.started = true;
-        this.notify(record, true);
-      }, (): void => this.notify(record, false));
+      record.detach = observeRnohDestroy(instance, (): void => {
+        record.started = false;
+        record.destroyed = true;
+        this.loaded = false;
+      });
+      waitForRnohInitialization(instance).then(
+        (): void => {
+          if (record.instance !== instance || record.destroyed || RNHeadlessAppLoader.records.get(scope) !== record) return;
+          record.started = true;
+          this.notify(record, true);
+        },
+        (): void => this.notify(record, false),
+      );
     }
   }
 
   private track(pending: Promise<void>): void {
     this.loading = pending;
-    const settled = (): void => { if (this.loading === pending) this.loading = undefined; };
+    const settled = (): void => {
+      if (this.loading === pending) this.loading = undefined;
+    };
     pending.then(settled, settled);
   }
 
@@ -160,23 +188,31 @@ export class RNHeadlessAppLoader implements HeadlessAppLoader {
   }
 
   private async start(context: common.Context): Promise<void> {
-    if (this.loaded && this.instance !== undefined) { this.bind(this.instance); return; }
+    if (this.loaded && this.instance !== undefined) {
+      this.bind(this.instance);
+      return;
+    }
     if (this.instance !== undefined) await this.stop();
 
     const existing = this.context === undefined ? this.delegate.getRuntime() : undefined;
     if (existing !== undefined) {
       this.borrowed = true;
       this.observe(existing);
-      try { await existing.start(); this.loaded = true; }
-      catch (error) {
+      try {
+        await existing.start();
+        this.loaded = true;
+      } catch (error) {
         await this.stop();
         throw new ExpoModuleError('ERR_REACT_HOST_LOAD', 'The application runtime could not finish loading.', error as Object);
       }
       return;
     }
 
-    const runtime = this.context ?? new RnohHeadlessContext(context, this.delegate.workerScriptUrl,
-      (ability: common.UIAbilityContext): boolean => this.delegate.hasOtherOwner(ability));
+    const runtime =
+      this.context ??
+      new RnohHeadlessContext(context, this.delegate.workerScriptUrl, (ability: common.UIAbilityContext): boolean =>
+        this.delegate.hasOtherOwner(ability),
+      );
     this.context = runtime;
     const core = runtime.coordinator.getRNOHCoreContext();
 
@@ -193,8 +229,11 @@ export class RNHeadlessAppLoader implements HeadlessAppLoader {
       this.loaded = true;
       console.info(`Expo background React runtime loaded: ${this.instance?.getId()}`);
     } catch (error) {
-      try { await this.stop(); }
-      catch (failure) { console.error(`Unable to release a failed background runtime: ${String(failure)}`); }
+      try {
+        await this.stop();
+      } catch (failure) {
+        console.error(`Unable to release a failed background runtime: ${String(failure)}`);
+      }
       throw new ExpoModuleError('ERR_REACT_HOST_LOAD', 'Unable to load the application for background execution.', error as Object);
     }
   }
@@ -246,8 +285,11 @@ export class RNHeadlessAppLoader implements HeadlessAppLoader {
       if (this.begun) this.delegate.end(context.ability);
     } finally {
       this.begun = false;
-      try { context.close(); }
-      finally { this.context = undefined; }
+      try {
+        context.close();
+      } finally {
+        this.context = undefined;
+      }
     }
     if (instance !== undefined) console.info(`Expo background React runtime released: ${instance.getId()}`);
   }

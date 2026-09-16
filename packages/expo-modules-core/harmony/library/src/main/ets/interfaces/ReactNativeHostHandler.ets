@@ -6,7 +6,12 @@ import type { RNInstanceConfig } from '@rnoh/react-native-openharmony/src/main/e
 import type { ReactNativeRuntime } from './ReactNativeRuntime';
 
 export interface ReactNativeHost {
-  createRuntime(core: RNOHCoreContext, config: RNInstanceConfig, bundle?: JSBundleProvider, replace?: (reason: string) => Promise<RNInstance>): ReactNativeRuntime;
+  createRuntime(
+    core: RNOHCoreContext,
+    config: RNInstanceConfig,
+    bundle?: JSBundleProvider,
+    replace?: (reason: string) => Promise<RNInstance>,
+  ): ReactNativeRuntime;
   createJSBundleProvider(context: common.Context, debug?: boolean): JSBundleProvider;
   load(context: common.Context): Promise<void>;
   unload(): Promise<void>;

@@ -10,16 +10,27 @@ export function createExpoModuleLogger(logger: RNOHLogger, moduleName: string, d
 
 class RNOHLogHandler implements LogHandler {
   private readonly logger: RNOHLogger;
-  constructor(logger: RNOHLogger) { this.logger = logger; }
+  constructor(logger: RNOHLogger) {
+    this.logger = logger;
+  }
 
   log(type: LogType, message: string, cause?: Error): void {
     const text = cause === undefined ? message : `${message}\n${describeLogError(cause)}`;
     switch (type) {
-      case 'info': this.logger.info(text); break;
-      case 'warn': this.logger.warn(text); break;
-      case 'error': this.logger.error(text); break;
-      case 'fatal': this.logger.fatal(text); break;
-      default: this.logger.debug(text);
+      case 'info':
+        this.logger.info(text);
+        break;
+      case 'warn':
+        this.logger.warn(text);
+        break;
+      case 'error':
+        this.logger.error(text);
+        break;
+      case 'fatal':
+        this.logger.fatal(text);
+        break;
+      default:
+        this.logger.debug(text);
     }
   }
 }

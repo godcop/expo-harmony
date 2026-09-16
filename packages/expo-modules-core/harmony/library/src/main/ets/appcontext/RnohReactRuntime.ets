@@ -22,9 +22,16 @@ interface Listener {
 // RNApp 0.84.1 needs a provider URL to display an already loaded unmanaged instance.
 class LoadedBundle extends JSBundleProvider {
   private readonly instance: RNInstance;
-  constructor(instance: RNInstance) { super(); this.instance = instance; }
-  getURL(): string { return this.instance.getInitialBundleUrl() ?? ''; }
-  getAppKeys(): string[] { return []; }
+  constructor(instance: RNInstance) {
+    super();
+    this.instance = instance;
+  }
+  getURL(): string {
+    return this.instance.getInitialBundleUrl() ?? '';
+  }
+  getAppKeys(): string[] {
+    return [];
+  }
   async getBundle(): Promise<JsBundle> {
     throw new ExpoModuleError('ERR_REACT_HOST_BUNDLE', 'The root cannot load a bundle on behalf of its runtime owner.');
   }
@@ -68,21 +75,36 @@ export class RnohReactRuntime implements ReactNativeRuntime {
     }
   }
 
-  get ready(): Promise<void> { return this.pending; }
-  get isReloading(): boolean { return this.replacing; }
-  get instance(): RNInstance | undefined { return this.current; }
-  get bundle(): JSBundleProvider | undefined { return this.provider; }
+  get ready(): Promise<void> {
+    return this.pending;
+  }
+  get isReloading(): boolean {
+    return this.replacing;
+  }
+  get instance(): RNInstance | undefined {
+    return this.current;
+  }
+  get bundle(): JSBundleProvider | undefined {
+    return this.provider;
+  }
 
   subscribe(observer: ReactRuntimeListener): () => void {
     const listener: Listener = { observer };
     this.listeners.add(listener);
     if (this.loaded && this.current !== undefined) {
       const instance = this.current;
-      this.prepare(listener, instance).then((): void => {
-        if (this.listeners.has(listener) && this.loaded && this.current === instance) observer.changed(instance);
-      }, (error: Error): void => { if (this.listeners.has(listener)) observer.failed(error); });
+      this.prepare(listener, instance).then(
+        (): void => {
+          if (this.listeners.has(listener) && this.loaded && this.current === instance) observer.changed(instance);
+        },
+        (error: Error): void => {
+          if (this.listeners.has(listener)) observer.failed(error);
+        },
+      );
     }
-    return (): void => { this.listeners.delete(listener); };
+    return (): void => {
+      this.listeners.delete(listener);
+    };
   }
 
   start(): Promise<void> {
@@ -117,7 +139,9 @@ export class RnohReactRuntime implements ReactNativeRuntime {
         this.loaded = false;
         this.core.devToolsController.dismissRNOHErrorDialog();
         await this.load();
-      } finally { this.replacing = false; }
+      } finally {
+        this.replacing = false;
+      }
     });
   }
 
@@ -140,8 +164,9 @@ export class RnohReactRuntime implements ReactNativeRuntime {
   private enqueue(operation: () => Promise<void>, closing: boolean = false): Promise<void> {
     const pending = this.tail.then(async (): Promise<void> => {
       if (this.closing && !closing) throw new ExpoModuleError('ERR_REACT_HOST_CONTEXT', 'The runtime owner is being destroyed.');
-      try { await operation(); }
-      catch (error) {
+      try {
+        await operation();
+      } catch (error) {
         const failure = error instanceof Error ? error : new ExpoModuleError('ERR_REACT_HOST_OPERATION', String(error));
         this.failed(failure);
         throw new ExpoModuleError(error instanceof ExpoModuleError ? error.code : 'ERR_REACT_HOST_OPERATION', failure.message, error as Object);
@@ -170,7 +195,8 @@ export class RnohReactRuntime implements ReactNativeRuntime {
     }
     // Roots can join while the bundle is running; prepare them before publishing this instance.
     for (const listener of this.listeners) await this.prepare(listener, instance);
-    if (this.current !== instance || this.closing) throw new ExpoModuleError('ERR_REACT_HOST_CONTEXT', 'The runtime was destroyed while its bundle was loading.');
+    if (this.current !== instance || this.closing)
+      throw new ExpoModuleError('ERR_REACT_HOST_CONTEXT', 'The runtime was destroyed while its bundle was loading.');
     this.provider = new LoadedBundle(instance);
     this.loaded = true;
     this.changed(instance);
@@ -216,16 +242,22 @@ export class RnohReactRuntime implements ReactNativeRuntime {
   private changed(instance: RNInstance | undefined): void {
     for (const listener of Array.from(this.listeners)) {
       if (!this.listeners.has(listener)) continue;
-      try { listener.observer.changed(instance); }
-      catch (error) { console.error(`React root notification failed: ${String(error)}`); }
+      try {
+        listener.observer.changed(instance);
+      } catch (error) {
+        console.error(`React root notification failed: ${String(error)}`);
+      }
     }
   }
 
   private failed(error: Error): void {
     for (const listener of Array.from(this.listeners)) {
       if (!this.listeners.has(listener)) continue;
-      try { listener.observer.failed(error); }
-      catch (failure) { console.error(`React root error notification failed: ${String(failure)}`); }
+      try {
+        listener.observer.failed(error);
+      } catch (failure) {
+        console.error(`React root error notification failed: ${String(failure)}`);
+      }
     }
   }
 }

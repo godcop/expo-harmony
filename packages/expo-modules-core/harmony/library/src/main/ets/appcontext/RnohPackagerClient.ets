@@ -1,7 +1,9 @@
 export class RnohPackagerClient {
   private readonly client: ESObject = AppStorage.get('jsPackagerClient');
 
-  isCurrent(): boolean { return this.client === AppStorage.get('jsPackagerClient'); }
+  isCurrent(): boolean {
+    return this.client === AppStorage.get('jsPackagerClient');
+  }
 
   restore(): void {
     if (this.client === undefined) AppStorage.delete('jsPackagerClient');

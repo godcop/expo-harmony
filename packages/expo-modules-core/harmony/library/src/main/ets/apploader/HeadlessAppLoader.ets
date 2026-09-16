@@ -3,7 +3,10 @@ import type { RNOHCoreContext } from '@rnoh/react-native-openharmony';
 
 import type { ReactNativeRuntime } from '../interfaces/ReactNativeRuntime';
 
-export interface HeadlessAppLoaderParams { appScopeKey: string; appUrl?: string; }
+export interface HeadlessAppLoaderParams {
+  appScopeKey: string;
+  appUrl?: string;
+}
 
 export interface HeadlessAppLoader {
   isAvailable(): boolean;

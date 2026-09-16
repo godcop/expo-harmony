@@ -1,1 +1,1 @@
-[Commit history](https://github.com/renbaoshuo/expo-harmony/commits/master/packages/expo-modules-core/harmony)
+[Commit history](https://github.com/renbaoshuo/expo-harmony/commits/master/packages/expo-modules-core)

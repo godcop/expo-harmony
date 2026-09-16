@@ -1,4 +1,5 @@
 import type { ExpoModuleContext } from '../modules/ExpoModule';
+import type { ExpoSharedObjectRegistry } from '../modules/ExpoSharedObject';
 import type { Descriptor, RNComponentContext } from '@rnoh/react-native-openharmony';
 import {
   EXPO_MODULE_NAME_PROP,
@@ -55,7 +56,14 @@ export interface ExpoViewDescriptor {
 
 /** @internal Type-erased runtime surface for a typed author View definition. */
 export interface ExpoViewDefinitionRuntime {
-  bindModule(moduleName: string, defaultView: boolean, instanceId: number, runtimeEpoch: string, moduleContext?: ExpoModuleContext): () => void;
+  bindModule(
+    moduleName: string,
+    defaultView: boolean,
+    instanceId: number,
+    runtimeEpoch: string,
+    moduleContext?: ExpoModuleContext,
+    sharedObjects?: ExpoSharedObjectRegistry,
+  ): () => void;
   descriptor(): ExpoViewDescriptor;
 }
 
@@ -304,7 +312,7 @@ export class ExpoViewDefinition<ViewType extends ExpoView = ExpoView> implements
     this.propValues.set(name, {
       descriptor: { name },
       convert: (value: ESObject): ESObject =>
-        ExpoValueConverter.fromBridge<Value>(value, type, `Expo view prop '${this.componentName}.${name}'`) as ESObject,
+        ExpoValueConverter.fromBridge<Value>(value, type, `Expo view prop '${this.componentName}.${name}'`, this.sharedObjects) as ESObject,
       setter: (view: ViewType, value: ESObject): void => setter(view, value as Value),
       hasDefaultValue: defaultValue !== undefined,
       defaultValue:
@@ -391,13 +399,21 @@ export class ExpoViewDefinition<ViewType extends ExpoView = ExpoView> implements
   }
 
   /** @internal Registers one runtime-scoped adapter for this RN instance. */
-  bindModule(moduleName: string, defaultView: boolean, instanceId: number, runtimeEpoch: string, moduleContext?: ExpoModuleContext): () => void {
+  bindModule(
+    moduleName: string,
+    defaultView: boolean,
+    instanceId: number,
+    runtimeEpoch: string,
+    moduleContext?: ExpoModuleContext,
+    sharedObjects?: ExpoSharedObjectRegistry,
+  ): () => void {
     if (this.componentNameValue !== undefined) {
       throw new Error(`Expo view '${moduleName}.${this.name}' was bound more than once.`);
     }
 
     this.defaultViewValue = defaultView;
     this.moduleContextValue = moduleContext;
+    this.sharedObjects = sharedObjects;
     this.runtimeEpochValue = runtimeEpoch;
     this.componentNameValue = `ViewManagerAdapter_${moduleName}_${this.name}`;
     this.prototypeNameValue = `${moduleName}_${this.name}`;
@@ -439,6 +455,7 @@ export class ExpoViewDefinition<ViewType extends ExpoView = ExpoView> implements
   }
 
   private moduleContextValue?: ExpoModuleContext;
+  private sharedObjects?: ExpoSharedObjectRegistry;
 
   create(rnComponentContext: RNComponentContext, tag: number, componentName: string): ESObject {
     this.moduleContextValue?.assertActive();

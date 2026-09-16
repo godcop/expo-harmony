@@ -1,14 +1,19 @@
 import { ExpoModuleError } from '../modules/ExpoModuleError';
 
 type ExpoReloadRegistryCallback = (reason: string) => Promise<void>;
-interface ReloadRoute { reload: ExpoReloadRegistryCallback; }
+interface ReloadRoute {
+  reload: ExpoReloadRegistryCallback;
+}
 
 export class ExpoReloadRegistry {
   private static readonly routes = new Map<number, Set<ReloadRoute>>();
 
   static register(instanceId: number, reload: ExpoReloadRegistryCallback): () => void {
     let routes = ExpoReloadRegistry.routes.get(instanceId);
-    if (routes === undefined) { routes = new Set(); ExpoReloadRegistry.routes.set(instanceId, routes); }
+    if (routes === undefined) {
+      routes = new Set();
+      ExpoReloadRegistry.routes.set(instanceId, routes);
+    }
     const route: ReloadRoute = { reload };
     routes.add(route);
     const current = routes;
@@ -27,7 +32,8 @@ export class ExpoReloadRegistry {
 
     return (reason: string): Promise<void> => {
       const current = ExpoReloadRegistry.routes.get(instanceId);
-      if (current !== registration) throw new ExpoModuleError('ERR_RELOAD_UNAVAILABLE', `RNInstance ${instanceId} reload registration has been released.`);
+      if (current !== registration)
+        throw new ExpoModuleError('ERR_RELOAD_UNAVAILABLE', `RNInstance ${instanceId} reload registration has been released.`);
       if (!current?.has(route)) return ExpoReloadRegistry.require(instanceId)(reason);
 
       return route.reload(reason);

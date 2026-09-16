@@ -26,10 +26,15 @@ export class RnohHeadlessContext {
     const previous = new RnohPackagerClient();
 
     try {
-      this.coordinator = RNInstancesCoordinator.create({
-        uiAbilityContext: this.ability, logger: new StandardRNOHLogger(), rnohWorkerScriptUrl: worker,
-        defaultBackPressHandler: (): void => {},
-      }, { disableCleaningRNInstances: hasOtherOwner(this.ability) });
+      this.coordinator = RNInstancesCoordinator.create(
+        {
+          uiAbilityContext: this.ability,
+          logger: new StandardRNOHLogger(),
+          rnohWorkerScriptUrl: worker,
+          defaultBackPressHandler: (): void => {},
+        },
+        { disableCleaningRNInstances: hasOtherOwner(this.ability) },
+      );
       if (previous.isCurrent()) {
         throw new ExpoModuleError('ERR_REACT_HOST_OWNER', 'The RNOH coordinator for this ability is already owned by another host.');
       }
@@ -47,7 +52,8 @@ export class RnohHeadlessContext {
       const insets: ESObject = core.safeAreaInsetsProvider;
       // Only a missing window is expected for ExtensionAbility; other failures still reject startup.
       this.ready = insets.ready.catch((error: ESObject): void => {
-        if (error?.code !== 1300002) throw new ExpoModuleError('ERR_REACT_HOST_INSETS', 'Unable to initialize background display insets.', error as Object);
+        if (error?.code !== 1300002)
+          throw new ExpoModuleError('ERR_REACT_HOST_INSETS', 'Unable to initialize background display insets.', error as Object);
       });
       insets.ready = this.ready;
       this.ready.catch((): void => {});
@@ -58,9 +64,13 @@ export class RnohHeadlessContext {
     }
   }
 
-  destroyInstance(instance: RNInstance): Promise<void> { return this.lifetime.destroyInstance(instance); }
+  destroyInstance(instance: RNInstance): Promise<void> {
+    return this.lifetime.destroyInstance(instance);
+  }
 
-  destroy(): Promise<void> { return this.lifetime.destroy(); }
+  destroy(): Promise<void> {
+    return this.lifetime.destroy();
+  }
 
   close(): void {
     if (this.closed) return;

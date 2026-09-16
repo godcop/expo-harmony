@@ -122,12 +122,15 @@ export class ExpoModulesCoreTurboModule extends EtsUITurboModule {
 
     installRnohDestroyBarrier(coreContext.rnInstance, (): Promise<void> => this.prepareForDestroy());
     installRnohBundleBarrier(coreContext.rnInstance);
-    waitForRnohBundle(coreContext.rnInstance).then((): void => {
-      if (this.destroyStarted) return;
-      this.dispatchExpoModuleLifecycle(EXPO_LIFECYCLE_JAVASCRIPT_BUNDLE_LOADED, readJavaScriptBundleDurationSeconds(coreContext));
-      // RNOH 0.84.1 can enter READY before evaluation. Replay the current Ability state only after the first bundle succeeds.
-      this.dispatchExpoModuleLifecycle(coreContext.getUIAbilityState() === 'FOREGROUND' ? EXPO_LIFECYCLE_FOREGROUND : EXPO_LIFECYCLE_BACKGROUND);
-    }, (): void => {});
+    waitForRnohBundle(coreContext.rnInstance).then(
+      (): void => {
+        if (this.destroyStarted) return;
+        this.dispatchExpoModuleLifecycle(EXPO_LIFECYCLE_JAVASCRIPT_BUNDLE_LOADED, readJavaScriptBundleDurationSeconds(coreContext));
+        // RNOH 0.84.1 can enter READY before evaluation. Replay the current Ability state only after the first bundle succeeds.
+        this.dispatchExpoModuleLifecycle(coreContext.getUIAbilityState() === 'FOREGROUND' ? EXPO_LIFECYCLE_FOREGROUND : EXPO_LIFECYCLE_BACKGROUND);
+      },
+      (): void => {},
+    );
   }
 
   bindExpoModuleRuntime(runtimeEpoch: string): void {

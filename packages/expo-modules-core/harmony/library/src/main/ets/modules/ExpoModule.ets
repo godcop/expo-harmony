@@ -1274,7 +1274,7 @@ export class ExpoModuleDefinition {
     const disposers: (() => void)[] = [];
     try {
       this.viewValues.forEach((definition: ExpoViewDefinitionRuntime, index: number): void => {
-        disposers.push(definition.bindModule(moduleName, index === 0, context.runtimeId, context.runtimeEpochValue(), context));
+        disposers.push(definition.bindModule(moduleName, index === 0, context.runtimeId, context.runtimeEpochValue(), context, sharedObjects));
       });
 
       return disposers;
@@ -2048,8 +2048,11 @@ export class ExpoModulesRegistry {
     // Close admission before running hooks that may permanently release resources.
     this.retirement = Promise.resolve().then(async (): Promise<void> => {
       for (const scope of scopes) {
-        try { await scope.prepareForReload(); }
-        catch (error) { reportModuleLifecycleFailure('ExpoModulesRegistry', 'prepareForDestroy', error); }
+        try {
+          await scope.prepareForReload();
+        } catch (error) {
+          reportModuleLifecycleFailure('ExpoModulesRegistry', 'prepareForDestroy', error);
+        }
       }
     });
 

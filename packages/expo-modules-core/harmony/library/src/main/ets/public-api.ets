@@ -38,7 +38,13 @@ export { ExpoRuntimeConfig, ExpoRuntimeOptions } from './appcontext/ExpoRuntimeC
 export { ExpoRuntimePermissions, ExpoRuntimePermissionsKey, ExpoPermissionRequestResult } from './appcontext/ExpoRuntimePermissions';
 export { ExpoRuntimeDirectories, ExpoRuntimeDirectoriesKey, ExpoAppDirectories } from './appcontext/ExpoRuntimeDirectories';
 export { ExpoRuntimeSession } from './appcontext/ExpoRuntimeSession';
-export { ExpoFileAccessPolicy, ExpoFileAccessKey, ExpoFileAccessMode, ExpoFileAccessHandler, ExpoFileAccessRegistry } from './appcontext/ExpoFileAccess';
+export {
+  ExpoFileAccessPolicy,
+  ExpoFileAccessKey,
+  ExpoFileAccessMode,
+  ExpoFileAccessHandler,
+  ExpoFileAccessRegistry,
+} from './appcontext/ExpoFileAccess';
 export {
   ExpoService,
   ExpoServiceContext,
@@ -62,7 +68,12 @@ export { ReactNativeHost, ReactNativeHostHandler, ReactNativeHostHandlerRegistra
 export { ExpoReloadRegistry } from './appcontext/ExpoReloadRegistry';
 export { ExpoHarmonyHostState } from './appcontext/HarmonyHostLifecycle';
 export type { ExpoModuleRegistration } from './modules/ExpoModule';
-export { EXPO_LIFECYCLE_MEMORY_LEVEL, EXPO_LIFECYCLE_NEW_INTENT, EXPO_LIFECYCLE_WINDOW_STAGE_SETUP, EXPO_LIFECYCLE_WINDOW_STAGE_WILL_DESTROY } from './protocol/Protocol';
+export {
+  EXPO_LIFECYCLE_MEMORY_LEVEL,
+  EXPO_LIFECYCLE_NEW_INTENT,
+  EXPO_LIFECYCLE_WINDOW_STAGE_SETUP,
+  EXPO_LIFECYCLE_WINDOW_STAGE_WILL_DESTROY,
+} from './protocol/Protocol';
 
 export { ReactRootViewBuilder, ReactRootViewContext } from './interfaces/ReactRootView';
 export { ModulePriorities } from './ModulePriorities';

@@ -1,4 +1,5 @@
 import { url } from '@kit.ArkTS';
+import type { ExpoSharedObjectRegistry } from './ExpoSharedObject';
 import { ExpoModuleError } from './ExpoModuleError';
 import { defineExpoRecordValue, hasOwnExpoRecordKey } from './ExpoRecord';
 
@@ -449,7 +450,7 @@ export type ExpoOwnedAsyncFunction<Owner> = ExpoFunction1<Owner, Promise<ESObjec
 const MAX_VALUE_DEPTH: number = 64;
 
 /** Decoder used by reusable author-defined value types. */
-export type ExpoValueDecoder<Value> = (value: ESObject, path: string) => Value;
+export type ExpoValueDecoder<Value> = (value: ESObject, path: string, sharedObjects?: ExpoSharedObjectRegistry) => Value;
 /** Encoder used by reusable author-defined value types. */
 export type ExpoValueEncoder<Value> = (value: Value, path: string) => ESObject | void;
 
@@ -484,8 +485,8 @@ export class ExpoValueType<Value> {
   }
 
   /** @internal */
-  decode(value: ESObject, path: string): Value {
-    return this.decoder(value, path);
+  decode(value: ESObject, path: string, sharedObjects?: ExpoSharedObjectRegistry): Value {
+    return this.decoder(value, path, sharedObjects);
   }
 
   /** @internal */
@@ -499,15 +500,23 @@ export class ExpoValueType<Value> {
    * Argument encoders do not participate in write-back.
    */
   writable(): ExpoValueType<Value> {
-    return new ExpoValueType<Value>(this.expectedType, this.decoder, this.encoder, this.acceptsUndefined, this.isOmittable, true, this.fillsUndefined);
+    return new ExpoValueType<Value>(
+      this.expectedType,
+      this.decoder,
+      this.encoder,
+      this.acceptsUndefined,
+      this.isOmittable,
+      true,
+      this.fillsUndefined,
+    );
   }
 
   optional(): ExpoValueType<Value | undefined> {
     return new ExpoValueType<Value | undefined>(
       `${this.expectedType} or null/undefined`,
-      (value: ESObject, path: string): Value | undefined => {
+      (value: ESObject, path: string, sharedObjects?: ExpoSharedObjectRegistry): Value | undefined => {
         if (value === undefined || value === null) return undefined;
-        return this.decode(value, path);
+        return this.decode(value, path, sharedObjects);
       },
       (value: Value | undefined, path: string): ESObject | void => {
         if (value === undefined) return undefined;
@@ -522,7 +531,8 @@ export class ExpoValueType<Value> {
   defaulted(defaultValue: Value): ExpoValueType<Value> {
     return new ExpoValueType<Value>(
       `${this.expectedType} or null/undefined`,
-      (value: ESObject, path: string): Value => (value === undefined || value === null ? defaultValue : this.decode(value, path)),
+      (value: ESObject, path: string, sharedObjects?: ExpoSharedObjectRegistry): Value =>
+        value === undefined || value === null ? defaultValue : this.decode(value, path, sharedObjects),
       (value: Value, path: string): ESObject | void => this.encode(value, path),
       true,
       true,
@@ -534,9 +544,9 @@ export class ExpoValueType<Value> {
   nullable(): ExpoValueType<Value | null> {
     return new ExpoValueType<Value | null>(
       `${this.expectedType} or null`,
-      (value: ESObject, path: string): Value | null => {
+      (value: ESObject, path: string, sharedObjects?: ExpoSharedObjectRegistry): Value | null => {
         if (value === null) return null;
-        return this.decode(value, path);
+        return this.decode(value, path, sharedObjects);
       },
       (value: Value | null, path: string): ESObject | void => {
         if (value === null) return null;
@@ -551,12 +561,12 @@ export class ExpoValueType<Value> {
   or<Other>(other: ExpoValueType<Other>): ExpoValueType<Value | Other> {
     return new ExpoValueType<Value | Other>(
       `${this.expectedType} or ${other.expectedType}`,
-      (value: ESObject, path: string): Value | Other => {
+      (value: ESObject, path: string, sharedObjects?: ExpoSharedObjectRegistry): Value | Other => {
         try {
-          return this.decode(value, path);
+          return this.decode(value, path, sharedObjects);
         } catch (_) {
           try {
-            return other.decode(value, path);
+            return other.decode(value, path, sharedObjects);
           } catch (_) {
             throw new ExpoArgumentTypeError(path, `${this.expectedType} or ${other.expectedType}`, value);
           }
@@ -778,7 +788,7 @@ export class ExpoValueTypes {
     const fields: ExpoRecordField[] = shape.fieldValues();
     return new ExpoValueType<Value>(
       name,
-      (value: ESObject, path: string): Value => {
+      (value: ESObject, path: string, sharedObjects?: ExpoSharedObjectRegistry): Value => {
         if (!isRecordValue(value)) throw new ExpoArgumentTypeError(path, name, value);
 
         const input = value as Record<string, ESObject>;
@@ -788,10 +798,11 @@ export class ExpoValueTypes {
           const present = hasOwnExpoRecordKey(input, field.key);
           if (!present) {
             if (field.required) throw new ExpoModuleError('ERR_FIELD_REQUIRED', `${path}.${field.key} is required.`);
-            if (field.type.fillsUndefined) defineExpoRecordValue(decoded, field.name, field.type.decode(undefined, `${path}.${field.key}`));
+            if (field.type.fillsUndefined)
+              defineExpoRecordValue(decoded, field.name, field.type.decode(undefined, `${path}.${field.key}`, sharedObjects));
             return;
           }
-          defineExpoRecordValue(decoded, field.name, field.type.decode(input[field.key], `${path}.${field.key}`));
+          defineExpoRecordValue(decoded, field.name, field.type.decode(input[field.key], `${path}.${field.key}`, sharedObjects));
         });
 
         return decoder(decoded);
@@ -835,9 +846,9 @@ export class ExpoValueTypes {
   static array<Value>(element: ExpoValueType<Value>): ExpoValueType<Value[]> {
     return new ExpoValueType<Value[]>(
       `array of ${element.expectedType}`,
-      (value: ESObject, path: string): Value[] => {
+      (value: ESObject, path: string, sharedObjects?: ExpoSharedObjectRegistry): Value[] => {
         if (!Array.isArray(value)) throw new ExpoArgumentTypeError(path, `array of ${element.expectedType}`, value);
-        return value.map((item: ESObject, index: number): Value => element.decode(item, `${path}[${index}]`));
+        return value.map((item: ESObject, index: number): Value => element.decode(item, `${path}[${index}]`, sharedObjects));
       },
       (value: Value[], path: string): ESObject =>
         value.map((item: Value, index: number): ESObject => element.encode(item, `${path}[${index}]`) as ESObject),
@@ -847,14 +858,14 @@ export class ExpoValueTypes {
   static record<Value>(valueType: ExpoValueType<Value>): ExpoValueType<Record<string, Value>> {
     return new ExpoValueType<Record<string, Value>>(
       `record of ${valueType.expectedType}`,
-      (value: ESObject, path: string): Record<string, Value> => {
+      (value: ESObject, path: string, sharedObjects?: ExpoSharedObjectRegistry): Record<string, Value> => {
         if (!isRecordValue(value)) throw new ExpoArgumentTypeError(path, `record of ${valueType.expectedType}`, value);
 
         const input = value as Record<string, ESObject>;
         const output: Record<string, Value> = {};
 
         Object.keys(input).forEach((key: string): void => {
-          defineExpoRecordValue(output, key, valueType.decode(input[key], `${path}.${key}`));
+          defineExpoRecordValue(output, key, valueType.decode(input[key], `${path}.${key}`, sharedObjects));
         });
 
         return output;
@@ -878,8 +889,8 @@ export class ExpoValueTypes {
   static valueOrUndefined<Value>(inner: ExpoValueType<Value>): ExpoValueType<ExpoValueOrUndefined<Value>> {
     return new ExpoValueType<ExpoValueOrUndefined<Value>>(
       `${inner.expectedType} or undefined`,
-      (value: ESObject, path: string): ExpoValueOrUndefined<Value> =>
-        value === undefined ? ExpoValueOrUndefined.undefined<Value>() : ExpoValueOrUndefined.value<Value>(inner.decode(value, path)),
+      (value: ESObject, path: string, sharedObjects?: ExpoSharedObjectRegistry): ExpoValueOrUndefined<Value> =>
+        value === undefined ? ExpoValueOrUndefined.undefined<Value>() : ExpoValueOrUndefined.value<Value>(inner.decode(value, path, sharedObjects)),
       (value: ExpoValueOrUndefined<Value>, path: string): ESObject | void =>
         value.isUndefined ? undefined : inner.encode(value.value as Value, path),
       true,
@@ -889,12 +900,12 @@ export class ExpoValueTypes {
   static either<First, Second>(first: ExpoValueType<First>, second: ExpoValueType<Second>): ExpoValueType<ExpoEither<First, Second>> {
     return new ExpoValueType<ExpoEither<First, Second>>(
       `${first.expectedType} or ${second.expectedType}`,
-      (value: ESObject, path: string): ExpoEither<First, Second> => {
+      (value: ESObject, path: string, sharedObjects?: ExpoSharedObjectRegistry): ExpoEither<First, Second> => {
         try {
-          return ExpoEither.first<First, Second>(first.decode(value, path));
+          return ExpoEither.first<First, Second>(first.decode(value, path, sharedObjects));
         } catch (_) {
           try {
-            return ExpoEither.second<First, Second>(second.decode(value, path));
+            return ExpoEither.second<First, Second>(second.decode(value, path, sharedObjects));
           } catch (_) {
             throw new ExpoArgumentTypeError(path, `${first.expectedType} or ${second.expectedType}`, value);
           }
@@ -914,15 +925,15 @@ export class ExpoValueTypes {
     const expected: string = `${first.expectedType}, ${second.expectedType}, or ${third.expectedType}`;
     return new ExpoValueType<ExpoEitherOfThree<First, Second, Third>>(
       expected,
-      (value: ESObject, path: string): ExpoEitherOfThree<First, Second, Third> => {
+      (value: ESObject, path: string, sharedObjects?: ExpoSharedObjectRegistry): ExpoEitherOfThree<First, Second, Third> => {
         try {
-          return ExpoEitherOfThree.first<First, Second, Third>(first.decode(value, path));
+          return ExpoEitherOfThree.first<First, Second, Third>(first.decode(value, path, sharedObjects));
         } catch (_) {
           try {
-            return ExpoEitherOfThree.second<First, Second, Third>(second.decode(value, path));
+            return ExpoEitherOfThree.second<First, Second, Third>(second.decode(value, path, sharedObjects));
           } catch (_) {
             try {
-              return ExpoEitherOfThree.third<First, Second, Third>(third.decode(value, path));
+              return ExpoEitherOfThree.third<First, Second, Third>(third.decode(value, path, sharedObjects));
             } catch (_) {
               throw new ExpoArgumentTypeError(path, expected, value);
             }
@@ -948,18 +959,18 @@ export class ExpoValueTypes {
     const expected: string = `${first.expectedType}, ${second.expectedType}, ${third.expectedType}, or ${fourth.expectedType}`;
     return new ExpoValueType<ExpoEitherOfFour<First, Second, Third, Fourth>>(
       expected,
-      (value: ESObject, path: string): ExpoEitherOfFour<First, Second, Third, Fourth> => {
+      (value: ESObject, path: string, sharedObjects?: ExpoSharedObjectRegistry): ExpoEitherOfFour<First, Second, Third, Fourth> => {
         try {
-          return ExpoEitherOfFour.first<First, Second, Third, Fourth>(first.decode(value, path));
+          return ExpoEitherOfFour.first<First, Second, Third, Fourth>(first.decode(value, path, sharedObjects));
         } catch (_) {
           try {
-            return ExpoEitherOfFour.second<First, Second, Third, Fourth>(second.decode(value, path));
+            return ExpoEitherOfFour.second<First, Second, Third, Fourth>(second.decode(value, path, sharedObjects));
           } catch (_) {
             try {
-              return ExpoEitherOfFour.third<First, Second, Third, Fourth>(third.decode(value, path));
+              return ExpoEitherOfFour.third<First, Second, Third, Fourth>(third.decode(value, path, sharedObjects));
             } catch (_) {
               try {
-                return ExpoEitherOfFour.fourth<First, Second, Third, Fourth>(fourth.decode(value, path));
+                return ExpoEitherOfFour.fourth<First, Second, Third, Fourth>(fourth.decode(value, path, sharedObjects));
               } catch (_) {
                 throw new ExpoArgumentTypeError(path, expected, value);
               }
@@ -992,9 +1003,7 @@ export class ExpoValueTypes {
 
       const rawStringValue: string = typeof rawValue === 'string' ? rawValue : '';
       const reverseNumericKey =
-        typeof rawValue === 'string' &&
-        typeof values[rawStringValue] === 'number' &&
-        String(values[rawStringValue]) === keys[index];
+        typeof rawValue === 'string' && typeof values[rawStringValue] === 'number' && String(values[rawStringValue]) === keys[index];
       if (!reverseNumericKey) rawValues.push(rawValue);
     }
 
@@ -1098,10 +1107,10 @@ export class ExpoValueTypes {
 }
 
 export class ExpoValueConverter {
-  static fromBridge<Value>(value: ESObject, type?: ExpoValueType<Value>, path: string = 'value'): Value {
+  static fromBridge<Value>(value: ESObject, type?: ExpoValueType<Value>, path: string = 'value', sharedObjects?: ExpoSharedObjectRegistry): Value {
     if (type !== undefined) {
       try {
-        return type.decode(value, path);
+        return type.decode(value, path, sharedObjects);
       } catch (error) {
         if (error instanceof ExpoModuleError) {
           throw new ExpoModuleError(error.code, error.message, error.cause, error.path);
