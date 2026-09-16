@@ -47,6 +47,7 @@
 - [expo-file-system](./packages/expo-file-system/)：访问设备上的本地文件系统。
 - [expo-font](./packages/expo-font/)：在运行时加载字体并在 React Native 组件中使用。
 - [expo-haptics](./packages/expo-haptics/)：访问系统的振动与触感反馈效果。
+- [expo-image](./packages/expo-image/)：显示与缓存图片，支持占位图、动画和原生图片引用。
 - [expo-intent-launcher](./packages/expo-intent-launcher/)：启动系统 Intent。
 - [expo-keep-awake](./packages/expo-keep-awake/)：在渲染时阻止屏幕休眠的 React 组件。
 - [expo-linear-gradient](./packages/expo-linear-gradient/)：渲染渐变视图的 React 组件。

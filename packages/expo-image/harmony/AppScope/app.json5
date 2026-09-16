@@ -1,0 +1,8 @@
+{
+  "app": {
+    "bundleName": "dev.expo.image.build",
+    "vendor": "expo-harmony",
+    "versionCode": 550011,
+    "versionName": "55.0.11-harmony.0"
+  }
+}
