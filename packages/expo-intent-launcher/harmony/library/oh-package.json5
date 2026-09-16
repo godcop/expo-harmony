@@ -1,6 +1,6 @@
 {
   "name": "@expo-harmony/expo-intent-launcher",
-  "version": "55.0.12-harmony.0",
+  "version": "55.0.12-harmony.1",
   "description": "HarmonyOS port of expo-intent-launcher",
   "keywords": [
     "react-native",
@@ -18,6 +18,6 @@
   "main": "Index.ets",
   "license": "MIT",
   "dependencies": {
-    "@expo-harmony/expo-modules-core": "55.0.25-harmony.2"
+    "@expo-harmony/expo-modules-core": "55.0.25-harmony.3"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@expo-harmony/expo-keep-awake",
-  "version": "55.0.8-harmony.2",
+  "version": "55.0.8-harmony.3",
   "description": "HarmonyOS port of expo-keep-awake",
   "keywords": [
     "react-native",

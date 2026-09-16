@@ -1,7 +1,7 @@
 {
   "modelVersion": "5.0.0",
   "name": "expo-live-photo-harmony",
-  "version": "55.0.15-harmony.0",
+  "version": "55.0.15-harmony.1",
   "description": "HarmonyOS port of expo-live-photo",
   "keywords": [
     "react-native",
@@ -21,7 +21,7 @@
     "@expo-harmony/expo-live-photo": "./library"
   },
   "overrides": {
-    "@expo-harmony/expo-modules-core": "55.0.25-harmony.2",
+    "@expo-harmony/expo-modules-core": "55.0.25-harmony.3",
     "@rnoh/react-native-openharmony": "0.84.1"
   }
 }
