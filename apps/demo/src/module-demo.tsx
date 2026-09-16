@@ -47,6 +47,7 @@ import { NavigationBarDemo } from './modules/navigation-bar';
 import { NetworkDemo } from './modules/network';
 import { PrebuildConfigDemo } from './modules/prebuild-config';
 import { PrintDemo } from './modules/print';
+import { ScreenCaptureDemo } from './modules/screen-capture';
 import { SharingDemo } from './modules/sharing';
 import { SplashScreenDemo } from './modules/splash-screen';
 import { SystemUIDemo } from './modules/system-ui';
@@ -114,6 +115,7 @@ const MODULE_DEMOS = {
   'network': NetworkDemo,
   'prebuild-config': PrebuildConfigDemo,
   'print': PrintDemo,
+  'screen-capture': ScreenCaptureDemo,
   'sharing': SharingDemo,
   'splash-screen': SplashScreenDemo,
   'system-ui': SystemUIDemo,
