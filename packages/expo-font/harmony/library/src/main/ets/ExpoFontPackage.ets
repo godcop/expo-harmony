@@ -258,8 +258,11 @@ export class ExpoFontLoaderModule extends ExpoModule {
     const granted = this.context.assertFileAccess(path);
     const application = this.context.uiAbilityContext.getApplicationContext();
     const roots: string[] = [
-      this.context.persistentFilesPath, this.context.cachePath, this.context.temporaryPath,
-      application.filesDir, application.cacheDir,
+      this.context.persistentFilesPath,
+      this.context.cachePath,
+      this.context.temporaryPath,
+      application.filesDir,
+      application.cacheDir,
     ];
     const root = roots.find((candidate: string): boolean => isInside(candidate, path));
     if (root === undefined && !granted) {
