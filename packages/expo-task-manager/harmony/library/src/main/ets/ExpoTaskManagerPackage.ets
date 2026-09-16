@@ -925,7 +925,8 @@ class ExpoTaskManagerScope {
 
   async waitForReady(): Promise<void> {
     await this.context.waitForJavaScriptBundle();
-    if (this.destroyed) throw new ExpoTaskManagerError('ERR_TASK_MANAGER_RUNTIME_UNAVAILABLE', 'The task runtime was released before loading completed.');
+    if (this.destroyed)
+      throw new ExpoTaskManagerError('ERR_TASK_MANAGER_RUNTIME_UNAVAILABLE', 'The task runtime was released before loading completed.');
   }
 
   hasActiveExecutions(): boolean {
@@ -1703,7 +1704,8 @@ export class ExpoTaskManagerRegistry {
     const owner = requireOwnerKey(ownerKey);
     const existing = ExpoTaskManagerRegistry.runtimeLoads.get(owner);
     if (existing !== undefined) await existing;
-    const attached = ExpoTaskManagerRegistry.primary(owner) ?? Array.from(ExpoTaskManagerRegistry.scopes.values()).find(scope => scope.ownerKey() === owner);
+    const attached =
+      ExpoTaskManagerRegistry.primary(owner) ?? Array.from(ExpoTaskManagerRegistry.scopes.values()).find((scope) => scope.ownerKey() === owner);
     if (attached !== undefined) {
       await attached.waitForReady();
       return;
