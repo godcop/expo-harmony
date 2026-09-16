@@ -68,6 +68,7 @@
 - [expo-print](./packages/expo-print/)：提供打印功能。
 - [expo-router](./packages/expo-router/)：面向 React Native 和 Web 应用的基于文件的路由库。
 - [expo-screen-capture](./packages/expo-screen-capture/)：阻止应用界面被截屏或录屏，并监听截图事件。
+- [expo-screen-orientation](./packages/expo-screen-orientation/)：管理设备的屏幕方向。
 - [expo-sharing](./packages/expo-sharing/)：与其他应用分享和接收数据。
 - [expo-splash-screen](./packages/expo-splash-screen/)：控制原生启动画面的显示行为。
 - [expo-status-bar](./packages/expo-status-bar/)：提供与 React Native StatusBar 一致的接口，但其默认值更适合 Expo 环境。
