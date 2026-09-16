@@ -6,7 +6,9 @@ import { UpdatesController } from './UpdatesController';
 export class ExpoUpdatesReactNativeHostHandler implements ReactNativeHostHandler {
   private readonly context: common.ApplicationContext;
 
-  constructor(context: common.Context) { this.context = context.getApplicationContext(); }
+  constructor(context: common.Context) {
+    this.context = context.getApplicationContext();
+  }
 
   onWillCreateReactInstance(debug: boolean): void {
     UpdatesController.initialize(this.context, debug);
@@ -19,13 +21,13 @@ export class ExpoUpdatesReactNativeHostHandler implements ReactNativeHostHandler
   async getJSBundleFile(_debug: boolean): Promise<string | undefined> {
     await UpdatesController.get(this.context).ready;
     const controller = UpdatesController.get(this.context);
-    return controller.active ? controller.path ?? undefined : undefined;
+    return controller.active ? (controller.path ?? undefined) : undefined;
   }
 
   async getBundleAssetName(_debug: boolean): Promise<string | undefined> {
     await UpdatesController.get(this.context).ready;
     const controller = UpdatesController.get(this.context);
-    return controller.active && controller.path === null ? controller.embedded?.assets.find(asset => asset.launch)?.embedded : undefined;
+    return controller.active && controller.path === null ? controller.embedded?.assets.find((asset) => asset.launch)?.embedded : undefined;
   }
 
   onDidCreateReactInstance(_debug: boolean, instance: RNInstance): void {
@@ -35,6 +37,7 @@ export class ExpoUpdatesReactNativeHostHandler implements ReactNativeHostHandler
   get onReactInstanceException(): ((_debug: boolean, instance: RNInstance, error: Error) => void) | undefined {
     const controller = UpdatesController.get(this.context);
     if (!controller.active) return undefined;
-    return (_debug: boolean, instance: RNInstance, error: Error): void => UpdatesController.get(this.context).onReactInstanceException(instance.getId(), error);
+    return (_debug: boolean, instance: RNInstance, error: Error): void =>
+      UpdatesController.get(this.context).onReactInstanceException(instance.getId(), error);
   }
 }

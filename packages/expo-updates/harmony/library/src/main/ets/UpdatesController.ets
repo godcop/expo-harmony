@@ -38,10 +38,10 @@ export class UpdatesController {
     const configuration = UpdatesController.configuration(context, info.name, development);
     const controller: IUpdatesController = configuration.enabled
       ? new EnabledUpdatesController(context, configuration, development, (error: Error): void => {
-        const disabled = new DisabledUpdatesController(context, configuration, error);
-        UpdatesController.controllers.set(info.name, disabled);
-        disabled.start();
-      })
+          const disabled = new DisabledUpdatesController(context, configuration, error);
+          UpdatesController.controllers.set(info.name, disabled);
+          disabled.start();
+        })
       : new DisabledUpdatesController(context, configuration);
     UpdatesController.controllers.set(info.name, controller);
     const adapter = new ExpoUpdatesAdapter(context);
@@ -53,7 +53,8 @@ export class UpdatesController {
 
   static initializeAsDevLauncherWithoutStarting(context: common.ApplicationContext): UpdatesDevLauncherController {
     const info = bundleManager.getBundleInfoForSelfSync(bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_APPLICATION);
-    if (UpdatesController.controllers.has(info.name)) throw new ExpoUpdatesError('ERR_UPDATES_INITIALIZATION', 'Initialize the development launcher before initializing Updates.');
+    if (UpdatesController.controllers.has(info.name))
+      throw new ExpoUpdatesError('ERR_UPDATES_INITIALIZATION', 'Initialize the development launcher before initializing Updates.');
 
     const controller = new UpdatesDevLauncherController(context, UpdatesController.configuration(context, info.name, false));
     UpdatesController.controllers.set(info.name, controller);
@@ -66,12 +67,16 @@ export class UpdatesController {
 
   static overrideConfiguration(context: common.ApplicationContext, value: Json): void {
     const info = bundleManager.getBundleInfoForSelfSync(bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_APPLICATION);
-    if (UpdatesController.controllers.has(info.name)) throw new ExpoUpdatesError('ERR_UPDATES_INITIALIZATION', 'Override Updates configuration before initializing its controller.');
+    if (UpdatesController.controllers.has(info.name))
+      throw new ExpoUpdatesError('ERR_UPDATES_INITIALIZATION', 'Override Updates configuration before initializing its controller.');
     try {
       let embedded: Json = {};
 
-      try { embedded = JSON.parse(decode(context.resourceManager.getRawFileContentSync('expo-updates/config.json'))); }
-      catch (error) { console.info(`No embedded Updates configuration: ${String(error)}`); }
+      try {
+        embedded = JSON.parse(decode(context.resourceManager.getRawFileContentSync('expo-updates/config.json')));
+      } catch (error) {
+        console.info(`No embedded Updates configuration: ${String(error)}`);
+      }
 
       const configuration = new UpdatesConfiguration(UpdatesConfiguration.merge(embedded, value), false);
       if (!configuration.enabled) {
@@ -87,14 +92,18 @@ export class UpdatesController {
   private static configuration(context: common.ApplicationContext, name: string, development: boolean): UpdatesConfiguration {
     let embedded: Json = {};
 
-    try { embedded = JSON.parse(decode(context.resourceManager.getRawFileContentSync('expo-updates/config.json'))); }
-    catch (error) { console.info(`No embedded Updates configuration: ${String(error)}`); }
+    try {
+      embedded = JSON.parse(decode(context.resourceManager.getRawFileContentSync('expo-updates/config.json')));
+    } catch (error) {
+      console.info(`No embedded Updates configuration: ${String(error)}`);
+    }
 
     const override = UpdatesController.overrides.get(name);
     const raw: Json = override === undefined ? embedded : UpdatesConfiguration.merge(embedded, override);
 
-    try { return new UpdatesConfiguration(raw, development); }
-    catch (error) {
+    try {
+      return new UpdatesConfiguration(raw, development);
+    } catch (error) {
       console.error(`Invalid embedded Updates configuration: ${String(error)}`);
       return new UpdatesConfiguration({ enabled: false, useNativeDebug: raw?.useNativeDebug === true }, development);
     }

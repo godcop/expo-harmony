@@ -14,7 +14,9 @@ import { ExpoUpdatesError } from './UpdatesProtocol';
 export class ExpoUpdatesRuntimeBinding implements ReactRuntimeBinding {
   private readonly context: common.ApplicationContext;
 
-  constructor(context: common.Context) { this.context = context.getApplicationContext(); }
+  constructor(context: common.Context) {
+    this.context = context.getApplicationContext();
+  }
 
   async bind(context: ReactRuntimeContext): Promise<(() => void) | void> {
     await UpdatesController.get(this.context).ready;
@@ -29,17 +31,22 @@ export class ExpoUpdatesRuntimeBinding implements ReactRuntimeBinding {
       if (!active) return;
       active = false;
       for (const dispose of subscriptions.splice(0).reverse()) {
-        try { dispose(); }
-        catch (error) { console.error(`Unable to detach an Updates runtime subscription: ${String(error)}`); }
+        try {
+          dispose();
+        } catch (error) {
+          console.error(`Unable to detach an Updates runtime subscription: ${String(error)}`);
+        }
       }
     };
 
     try {
       subscriptions.push(controller.attach(id, context.reload, context.owner));
-      subscriptions.push(ExpoFileAccessRegistry.register(id, (path: string, mode: ExpoFileAccessMode, policy?: ExpoFileAccessPolicy): boolean | undefined => {
-        if (policy === undefined) return undefined;
-        return assetAccess(path, mode, (candidate: string): boolean => controller.hasAsset(id, candidate));
-      }));
+      subscriptions.push(
+        ExpoFileAccessRegistry.register(id, (path: string, mode: ExpoFileAccessMode, policy?: ExpoFileAccessPolicy): boolean | undefined => {
+          if (policy === undefined) return undefined;
+          return assetAccess(path, mode, (candidate: string): boolean => controller.hasAsset(id, candidate));
+        }),
+      );
       subscriptions.push(instance.cppEventEmitter.subscribe(EXPO_CONTENT_APPEARED, (): void => controller.contentAppeared(id)));
 
       return cleanup;

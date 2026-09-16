@@ -66,6 +66,7 @@
 - [expo-structured-headers](./packages/expo-structured-headers/)：解析和序列化 Structured Fields（RFC 8941）响应头。
 - [expo-system-ui](./packages/expo-system-ui/)：与系统 UI 元素进行交互。
 - [expo-task-manager](./packages/expo-task-manager/)：支持可在后台运行的任务。
+- [expo-updates](./packages/expo-updates/)：管理应用代码的远程更新。
 
 可以查看 [快速开始](./docs/QuickStart.md) 获得接入教程。
 

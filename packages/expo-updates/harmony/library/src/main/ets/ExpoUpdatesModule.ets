@@ -8,10 +8,14 @@ import { UpdatesReloadScreen } from './UpdatesReloadScreen';
 import { UpdatesLogReader } from './logging/UpdatesLogReader';
 
 const event = 'Expo.nativeUpdatesStateChangeEvent';
-const object = ExpoValueTypes.custom<Json>('JSON object', (value: ESObject): Json => {
-  if (!isRecord(value)) throw new ExpoUpdatesError('ERR_UPDATES_ARGUMENT', 'Expected a JSON object.');
-  return value;
-}, (value: Json): ESObject => value);
+const object = ExpoValueTypes.custom<Json>(
+  'JSON object',
+  (value: ESObject): Json => {
+    if (!isRecord(value)) throw new ExpoUpdatesError('ERR_UPDATES_ARGUMENT', 'Expected a JSON object.');
+    return value;
+  },
+  (value: Json): ESObject => value,
+);
 
 export class ExpoUpdatesModule extends ExpoModule {
   private subscription?: UpdatesStateSubscription;
@@ -29,27 +33,55 @@ export class ExpoUpdatesModule extends ExpoModule {
       .asyncFunction('checkForUpdateAsync', async (): Promise<Json> => this.controller.checkForUpdateAsync())
       .asyncFunction('fetchUpdateAsync', async (): Promise<Json> => this.controller.fetchUpdateAsync())
       .asyncFunction('getExtraParamsAsync', async (): Promise<Record<string, string>> => this.controller.extra())
-      .asyncFunction('setExtraParamAsync', ExpoFunction.typed2(ExpoValueTypes.string(), ExpoValueTypes.string().nullable(),
-        async (key: string, value: string | null): Promise<void> => this.controller.setExtra(key, value)))
-      .asyncFunction('readLogEntriesAsync', ExpoFunction.typed1(ExpoValueTypes.number(),
-        async (age: number): Promise<Json[]> => new UpdatesLogReader(this.context.uiAbilityContext.getApplicationContext()).read(age)))
-      .asyncFunction('clearLogEntriesAsync', async (): Promise<void> => new UpdatesLogReader(this.context.uiAbilityContext.getApplicationContext()).clear())
-      .asyncFunction('reload', ExpoFunction.typed1(object.nullable().optional(), async (options: Json | null | undefined): Promise<void> => {
-        if (!this.context.isHeadless) UpdatesReloadScreen.show(this.context.uiAbilityContext, options ?? {});
-        try { await this.controller.reload(this.context.runtimeId, async (reason: string): Promise<void> => this.context.reloadAppAsync(reason)); }
-        catch (error) {
-          UpdatesReloadScreen.hide(this.context.uiAbilityContext);
-          throw new ExpoUpdatesError(error instanceof ExpoUpdatesError ? error.code : 'ERR_UPDATES_RELOAD', String(error));
-        }
-      }))
-      .syncFunction('setUpdateURLAndRequestHeadersOverride', ExpoFunction.typed1(object.nullable(), (value: Json | null): void => {
-        this.controller.override(value === null ? null : { url: value.updateUrl, requestHeaders: value.requestHeaders ?? {} });
-      }))
-      .syncFunction('setUpdateRequestHeadersOverride', ExpoFunction.typed1(ExpoValueTypes.record(ExpoValueTypes.string()).nullable(),
-        (headers: Record<string, string> | null): void => this.controller.overrideHeaders(headers)))
-      .asyncFunction('showReloadScreen', ExpoFunction.typed1(object.nullable().optional(), async (options: Json | null | undefined): Promise<void> => {
-        if (this.context.isDebug && !this.context.isHeadless) UpdatesReloadScreen.show(this.context.uiAbilityContext, options ?? {});
-      }))
+      .asyncFunction(
+        'setExtraParamAsync',
+        ExpoFunction.typed2(
+          ExpoValueTypes.string(),
+          ExpoValueTypes.string().nullable(),
+          async (key: string, value: string | null): Promise<void> => this.controller.setExtra(key, value),
+        ),
+      )
+      .asyncFunction(
+        'readLogEntriesAsync',
+        ExpoFunction.typed1(
+          ExpoValueTypes.number(),
+          async (age: number): Promise<Json[]> => new UpdatesLogReader(this.context.uiAbilityContext.getApplicationContext()).read(age),
+        ),
+      )
+      .asyncFunction(
+        'clearLogEntriesAsync',
+        async (): Promise<void> => new UpdatesLogReader(this.context.uiAbilityContext.getApplicationContext()).clear(),
+      )
+      .asyncFunction(
+        'reload',
+        ExpoFunction.typed1(object.nullable().optional(), async (options: Json | null | undefined): Promise<void> => {
+          if (!this.context.isHeadless) UpdatesReloadScreen.show(this.context.uiAbilityContext, options ?? {});
+          try {
+            await this.controller.reload(this.context.runtimeId, async (reason: string): Promise<void> => this.context.reloadAppAsync(reason));
+          } catch (error) {
+            UpdatesReloadScreen.hide(this.context.uiAbilityContext);
+            throw new ExpoUpdatesError(error instanceof ExpoUpdatesError ? error.code : 'ERR_UPDATES_RELOAD', String(error));
+          }
+        }),
+      )
+      .syncFunction(
+        'setUpdateURLAndRequestHeadersOverride',
+        ExpoFunction.typed1(object.nullable(), (value: Json | null): void => {
+          this.controller.override(value === null ? null : { url: value.updateUrl, requestHeaders: value.requestHeaders ?? {} });
+        }),
+      )
+      .syncFunction(
+        'setUpdateRequestHeadersOverride',
+        ExpoFunction.typed1(ExpoValueTypes.record(ExpoValueTypes.string()).nullable(), (headers: Record<string, string> | null): void =>
+          this.controller.overrideHeaders(headers),
+        ),
+      )
+      .asyncFunction(
+        'showReloadScreen',
+        ExpoFunction.typed1(object.nullable().optional(), async (options: Json | null | undefined): Promise<void> => {
+          if (this.context.isDebug && !this.context.isHeadless) UpdatesReloadScreen.show(this.context.uiAbilityContext, options ?? {});
+        }),
+      )
       .asyncFunction('hideReloadScreen', async (): Promise<void> => {
         if (this.context.isDebug) UpdatesReloadScreen.hide(this.context.uiAbilityContext);
       })
@@ -58,7 +90,10 @@ export class ExpoUpdatesModule extends ExpoModule {
         this.subscription = this.controller.state.subscribeContext((value: Json): void => this.sendEvent(event, value));
         this.sendEvent(event, { context: this.subscription.getContext() });
       })
-      .onStopObserving(event, (): void => { this.subscription?.remove(); this.subscription = undefined; })
+      .onStopObserving(event, (): void => {
+        this.subscription?.remove();
+        this.subscription = undefined;
+      })
       .onJavaScriptBundleLoaded((): void => {
         if (!this.context.isHeadless) UpdatesReloadScreen.hide(this.context.uiAbilityContext);
       })
@@ -66,6 +101,9 @@ export class ExpoUpdatesModule extends ExpoModule {
         this.controller.contentAppeared(this.context.runtimeId);
         UpdatesReloadScreen.hide(this.context.uiAbilityContext);
       })
-      .onDestroy((): void => { this.subscription?.remove(); this.subscription = undefined; });
+      .onDestroy((): void => {
+        this.subscription?.remove();
+        this.subscription = undefined;
+      });
   }
 }

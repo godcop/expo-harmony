@@ -17,21 +17,29 @@ class ReloadAppearance {
   failed?: () => void;
 
   constructor(options: Json) {
-    if ((options.backgroundColor != null && typeof options.backgroundColor !== 'string')
-      || (options.imageFullScreen != null && typeof options.imageFullScreen !== 'boolean')
-      || (options.fade != null && typeof options.fade !== 'boolean')
-      || (options.imageResizeMode != null && !['contain', 'cover', 'center', 'stretch'].includes(options.imageResizeMode))) {
+    if (
+      (options.backgroundColor != null && typeof options.backgroundColor !== 'string') ||
+      (options.imageFullScreen != null && typeof options.imageFullScreen !== 'boolean') ||
+      (options.fade != null && typeof options.fade !== 'boolean') ||
+      (options.imageResizeMode != null && !['contain', 'cover', 'center', 'stretch'].includes(options.imageResizeMode))
+    ) {
       throw new ExpoUpdatesError('ERR_UPDATES_ARGUMENT', 'Invalid reload screen appearance.');
     }
-    if (options.image != null && (!isRecord(options.image)
-      || (options.image.url != null && typeof options.image.url !== 'string')
-      || ['width', 'height', 'scale'].some((key: string): boolean => options.image[key] != null && !Number.isFinite(options.image[key])))) {
+    if (
+      options.image != null &&
+      (!isRecord(options.image) ||
+        (options.image.url != null && typeof options.image.url !== 'string') ||
+        ['width', 'height', 'scale'].some((key: string): boolean => options.image[key] != null && !Number.isFinite(options.image[key])))
+    ) {
       throw new ExpoUpdatesError('ERR_UPDATES_ARGUMENT', 'A reload image requires a URL string and finite dimensions.');
     }
-    if (options.spinner != null && (!isRecord(options.spinner)
-      || (options.spinner.enabled != null && typeof options.spinner.enabled !== 'boolean')
-      || (options.spinner.color != null && typeof options.spinner.color !== 'string')
-      || (options.spinner.size != null && !['small', 'medium', 'large'].includes(options.spinner.size)))) {
+    if (
+      options.spinner != null &&
+      (!isRecord(options.spinner) ||
+        (options.spinner.enabled != null && typeof options.spinner.enabled !== 'boolean') ||
+        (options.spinner.color != null && typeof options.spinner.color !== 'string') ||
+        (options.spinner.size != null && !['small', 'medium', 'large'].includes(options.spinner.size)))
+    ) {
       throw new ExpoUpdatesError('ERR_UPDATES_ARGUMENT', 'Invalid reload spinner configuration.');
     }
 
@@ -43,8 +51,14 @@ class ReloadAppearance {
       this.width = image.width * (image.scale ?? 1);
       this.height = image.height * (image.scale ?? 1);
     }
-    this.fit = options.imageResizeMode === 'cover' ? ImageFit.Cover : options.imageResizeMode === 'center' ? ImageFit.None
-      : options.imageResizeMode === 'stretch' ? ImageFit.Fill : ImageFit.Contain;
+    this.fit =
+      options.imageResizeMode === 'cover'
+        ? ImageFit.Cover
+        : options.imageResizeMode === 'center'
+          ? ImageFit.None
+          : options.imageResizeMode === 'stretch'
+            ? ImageFit.Fill
+            : ImageFit.Contain;
     this.spinner = options.spinner?.enabled ?? image == null;
     this.tint = options.spinner?.color ?? '#007aff';
     this.size = options.spinner?.size === 'small' ? 24 : options.spinner?.size === 'large' ? 72 : 48;
@@ -55,14 +69,24 @@ class ReloadAppearance {
 function reloadContent(value: ReloadAppearance) {
   Stack() {
     if (value.image.length > 0) {
-      Image(value.image).width(value.width).height(value.height).objectFit(value.fit)
-        .onError((): void => value.failed?.())
+      Image(value.image)
+        .width(value.width)
+        .height(value.height)
+        .objectFit(value.fit)
+        .onError((): void => value.failed?.());
     }
     if (value.spinner) {
-      LoadingProgress().width(value.size).height(value.size).color(value.tint)
+      LoadingProgress()
+        .width(value.size)
+        .height(value.size)
+        .color(value.tint);
     }
-  }.width('100%').height('100%').backgroundColor(value.fullscreen && value.image.length > 0 ? Color.Transparent : value.color).opacity(value.opacity)
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+  }
+  .width('100%')
+  .height('100%')
+  .backgroundColor(value.fullscreen && value.image.length > 0 ? Color.Transparent : value.color)
+  .opacity(value.opacity)
+  .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM]);
 }
 
 class ReloadOverlay {
@@ -105,14 +129,26 @@ export class UpdatesReloadScreen {
   static hide(context: common.UIAbilityContext): void {
     const overlay = UpdatesReloadScreen.overlays.get(context);
     if (!overlay) return;
-    if (!overlay.fade) { UpdatesReloadScreen.remove(context); return; }
+    if (!overlay.fade) {
+      UpdatesReloadScreen.remove(context);
+      return;
+    }
 
-    context.windowStage.getMainWindowSync().getUIContext().animateTo({ duration: 300, onFinish: (): void => {
-      if (UpdatesReloadScreen.overlays.get(context) === overlay) UpdatesReloadScreen.remove(context);
-    } }, (): void => {
-      overlay.appearance.opacity = 0;
-      overlay.content.update(overlay.appearance);
-    });
+    context.windowStage
+      .getMainWindowSync()
+      .getUIContext()
+      .animateTo(
+        {
+          duration: 300,
+          onFinish: (): void => {
+            if (UpdatesReloadScreen.overlays.get(context) === overlay) UpdatesReloadScreen.remove(context);
+          },
+        },
+        (): void => {
+          overlay.appearance.opacity = 0;
+          overlay.content.update(overlay.appearance);
+        },
+      );
   }
 
   private static remove(context: common.UIAbilityContext): void {

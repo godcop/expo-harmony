@@ -5,7 +5,9 @@ import { UpdatesController } from './UpdatesController';
 export class ExpoUpdatesReactActivityHandler implements ReactActivityHandler {
   private readonly context: common.ApplicationContext;
 
-  constructor(context: common.Context) { this.context = context.getApplicationContext(); }
+  constructor(context: common.Context) {
+    this.context = context.getApplicationContext();
+  }
 
   getDelayLoadAppHandler(_context: ReactRootViewContext): Promise<void> | undefined {
     const controller = UpdatesController.get(this.context);
