@@ -50,15 +50,21 @@ export class ExpoReactHostDelegate {
       }
       idsForBindings.add(binding.registrationId);
     }
-    this.registrationsForBindings = bindings.slice().sort((left, right) => ModulePriorities.get(right.packageName) - ModulePriorities.get(left.packageName));
+    this.registrationsForBindings = bindings
+      .slice()
+      .sort((left, right) => ModulePriorities.get(right.packageName) - ModulePriorities.get(left.packageName));
   }
 
   initialize(context: common.Context, host: ReactNativeHost, debug: boolean): void {
     if (this.initialized) return;
 
-    const handlers = this.registrations.map((registration: ReactNativeHostHandlerRegistration): ReactNativeHostHandler => registration.create(context));
+    const handlers = this.registrations.map(
+      (registration: ReactNativeHostHandlerRegistration): ReactNativeHostHandler => registration.create(context),
+    );
     for (const handler of handlers) handler.onWillCreateReactInstance?.(debug);
-    this.bindings = this.registrationsForBindings.map((registration: ReactRuntimeBindingRegistration): ReactRuntimeBinding => registration.create(context));
+    this.bindings = this.registrationsForBindings.map(
+      (registration: ReactRuntimeBindingRegistration): ReactRuntimeBinding => registration.create(context),
+    );
     this.handlers = handlers;
     this.initialized = true;
 
@@ -110,13 +116,20 @@ export class ExpoReactHostDelegate {
       if (!active) return;
       active = false;
       for (const unsubscribe of subscriptions.splice(0).reverse()) {
-        try { unsubscribe(); }
-        catch (error) { console.error(`Unable to detach a React host handler: ${String(error)}`); }
+        try {
+          unsubscribe();
+        } catch (error) {
+          console.error(`Unable to detach a React host handler: ${String(error)}`);
+        }
       }
     };
 
     try {
-      subscriptions.push(observeRnohDestroy(instance, (): void => { destroyed = true; }));
+      subscriptions.push(
+        observeRnohDestroy(instance, (): void => {
+          destroyed = true;
+        }),
+      );
       const manager = context.core.devToolsController;
       if (!this.managers.has(manager)) {
         for (const handler of this.handlers) handler.onDidCreateDevSupportManager?.(manager);
@@ -131,8 +144,11 @@ export class ExpoReactHostDelegate {
         if (!active || destroyed || this.notified.has(instance)) return;
         this.notified.add(instance);
         for (const handler of this.handlers) {
-          try { handler.onDidCreateReactInstance?.(debug, instance); }
-          catch (error) { console.error(`React instance notification failed: ${String(error)}`); }
+          try {
+            handler.onDidCreateReactInstance?.(debug, instance);
+          } catch (error) {
+            console.error(`React instance notification failed: ${String(error)}`);
+          }
         }
       };
       // ReactHostImpl notifies ReactContext initialization after submitting bundle loading, independently of JS execution success.
@@ -142,15 +158,20 @@ export class ExpoReactHostDelegate {
       const report = (error: Error): void => {
         if (!active || destroyed) return;
         for (const handler of handlers) {
-          try { handler.onReactInstanceException?.(debug, instance, error); }
-          catch (failure) { console.error(`React host error handler failed: ${String(failure)}`); }
+          try {
+            handler.onReactInstanceException?.(debug, instance, error);
+          } catch (failure) {
+            console.error(`React host error handler failed: ${String(failure)}`);
+          }
         }
       };
       waitForRnohBundle(instance).catch(report);
-      subscriptions.push(await ExpoRuntimeErrors.observe(instance, (error: Error): void => {
-        reportRnohBundleError(instance, error);
-        if (hasLoadedRnohBundle(instance)) report(error);
-      }));
+      subscriptions.push(
+        await ExpoRuntimeErrors.observe(instance, (error: Error): void => {
+          reportRnohBundleError(instance, error);
+          if (hasLoadedRnohBundle(instance)) report(error);
+        }),
+      );
 
       return cleanup;
     } catch (error) {

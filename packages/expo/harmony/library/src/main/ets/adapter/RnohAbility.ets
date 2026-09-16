@@ -81,7 +81,11 @@ export abstract class RnohAbility extends RNAbility {
   }
 
   protected override async onWindowSetup(view: window.Window): Promise<void> {
-    if (!this.windows.has(view)) this.windows.set(view, adaptRnohWindow(view, (): boolean => this.destruction !== undefined));
+    if (!this.windows.has(view))
+      this.windows.set(
+        view,
+        adaptRnohWindow(view, (): boolean => this.destruction !== undefined),
+      );
     await super.onWindowSetup(view);
   }
 
@@ -110,9 +114,19 @@ export abstract class RnohAbility extends RNAbility {
     super.onWindowStageCreate(stage);
   }
 
-  override onWillForeground(): void { super.onWillForeground?.(); }
-  override onDidForeground(): void { super.onDidForeground?.(); }
-  override onWillBackground(): void { super.onWillBackground?.(); }
-  override onDidBackground(): void { super.onDidBackground?.(); }
-  override onBackPressed(): boolean { return super.onBackPressed?.() ?? false; }
+  override onWillForeground(): void {
+    super.onWillForeground?.();
+  }
+  override onDidForeground(): void {
+    super.onDidForeground?.();
+  }
+  override onWillBackground(): void {
+    super.onWillBackground?.();
+  }
+  override onDidBackground(): void {
+    super.onDidBackground?.();
+  }
+  override onBackPressed(): boolean {
+    return super.onBackPressed?.() ?? false;
+  }
 }

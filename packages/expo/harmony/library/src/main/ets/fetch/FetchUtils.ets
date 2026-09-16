@@ -148,7 +148,6 @@ export function withoutHeaders(headers: Object, names: string[]): Object {
   return result;
 }
 
-
 export function mimeType(path: string): string {
   const dot = path.lastIndexOf('.');
   if (dot < 0 || dot === path.length - 1) return 'application/octet-stream';

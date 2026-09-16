@@ -3,11 +3,20 @@ import { ExpoReactHost } from './ExpoReactHost';
 import { JSBundleProvider, RNApp, RNInstance, RNOHCoreContext, RNOHError } from '@rnoh/react-native-openharmony';
 import type { RNInstanceConfig } from '@rnoh/react-native-openharmony/src/main/ets/RNApp';
 import type { WrappedCustomRNComponentBuilder } from '@rnoh/react-native-openharmony/src/main/ets/RNOH';
-import { ReactNativeRuntime, ReactRuntimeListener, ExpoModuleError, ReactRootViewBuilder, ReactRootViewContext, ReactActivityHandler, ModulePriorities } from '@expo-harmony/expo-modules-core';
+import {
+  ReactNativeRuntime,
+  ReactRuntimeListener,
+  ExpoModuleError,
+  ReactRootViewBuilder,
+  ReactRootViewContext,
+  ReactActivityHandler,
+  ModulePriorities,
+} from '@expo-harmony/expo-modules-core';
 
-interface ExpoUnmanagedRNInstanceConfig { rnInstance: RNInstance; }
+interface ExpoUnmanagedRNInstanceConfig {
+  rnInstance: RNInstance;
+}
 export type ExpoRNInstanceReplacement = (reason: string) => Promise<RNInstance>;
-
 @Builder
 export function buildExpoDefaultRoot(context: ReactRootViewContext): void {
   if (context.ready) {
@@ -45,7 +54,6 @@ struct ExpoReactRootView {
     });
   }
 }
-
 @Component
 export struct ExpoRNApp {
   @Require public rnInstanceConfig!: RNInstanceConfig;
@@ -82,9 +90,10 @@ export struct ExpoRNApp {
 
     const context: ReactRootViewContext = this.rootContext(false);
     try {
-      const handlers: ReactActivityHandler[] = this.reactHost.activityHandlers.slice()
+      const handlers: ReactActivityHandler[] = this.reactHost.activityHandlers
+        .slice()
         .sort((left, right) => ModulePriorities.get(right.packageName) - ModulePriorities.get(left.packageName))
-        .map(registration => registration.create(context.core.uiAbilityContext));
+        .map((registration) => registration.create(context.core.uiAbilityContext));
       this.selectedRoot = this.rootViewBuilder ?? ExpoReactRootViewFactory.create(handlers, context);
       const delay = ExpoReactRootViewFactory.getDelayLoadAppHandler(handlers, context);
       if (delay !== undefined) await delay;
@@ -92,7 +101,9 @@ export struct ExpoRNApp {
       const runtime = this.reactHost.createRuntime(context.core, this.rnInstanceConfig, this.jsBundleProvider, this.replaceRNInstance);
       this.runtime = runtime;
       const listener: ReactRuntimeListener = {
-        prepare: async (instance: RNInstance): Promise<void> => { await this.onSetUp(instance); },
+        prepare: async (instance: RNInstance): Promise<void> => {
+          await this.onSetUp(instance);
+        },
         changed: (instance: RNInstance | undefined): void => {
           if (!this.mounted || preparation !== this.preparationSerial) return;
           this.instance = instance;
@@ -114,11 +125,13 @@ export struct ExpoRNApp {
     const callback = this.onDelayLoadError;
     if (callback !== undefined) callback(error);
     else if (this.core !== undefined) {
-      this.core.reportRNOHError(new RNOHError({
-        whatHappened: 'Unable to prepare the Expo React root.',
-        howCanItBeFixed: [],
-        extraData: error,
-      }));
+      this.core.reportRNOHError(
+        new RNOHError({
+          whatHappened: 'Unable to prepare the Expo React root.',
+          howCanItBeFixed: [],
+          extraData: error,
+        }),
+      );
     } else {
       throw new ExpoModuleError('ERR_REACT_HOST_CONTEXT', 'The RNOH context is not available.', error);
     }

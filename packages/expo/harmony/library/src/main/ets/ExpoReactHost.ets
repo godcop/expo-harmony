@@ -12,13 +12,7 @@ import {
   observeRnohDestroy,
 } from '@expo-harmony/expo-modules-core';
 import { bundleManager, common } from '@kit.AbilityKit';
-import {
-  JSBundleProvider,
-  MetroJSBundleProvider,
-  RNInstance,
-  RNInstanceOptions,
-  RNOHCoreContext,
-} from '@rnoh/react-native-openharmony';
+import { JSBundleProvider, MetroJSBundleProvider, RNInstance, RNInstanceOptions, RNOHCoreContext } from '@rnoh/react-native-openharmony';
 import { ExpoJSBundleProvider, ExpoResourceBundle } from './ExpoJSBundleProvider';
 import type { RNInstanceConfig } from '@rnoh/react-native-openharmony/src/main/ets/RNApp';
 import type { ExpoHarmonyHostProvider } from './ExpoModulesPackage';
@@ -30,7 +24,9 @@ export interface ExpoReactHostOptions {
   createRNInstanceOptions: (headless: boolean) => RNInstanceOptions;
 }
 
-interface SuppliedRuntime { rnInstance?: RNInstance; }
+interface SuppliedRuntime {
+  rnInstance?: RNInstance;
+}
 
 interface HostRuntime {
   core: RNOHCoreContext;
@@ -152,36 +148,52 @@ export class ExpoReactHost {
     return new ExpoJSBundleProvider(context, fallback, this.delegate, development);
   }
 
-  createRuntime(core: RNOHCoreContext, config: RNInstanceConfig, bundle?: JSBundleProvider,
-    replace?: (reason: string) => Promise<RNInstance>): ReactNativeRuntime {
+  createRuntime(
+    core: RNOHCoreContext,
+    config: RNInstanceConfig,
+    bundle?: JSBundleProvider,
+    replace?: (reason: string) => Promise<RNInstance>,
+  ): ReactNativeRuntime {
     const supplied = config as SuppliedRuntime;
     if (supplied.rnInstance !== undefined) {
       const existing = this.owners.get(supplied.rnInstance);
       if (existing !== undefined) {
-        if (existing.instance !== supplied.rnInstance) throw new ExpoModuleError('ERR_REACT_HOST_CONTEXT', 'The supplied instance has already been replaced or destroyed.');
+        if (existing.instance !== supplied.rnInstance)
+          throw new ExpoModuleError('ERR_REACT_HOST_CONTEXT', 'The supplied instance has already been replaced or destroyed.');
         if (existing.core !== core) throw new ExpoModuleError('ERR_REACT_HOST_CONTEXT', 'A root cannot bind an instance from another coordinator.');
         return existing;
       }
       return this.runtime(core, supplied.rnInstance, bundle === undefined ? undefined : (): JSBundleProvider => bundle, true, replace);
     }
-    if (replace !== undefined) throw new ExpoModuleError('ERR_RELOAD_HOST_REPLACEMENT', 'replaceRNInstance requires an unmanaged rnInstance configuration.');
+    if (replace !== undefined)
+      throw new ExpoModuleError('ERR_RELOAD_HOST_REPLACEMENT', 'replaceRNInstance requires an unmanaged rnInstance configuration.');
 
     let runtime = this.managed.get(core);
     if (runtime === undefined) {
-      runtime = this.runtime(core, config as RNInstanceOptions,
-        (): JSBundleProvider => bundle ?? this.createJSBundleProvider(core.uiAbilityContext, this.debug), true);
+      runtime = this.runtime(
+        core,
+        config as RNInstanceOptions,
+        (): JSBundleProvider => bundle ?? this.createJSBundleProvider(core.uiAbilityContext, this.debug),
+        true,
+      );
       this.managed.set(core, runtime);
     }
     return runtime;
   }
 
-  private runtime(core: RNOHCoreContext, source: RNInstanceOptions | RNInstance, bundle: (() => JSBundleProvider) | undefined,
-    ui: boolean, replace?: (reason: string) => Promise<RNInstance>): ReactNativeRuntime {
+  private runtime(
+    core: RNOHCoreContext,
+    source: RNInstanceOptions | RNInstance,
+    bundle: (() => JSBundleProvider) | undefined,
+    ui: boolean,
+    replace?: (reason: string) => Promise<RNInstance>,
+  ): ReactNativeRuntime {
     const external = typeof (source as RNInstance).getId === 'function';
     const runtime = new RnohReactRuntime(core, {
-      options: external ? undefined : source as RNInstanceOptions,
-      instance: external ? source as RNInstance : undefined,
-      replace, bundle,
+      options: external ? undefined : (source as RNInstanceOptions),
+      instance: external ? (source as RNInstance) : undefined,
+      replace,
+      bundle,
       prepare: async (instance: RNInstance): Promise<void> => {
         this.owners.set(instance, runtime);
         await this.prepareRuntime(instance, core, runtime, ui);
@@ -211,11 +223,17 @@ export class ExpoReactHost {
 
   private prepareInstance(instance: RNInstance, core: RNOHCoreContext, owner: Object, ui: boolean): HostRuntime {
     let family = this.families.get(owner);
-    if (family === undefined) { family = new Object(); this.families.set(owner, family); }
+    if (family === undefined) {
+      family = new Object();
+      this.families.set(owner, family);
+    }
     const record: HostRuntime = { core, family, ready: Promise.resolve(), destroyed: false, released: false, ui };
     const lifetime = RnohContextLifecycle.install(core);
     const context: ReactRuntimeContext = {
-      instance, host: this, core, owner: family,
+      instance,
+      host: this,
+      core,
+      owner: family,
       reload: (reason: string): Promise<void> => {
         if (record.destroyed) throw new ExpoModuleError('ERR_RELOAD_UNAVAILABLE', 'The React instance was destroyed.');
         return ExpoReloadRegistry.require(instance.getId())(reason);
@@ -250,7 +268,9 @@ export class ExpoReactHost {
     return record;
   }
 
-  get activityHandlers(): ReactActivityHandlerRegistration[] { return this.options.provider.reactActivityHandlers; }
+  get activityHandlers(): ReactActivityHandlerRegistration[] {
+    return this.options.provider.reactActivityHandlers;
+  }
 
   async load(context: common.Context): Promise<void> {
     if (!this.isAvailable()) throw new ExpoModuleError('ERR_REACT_HOST_BUNDLE', 'The application bundle is not available for background execution.');

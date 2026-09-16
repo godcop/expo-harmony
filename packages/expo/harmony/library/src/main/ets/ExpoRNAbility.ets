@@ -166,8 +166,11 @@ export abstract class ExpoRNAbility extends RnohAbility {
   }
 
   protected override onRNOHDestroyed(): void {
-    try { this.getExpoHarmonyHostProvider().hostState.finishAbility(this.context); }
-    finally { ExpoReactHost.detachAbility(this.context); }
+    try {
+      this.getExpoHarmonyHostProvider().hostState.finishAbility(this.context);
+    } finally {
+      ExpoReactHost.detachAbility(this.context);
+    }
   }
 
   override onMemoryLevel(level: AbilityConstant.MemoryLevel): void {

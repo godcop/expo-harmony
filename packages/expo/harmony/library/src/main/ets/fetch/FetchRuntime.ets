@@ -7,10 +7,24 @@ import uniformTypeDescriptor from '@ohos.data.uniformTypeDescriptor';
 import { ExpoFetchError } from './ExpoFetchError';
 import { FetchInit, FetchResult, StreamPacket, EMPTY_BYTES } from './FetchTypes';
 import {
-  copyBytes, chunksToBuffer, encodeString, errorMessage, formatError, headerFromPairs, headerPairs,
-  isFileURL, isHttpURL, isRedirectStatus, makeHeaders, mimeType,
-  readFileBuffer, requestMethodRequiresBody, sameOrigin,
-  storeResponseCookies, withStoredCookies, withoutHeaders,
+  copyBytes,
+  chunksToBuffer,
+  encodeString,
+  errorMessage,
+  formatError,
+  headerFromPairs,
+  headerPairs,
+  isFileURL,
+  isHttpURL,
+  isRedirectStatus,
+  makeHeaders,
+  mimeType,
+  readFileBuffer,
+  requestMethodRequiresBody,
+  sameOrigin,
+  storeResponseCookies,
+  withStoredCookies,
+  withoutHeaders,
 } from './FetchUtils';
 import { filePathFromUrl, headersForDecodedResponse, requestMethodPolicy } from './FetchHeaderPolicy';
 

@@ -26,5 +26,7 @@ export class ExpoModulesPackage extends ExpoModulesCorePackage {
     super(context, provider.expoModules, provider.hostState, config, provider.expoServices);
   }
 
-  override getDebugName(): string { return '@expo-harmony/expo'; }
+  override getDebugName(): string {
+    return '@expo-harmony/expo';
+  }
 }

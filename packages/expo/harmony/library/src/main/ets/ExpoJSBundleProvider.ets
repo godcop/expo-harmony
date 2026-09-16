@@ -1,5 +1,13 @@
 import type { common } from '@kit.AbilityKit';
-import { FileJSBundleProvider, HotReloadConfig, JSBundleProvider, JsBundle, RawFileJSBundle, ResourceJSBundleProvider, RNOHCoreContext } from '@rnoh/react-native-openharmony';
+import {
+  FileJSBundleProvider,
+  HotReloadConfig,
+  JSBundleProvider,
+  JsBundle,
+  RawFileJSBundle,
+  ResourceJSBundleProvider,
+  RNOHCoreContext,
+} from '@rnoh/react-native-openharmony';
 import type { ExpoReactHostDelegate } from './ExpoReactHostDelegate';
 
 export class ExpoResourceBundle extends ResourceJSBundleProvider {
@@ -14,8 +22,7 @@ export class ExpoResourceBundle extends ResourceJSBundleProvider {
 
   override async getBundle(): Promise<ArrayBuffer | RawFileJSBundle> {
     const rnohCoreContext: RNOHCoreContext | undefined = AppStorage.get<RNOHCoreContext>('RNOHCoreContext');
-    if (rnohCoreContext !== undefined &&
-        rnohCoreContext.uiAbilityContext.resourceManager === this.context.resourceManager) {
+    if (rnohCoreContext !== undefined && rnohCoreContext.uiAbilityContext.resourceManager === this.context.resourceManager) {
       try {
         const fd = this.context.resourceManager.getRawFdSync(this.asset);
         if (fd) {
@@ -23,8 +30,7 @@ export class ExpoResourceBundle extends ResourceJSBundleProvider {
           // RNOH 0.84.1 mmaps the raw offset; Hermes requires uint32 bytecode alignment.
           if (fd.offset % Uint32Array.BYTES_PER_ELEMENT === 0) return { rawFilePath: this.asset };
         }
-      } catch (_error) {
-      }
+      } catch (_error) {}
     }
 
     const bytes = await this.context.resourceManager.getRawFileContent(this.asset);
@@ -49,14 +55,22 @@ export class ExpoJSBundleProvider extends JSBundleProvider {
     this.debug = debug;
   }
 
-  getURL(): string { return (this.selected ?? this.fallback).getURL(); }
-  getAppKeys(): string[] { return this.fallback.getAppKeys(); }
-  getHotReloadConfig(): HotReloadConfig | null { return (this.selected ?? this.fallback).getHotReloadConfig(); }
+  getURL(): string {
+    return (this.selected ?? this.fallback).getURL();
+  }
+  getAppKeys(): string[] {
+    return this.fallback.getAppKeys();
+  }
+  getHotReloadConfig(): HotReloadConfig | null {
+    return (this.selected ?? this.fallback).getHotReloadConfig();
+  }
 
   async getBundle(progress?: (value: number) => void, switched?: (provider: JSBundleProvider) => void): Promise<JsBundle> {
     const path = await this.delegate.getJSBundleFile(this.debug);
     if (path !== undefined) {
-      this.selected = path.startsWith('assets://') ? new ExpoResourceBundle(this.context, path.slice('assets://'.length)) : new FileJSBundleProvider(path, this.getAppKeys());
+      this.selected = path.startsWith('assets://')
+        ? new ExpoResourceBundle(this.context, path.slice('assets://'.length))
+        : new FileJSBundleProvider(path, this.getAppKeys());
     } else {
       const asset = await this.delegate.getBundleAssetName(this.debug);
       this.selected = asset === undefined ? this.fallback : new ExpoResourceBundle(this.context, asset);

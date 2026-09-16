@@ -56,7 +56,11 @@ export class ExpoHarmonyLifecycleDispatcher {
         scope.entries.push(new AbilitySubscriberEntry(registration.registrationId, registration.create(context)));
       } catch (error) {
         this.onDestroy(context);
-        throw new ExpoModuleError('ERR_ABILITY_LIFECYCLE', `Unable to construct ability subscriber '${registration.registrationId}'.`, error as Object);
+        throw new ExpoModuleError(
+          'ERR_ABILITY_LIFECYCLE',
+          `Unable to construct ability subscriber '${registration.registrationId}'.`,
+          error as Object,
+        );
       }
     }
 
@@ -358,18 +362,22 @@ function mergeSaveResult(
 
   const recovery = reason === AbilityConstant.StateType.APP_RECOVERY;
   const allowed: AbilityConstant.OnSaveResult[] = recovery
-    ? [AbilityConstant.OnSaveResult.ALL_AGREE, AbilityConstant.OnSaveResult.ALL_REJECT,
-       AbilityConstant.OnSaveResult.RECOVERY_AGREE, AbilityConstant.OnSaveResult.RECOVERY_REJECT]
-    : [AbilityConstant.OnSaveResult.ALL_AGREE, AbilityConstant.OnSaveResult.ALL_REJECT,
-       AbilityConstant.OnSaveResult.CONTINUATION_REJECT, AbilityConstant.OnSaveResult.CONTINUATION_MISMATCH];
+    ? [
+        AbilityConstant.OnSaveResult.ALL_AGREE,
+        AbilityConstant.OnSaveResult.ALL_REJECT,
+        AbilityConstant.OnSaveResult.RECOVERY_AGREE,
+        AbilityConstant.OnSaveResult.RECOVERY_REJECT,
+      ]
+    : [
+        AbilityConstant.OnSaveResult.ALL_AGREE,
+        AbilityConstant.OnSaveResult.ALL_REJECT,
+        AbilityConstant.OnSaveResult.CONTINUATION_REJECT,
+        AbilityConstant.OnSaveResult.CONTINUATION_MISMATCH,
+      ];
   if (!allowed.includes(vote)) throw new ExpoModuleError('ERR_SAVE_STATE_RESULT', `Save result ${vote} is not valid for state type ${reason}.`);
 
-  const reject = recovery
-    ? AbilityConstant.OnSaveResult.RECOVERY_REJECT
-    : AbilityConstant.OnSaveResult.CONTINUATION_REJECT;
-  const agree = recovery
-    ? AbilityConstant.OnSaveResult.RECOVERY_AGREE
-    : AbilityConstant.OnSaveResult.ALL_AGREE;
+  const reject = recovery ? AbilityConstant.OnSaveResult.RECOVERY_REJECT : AbilityConstant.OnSaveResult.CONTINUATION_REJECT;
+  const agree = recovery ? AbilityConstant.OnSaveResult.RECOVERY_AGREE : AbilityConstant.OnSaveResult.ALL_AGREE;
 
   if (current === AbilityConstant.OnSaveResult.ALL_REJECT || vote === AbilityConstant.OnSaveResult.ALL_REJECT)
     return AbilityConstant.OnSaveResult.ALL_REJECT;
@@ -377,8 +385,7 @@ function mergeSaveResult(
 
   if (!recovery && (current === AbilityConstant.OnSaveResult.CONTINUATION_MISMATCH || vote === AbilityConstant.OnSaveResult.CONTINUATION_MISMATCH))
     return AbilityConstant.OnSaveResult.CONTINUATION_MISMATCH;
-  if (recovery && (current === AbilityConstant.OnSaveResult.RECOVERY_AGREE || vote === AbilityConstant.OnSaveResult.RECOVERY_AGREE))
-    return agree;
+  if (recovery && (current === AbilityConstant.OnSaveResult.RECOVERY_AGREE || vote === AbilityConstant.OnSaveResult.RECOVERY_AGREE)) return agree;
 
   return current ?? vote;
 }

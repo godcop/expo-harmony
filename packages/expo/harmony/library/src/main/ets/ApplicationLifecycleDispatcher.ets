@@ -1,10 +1,6 @@
 import { AbilityConstant, ApplicationStateChangeCallback, EnvironmentCallback } from '@kit.AbilityKit';
 import type { Configuration, common } from '@kit.AbilityKit';
-import {
-  ExpoModuleError,
-  ExpoAppLifecycleSubscriber,
-  ExpoAppLifecycleSubscriberRegistration,
-} from '@expo-harmony/expo-modules-core';
+import { ExpoModuleError, ExpoAppLifecycleSubscriber, ExpoAppLifecycleSubscriberRegistration } from '@expo-harmony/expo-modules-core';
 
 export function reportSubscriberFailure(id: string, callback: string, error: ESObject): void {
   console.error(`Expo lifecycle subscriber '${id}' failed in ${callback}: ${String(error)}`);

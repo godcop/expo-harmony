@@ -32,8 +32,11 @@ export class ExpoRuntimeErrors {
       detached?.();
       if (destroyed) return;
 
-      try { instance.postMessageToCpp(EXPO_RUNTIME_UNOBSERVE, { observer: id }); }
-      catch (error) { console.error(`Unable to detach a React runtime error subscriber: ${String(error)}`); }
+      try {
+        instance.postMessageToCpp(EXPO_RUNTIME_UNOBSERVE, { observer: id });
+      } catch (error) {
+        console.error(`Unable to detach a React runtime error subscriber: ${String(error)}`);
+      }
     };
 
     try {
@@ -66,8 +69,11 @@ export class ExpoRuntimeErrors {
           finish(typeof event.error === 'string' ? new ExpoModuleError('ERR_RUNTIME_OBSERVER', event.error) : undefined);
         });
 
-        try { instance.postMessageToCpp(EXPO_RUNTIME_OBSERVE, { observer: id }); }
-        catch (error) { finish(new ExpoModuleError('ERR_RUNTIME_OBSERVER', 'Unable to register a React runtime error observer.', error as Object)); }
+        try {
+          instance.postMessageToCpp(EXPO_RUNTIME_OBSERVE, { observer: id });
+        } catch (error) {
+          finish(new ExpoModuleError('ERR_RUNTIME_OBSERVER', 'Unable to register a React runtime error observer.', error as Object));
+        }
       });
       if (destroyed) throw new ExpoModuleError('ERR_RUNTIME_OBSERVER', 'The React runtime was destroyed during observer registration.');
 
