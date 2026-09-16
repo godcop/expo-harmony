@@ -8,11 +8,12 @@ import JSON5 from 'json5';
 import tar from 'tar';
 import { bump, planRelease, updateManifests } from './release-plan.mjs';
 import { assertPortableHarmonyHarSync } from '../packages/expo-module-scripts/src/har.mjs';
+import { planWorkspaceBuild } from '../packages/expo-module-scripts/src/workspace.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const args = process.argv.slice(2);
 if (args.includes('--help')) {
-  console.log('yarn release [--prepare-only]\nInteractively bump packages, build once, pack and optionally publish.');
+  console.log('yarn release [--prepare-only]\nInteractively bump packages, build once, validate tgz/HAR archives and optionally publish to OHPM, then npm.');
   process.exit(0);
 }
 if (args.some(arg => arg !== '--prepare-only')) throw new Error('Unknown option. Use --help.');
@@ -65,6 +66,7 @@ async function verifyTarball(file, pkg, project, temporary) {
       const native = JSON5.parse(await fs.readFile(nativeFile, 'utf8'));
       if (native.name !== manifest.name || native.version !== manifest.version) throw new Error(`Native version mismatch: ${nativeFile}`);
     }
+    return har;
   }
 }
 
@@ -102,7 +104,7 @@ async function main() {
     for (const [name, version] of versions) {
       console.log(`${name}: ${packages.find(pkg => pkg.manifest.name === name).manifest.version} → ${version}${selected.has(name) ? '' : '（依赖联动）'}`);
     }
-    const tag = (await rl.question('npm dist-tag [latest]: ')).trim() || 'latest';
+    const tag = (await rl.question('npm / OHPM tag [latest]: ')).trim() || 'latest';
     if (!/^[a-z][a-z0-9-]*$/.test(tag) || tag === 'v') throw new Error('Use a dist-tag such as latest or next.');
     if ((await rl.question('更新版本并构建打包？[y/N] ')).trim().toLowerCase() !== 'y') return;
     for (const pkg of packages) {
@@ -122,6 +124,8 @@ async function main() {
     // Compile the JS tooling before importing it or building native modules.
     run('yarn', ['workspaces', 'foreach', '--all', '--include', '@expo-harmony/*', '--topological-dev', '--verbose', 'run', 'build']);
     const { buildWorkspace, loadModuleProject, writeBuildReceipt } = await import('../packages/expo-module-scripts/src/index.mjs');
+    const { resolveHarmonyCommand } = await import('@expo-harmony/expo-modules-autolinking/tool-command');
+    const ohpm = resolveHarmonyCommand('ohpm', []);
     await buildWorkspace(root, { clean: true });
     temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'expo-release-'));
     const projects = [];
@@ -138,17 +142,41 @@ async function main() {
       const pkg = packages.find(item => item.manifest.name === name);
       const file = path.join(output, `${name.replace('@', '').replaceAll('/', '-')}-${version}.tgz`);
       run('yarn', ['workspace', name, 'pack', '--out', file], { env: { ...process.env, EXPO_HARMONY_BUILD_RECEIPT: receipt } });
-      await verifyTarball(file, pkg, projects.find(project => project.packageRoot === pkg.directory), temporary);
-      artifacts.push({ name, version, file, tag });
+      const packedHar = await verifyTarball(file, pkg, projects.find(project => project.packageRoot === pkg.directory), temporary);
+      const artifact = { name, version, file, tag, published: { npm: false } };
+      if (packedHar) {
+        // Publish exactly the same HAR that npm consumers receive, including native-only packages.
+        artifact.har = file.replace(/\.tgz$/, '.har');
+        artifact.published.ohpm = false;
+        await fs.copyFile(packedHar, artifact.har);
+        run(ohpm.command, [...ohpm.args, 'prepublish', artifact.har]);
+      }
+      artifacts.push(artifact);
     }
-    await fs.writeFile(path.join(output, 'release.json'), `${JSON.stringify(artifacts, null, 2)}\n`);
+    const nativeOrder = new Map(planWorkspaceBuild(projects, projects).map(({ project }, index) => [project.packageJson.name, index]));
+    artifacts.sort((a, b) => (nativeOrder.get(a.name) ?? nativeOrder.size) - (nativeOrder.get(b.name) ?? nativeOrder.size));
+    const releaseFile = path.join(output, 'release.json');
+    const saveRelease = async () => {
+      await fs.writeFile(`${releaseFile}.tmp`, `${JSON.stringify(artifacts, null, 2)}\n`);
+      await fs.rename(`${releaseFile}.tmp`, releaseFile);
+    };
+    await saveRelease();
     console.log(`产物已校验：${output}`);
     if (args.includes('--prepare-only')) return;
-    console.table(artifacts.map(({ name, version, tag }) => ({ name, version, tag })));
-    if ((await rl.question('将这些 tgz 发布到 npm？[y/N] ')).trim().toLowerCase() !== 'y') return;
+    console.table(artifacts.map(({ name, version, tag, har }) => ({ name, version, tag, registries: har ? 'OHPM + npm' : 'npm' })));
+    if ((await rl.question('按依赖顺序将 HAR 提交到 OHPM，再将 tgz 发布到 npm？[y/N] ')).trim().toLowerCase() !== 'y') return;
     for (const artifact of artifacts) {
-      run('npm', ['publish', artifact.file, '--access', 'public', '--tag', tag]);
-      console.log(`已发布 ${artifact.name}@${artifact.version}`);
+      if (!artifact.har) continue;
+      run(ohpm.command, [...ohpm.args, 'publish', artifact.har, '--tag', artifact.tag]);
+      artifact.published.ohpm = true;
+      await saveRelease();
+      console.log(`已提交到 OHPM：${artifact.name}@${artifact.version}（公仓上架状态请在 OHPM 确认）`);
+    }
+    for (const artifact of artifacts) {
+      run('npm', ['publish', artifact.file, '--access', 'public', '--tag', artifact.tag]);
+      artifact.published.npm = true;
+      await saveRelease();
+      console.log(`已发布到 npm：${artifact.name}@${artifact.version}`);
     }
   } finally {
     rl.close();
@@ -158,6 +186,6 @@ async function main() {
 
 main().catch(error => {
   console.error(error.message);
-  console.error('若版本已更新，修改会保留以便检查；不会自动提交、回滚或重新发布。已生成的 tgz 可用于重试。');
+  console.error('若版本已更新，修改会保留以便检查；不会自动提交、回滚或重新发布。可参考 release.json 中各仓库的成功记录，使用已生成的 HAR / tgz 手动重试；若上传时中断，请先确认仓库状态。');
   process.exitCode = 1;
 });
