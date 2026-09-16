@@ -27,7 +27,8 @@
     "lint": "eslint \"{packages,apps}/*/**/*.{ts,tsx,js,jsx}\" --fix",
     "lint:check": "eslint \"{packages,apps}/*/**/*.{ts,tsx,js,jsx}\"",
     "release": "node scripts/release.mjs",
-    "release:prepare": "node scripts/release.mjs --prepare-only"
+    "release:prepare": "node scripts/release.mjs --prepare-only",
+    "release:publish": "node scripts/release.mjs --publish-only"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
