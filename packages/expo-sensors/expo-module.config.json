@@ -1,0 +1,17 @@
+{
+  "platforms": [
+    "harmony"
+  ],
+  "harmony": {
+    "modules": [
+      "AccelerometerModule",
+      "BarometerModule",
+      "DeviceMotionModule",
+      "GyroscopeModule",
+      "LightSensorModule",
+      "MagnetometerModule",
+      "MagnetometerUncalibratedModule",
+      "PedometerModule"
+    ]
+  }
+}

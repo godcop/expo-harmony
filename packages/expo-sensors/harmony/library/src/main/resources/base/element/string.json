@@ -1,0 +1,8 @@
+{
+  "string": [
+    {
+      "name": "expo_sensors_motion_permission_reason",
+      "value": "用于读取运动步数"
+    }
+  ]
+}
