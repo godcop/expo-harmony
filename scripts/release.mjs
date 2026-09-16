@@ -104,8 +104,8 @@ async function main() {
     for (const [name, version] of versions) {
       console.log(`${name}: ${packages.find(pkg => pkg.manifest.name === name).manifest.version} → ${version}${selected.has(name) ? '' : '（依赖联动）'}`);
     }
-    const tag = (await rl.question('npm / OHPM tag [latest]: ')).trim() || 'latest';
-    if (!/^[a-z][a-z0-9-]*$/.test(tag) || tag === 'v') throw new Error('Use a dist-tag such as latest or next.');
+    const tag = (await rl.question('发布 tag [latest，OHPM 不传 --tag]: ')).trim() || 'latest';
+    if (!/^[a-z][a-z0-9-]{0,59}$/.test(tag) || tag === 'v') throw new Error('Use a tag such as latest or next (at most 60 characters).');
     if ((await rl.question('更新版本并构建打包？[y/N] ')).trim().toLowerCase() !== 'y') return;
     for (const pkg of packages) {
       const updated = updateManifests(pkg, versions);
@@ -167,7 +167,9 @@ async function main() {
     if ((await rl.question('按依赖顺序将 HAR 提交到 OHPM，再将 tgz 发布到 npm？[y/N] ')).trim().toLowerCase() !== 'y') return;
     for (const artifact of artifacts) {
       if (!artifact.har) continue;
-      run(ohpm.command, [...ohpm.args, 'publish', artifact.har, '--tag', artifact.tag]);
+      // OHPM reserves "latest" and rejects it as an explicit tag.
+      const tagArgs = artifact.tag === 'latest' ? [] : ['--tag', artifact.tag];
+      run(ohpm.command, [...ohpm.args, 'publish', artifact.har, ...tagArgs]);
       artifact.published.ohpm = true;
       await saveRelease();
       console.log(`已提交到 OHPM：${artifact.name}@${artifact.version}（公仓上架状态请在 OHPM 确认）`);
