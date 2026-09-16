@@ -41,6 +41,7 @@ export const MODULES = [
   { id: 'crypto', title: '加密', packageName: '@expo-harmony/expo-crypto', category: '设备与媒体', summary: '摘要、随机字节、UUID 与 AES-GCM 往返校验。' },
   { id: 'contacts', title: '联系人', packageName: '@expo-harmony/expo-contacts', category: '设备与媒体', summary: '通讯录权限、联系人读写、分页查询、系统选择器与 vCard 导出。' },
   { id: 'device', title: '设备信息', packageName: '@expo-harmony/expo-device', category: '设备与媒体', summary: '品牌、型号、系统版本、内存、CPU 架构、设备类型与开机时长。' },
+  { id: 'document-picker', title: '文档选择器', packageName: '@expo-harmony/expo-document-picker', category: '设备与媒体', summary: '系统文档选择、MIME 过滤、多选、缓存复制、取消和并发保护。' },
   { id: 'fetch', title: '网络请求', packageName: '@expo-harmony/expo', category: '设备与媒体', summary: '通过 Expo fetch 实现的流式 HTTP 与本地文件响应。' },
   { id: 'file-system', title: '文件系统', packageName: '@expo-harmony/expo-file-system', category: '设备与媒体', summary: '文件、目录、原始句柄与系统选择器。' },
   { id: 'haptics', title: '触感反馈', packageName: '@expo-harmony/expo-haptics', category: '设备与媒体', summary: '官方反馈样式与参数校验。' },

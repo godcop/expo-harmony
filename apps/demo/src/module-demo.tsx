@@ -21,6 +21,7 @@ import { ConstantsDemo } from './modules/constants';
 import { ContactsDemo } from './modules/contacts';
 import { CryptoDemo } from './modules/crypto';
 import { DeviceDemo } from './modules/device';
+import { DocumentPickerDemo } from './modules/document-picker';
 import { ExpoModulesDemo } from './expoModules/ExpoModulesDemo';
 import { ModulesAutolinkingDemo } from './modules/expo-modules-autolinking';
 import { ModulesCoreDemo } from './modules/expo-modules-core';
@@ -80,6 +81,7 @@ const MODULE_DEMOS = {
   'contacts': ContactsDemo,
   'crypto': CryptoDemo,
   'device': DeviceDemo,
+  'document-picker': DocumentPickerDemo,
   'expo-module-showcase': ExpoModulesDemo,
   'expo-modules-autolinking': ModulesAutolinkingDemo,
   'expo-modules-core': ModulesCoreDemo,
