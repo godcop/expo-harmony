@@ -24,6 +24,7 @@ export const MODULES = [
   { id: 'application', title: '应用信息', packageName: '@expo-harmony/expo-application', category: '应用', summary: '应用包标识、版本号、显示名称与安装时间。' },
   { id: 'asset', title: '资源', packageName: '@expo-harmony/expo-asset', category: '应用', summary: '内置资源、本地 URI 与远程缓存行为。' },
   { id: 'image', title: '图片', packageName: '@expo-harmony/expo-image', category: '设备与媒体', summary: '图片显示、动画、共享引用、BlurHash / ThumbHash、网络与缓存。' },
+  { id: 'image-loader', title: '图片加载服务', packageName: '@expo-harmony/expo-image-loader', category: '设备与媒体', summary: '原生图片加载、Promise 与回调、独立编辑副本及错误边界。' },
   { id: 'blob', title: '二进制数据', packageName: '@expo-harmony/expo-blob', category: '应用', summary: 'Blob 构造、文本与字节读取、切片、编码边界与流式读取。' },
   { id: 'constants', title: '常量', packageName: '@expo-harmony/expo-constants', category: '应用', summary: '内嵌的应用配置、设备信息与运行时标识。' },
   { id: 'font', title: '字体', packageName: '@expo-harmony/expo-font', category: '应用', summary: '内置字体资源与运行时注册。' },

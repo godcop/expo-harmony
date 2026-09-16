@@ -30,6 +30,7 @@
     "expo-modules-core": "^55.0.0"
   },
   "devDependencies": {
+    "@expo-harmony/expo-image-loader": "workspace:*",
     "@expo-harmony/expo-manifests": "workspace:*",
     "@expo-harmony/expo-module-scripts": "workspace:*",
     "@expo-harmony/expo-structured-headers": "workspace:*",

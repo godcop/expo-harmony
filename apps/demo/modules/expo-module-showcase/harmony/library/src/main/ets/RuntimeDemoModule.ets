@@ -8,6 +8,7 @@ import {
 import {
   UpdatesControllerRegistry, UpdatesStateChangeSubscription,
 } from '@expo-harmony/expo-updates-interface';
+import { checkImages, readImage } from './ImageLoaderDemo';
 
 export class RuntimeDemoModule extends ExpoModule {
   private subscription?: UpdatesStateChangeSubscription;
@@ -16,6 +17,10 @@ export class RuntimeDemoModule extends ExpoModule {
     return new ExpoModuleDefinition()
       .name('RuntimeDemo')
       .events(['onUpdatesStateChange'])
+      .asyncFunction('readImage', ExpoFunction.typed3(
+        ExpoValueTypes.string(), ExpoValueTypes.boolean(), ExpoValueTypes.boolean(),
+        (uri: string, editing: boolean, callback: boolean): Promise<string> => readImage(this.context, uri, editing, callback)))
+      .asyncFunction('checkImages', (): Promise<string> => checkImages(this.context))
       .syncFunction('readManifest', ExpoFunction.typed1(ExpoValueTypes.string(), (input: string): string => {
         const manifest = Manifest.fromManifestJson(JSON.parse(input));
 
