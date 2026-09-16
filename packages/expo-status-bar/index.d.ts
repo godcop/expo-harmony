@@ -1,1 +1,1 @@
-export * from 'expo-status-bar';
+export {};
