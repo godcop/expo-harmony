@@ -1,0 +1,19 @@
+{
+  "apiType": "stageMode",
+  "targets": [
+    {
+      "name": "default",
+      "runtimeOS": "HarmonyOS"
+    }
+  ],
+  "buildOption": {
+    "externalNativeOptions": {
+      "path": "./src/main/cpp/CMakeLists.txt"
+    },
+    "arkOptions": {
+      "types": [
+        "./src/main/ets/Localization"
+      ]
+    }
+  }
+}
