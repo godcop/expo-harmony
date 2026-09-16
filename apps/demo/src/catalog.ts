@@ -55,6 +55,7 @@ export const MODULES = [
   { id: 'linking', title: '链接', packageName: '@expo-harmony/expo-linking', category: '设备与媒体', summary: 'URL 构造、解析、初始状态与前台链接。' },
   { id: 'live-photo', title: '实况照片', packageName: '@expo-harmony/expo-live-photo', category: '设备与媒体', summary: '图片与配对视频加载、播放控制、显示属性、生命周期事件及错误恢复。' },
   { id: 'location', title: '定位', packageName: '@expo-harmony/expo-location', category: '设备与媒体', summary: '定位权限、当前位置、位置与方向订阅、地理编码及参数边界。' },
+  { id: 'media-library', title: '媒体库', packageName: '@expo-harmony/expo-media-library', category: '设备与媒体', summary: '图库权限、图片视频分页、元数据、保存与删除、相册成员和变更事件。' },
   { id: 'navigation-bar', title: '导航栏', packageName: '@expo-harmony/expo-navigation-bar', category: '设备与媒体', summary: '系统导航栏颜色、按键与可见性。' },
   { id: 'network', title: '网络', packageName: '@expo-harmony/expo-network', category: '设备与媒体', summary: '连接类型、可达性、IP 地址与状态事件。' },
   { id: 'print', title: '打印', packageName: '@expo-harmony/expo-print', category: '设备与媒体', summary: 'HTML 转 PDF、分页与 Base64 校验，以及系统文档打印。' },

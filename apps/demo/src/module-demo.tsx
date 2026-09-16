@@ -41,6 +41,7 @@ import { LinkingDemo } from './modules/linking';
 import { LivePhotoDemo } from './modules/live-photo';
 import { LocalizationDemo } from './modules/localization';
 import { LocationDemo } from './modules/location';
+import { MediaLibraryDemo } from './modules/media-library';
 import { MetroConfigDemo } from './modules/metro-config';
 import { NavigationBarDemo } from './modules/navigation-bar';
 import { NetworkDemo } from './modules/network';
@@ -107,6 +108,7 @@ const MODULE_DEMOS = {
   'live-photo': LivePhotoDemo,
   'localization': LocalizationDemo,
   'location': LocationDemo,
+  'media-library': MediaLibraryDemo,
   'metro-config': MetroConfigDemo,
   'navigation-bar': NavigationBarDemo,
   'network': NetworkDemo,
