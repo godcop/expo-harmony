@@ -7,6 +7,37 @@ import * as tar from 'tar';
 
 const localDependency = /^(?:file:|link:|workspace:|\.{1,2}[\\/])|^(?:\/|[A-Za-z]:[\\/])/u;
 const absoluteSourcePath = /(?:\/Users\/[^/]+\/|\/home\/[^/]+\/|[A-Za-z]:\\Users\\)/u;
+const publicationDocuments = ['README.md', 'LICENSE', 'CHANGELOG.md'];
+
+async function includePublicationDocuments(root, packageRoot) {
+  for (const name of publicationDocuments) {
+    // Keep documents already included by Hvigor, especially combined licenses.
+    // A package-specific license takes precedence over harmony/LICENSE, which
+    // may link to the workspace's shared license.
+    const directories = name === 'LICENSE'
+      ? ['harmony/library', '.', 'harmony']
+      : ['harmony/library', 'harmony', '.'];
+    const target = path.join(root, name);
+    const candidates = [target, ...directories.map(directory => path.join(packageRoot, directory, name))];
+
+    for (const file of candidates) {
+      let content;
+      try {
+        content = await fs.promises.readFile(file, 'utf8');
+      } catch (error) {
+        if (error.code === 'ENOENT') continue;
+        throw error;
+      }
+      if (!content.trim()) throw new Error(`HAR publication document is empty: ${file}`);
+
+      // Materialize source symlinks as regular files inside the HAR.
+      await fs.promises.rm(target, { force: true });
+      await fs.promises.writeFile(target, content);
+      break;
+    }
+    // Local modules may omit publication docs; release validation requires them.
+  }
+}
 
 // Hvigor retains a relative OHPM dependency for a native library's type package.
 // It is portable only when both the declaration package and binary are in this HAR.
@@ -36,7 +67,7 @@ function isBundledNativeTypeDependency(packageRoot, manifest, name, specifier) {
   }
 }
 
-export async function sanitizeHarmonyHar(file, { sourceManifest: source, workspaceVersions: versions = {} } = {}) {
+export async function sanitizeHarmonyHar(file, { sourceManifest: source, workspaceVersions: versions = {}, packageRoot } = {}) {
   const temp = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'expo-har-'));
   const output = path.join(temp, 'library.har');
 
@@ -68,6 +99,7 @@ export async function sanitizeHarmonyHar(file, { sourceManifest: source, workspa
 
     await fs.promises.writeFile(target, `${JSON5.stringify(manifest, null, 2)}\n`);
     await fs.promises.rm(path.join(root, 'oh-package-lock.json5'), { force: true });
+    if (packageRoot) await includePublicationDocuments(root, packageRoot);
 
     await tar.c({ cwd: temp, file: output, gzip: true, portable: true }, ['package']);
     await fs.promises.copyFile(output, file);
@@ -82,6 +114,12 @@ export function assertPortableHarmonyHarSync(harPath) {
     tar.x({ cwd: tempRoot, file: harPath, strict: true, sync: true });
 
     const packageRoot = path.join(tempRoot, 'package');
+    for (const name of ['oh-package.json5', ...publicationDocuments]) {
+      const file = path.join(packageRoot, name);
+      if (!fs.existsSync(file) || !fs.lstatSync(file).isFile() || !fs.readFileSync(file, 'utf8').trim()) {
+        throw new Error(`${harPath} must contain a non-empty regular file at package/${name}.`);
+      }
+    }
     for (const name of ['oh-package.json5', 'oh-package-lock.json5']) {
       const file = path.join(packageRoot, name);
       if (!fs.existsSync(file)) continue;

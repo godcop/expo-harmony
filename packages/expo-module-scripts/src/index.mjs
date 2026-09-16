@@ -353,6 +353,7 @@ async function publishBuiltHar(project, dependencies = []) {
   try {
     await fs.promises.copyFile(project.sourceOutput, temp, fs.constants.COPYFILE_EXCL);
     await sanitizeHarmonyHar(temp, {
+      packageRoot: project.packageRoot,
       sourceManifest: project.ohPackage,
       workspaceVersions: versions,
     });
