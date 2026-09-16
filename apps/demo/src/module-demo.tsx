@@ -39,6 +39,7 @@ import { KeepAwakeDemo } from './modules/keep-awake';
 import { LinearGradientDemo } from './modules/linear-gradient';
 import { LinkingDemo } from './modules/linking';
 import { LivePhotoDemo } from './modules/live-photo';
+import { LocalizationDemo } from './modules/localization';
 import { LocationDemo } from './modules/location';
 import { MetroConfigDemo } from './modules/metro-config';
 import { NavigationBarDemo } from './modules/navigation-bar';
@@ -104,6 +105,7 @@ const MODULE_DEMOS = {
   'linear-gradient': LinearGradientDemo,
   'linking': LinkingDemo,
   'live-photo': LivePhotoDemo,
+  'localization': LocalizationDemo,
   'location': LocationDemo,
   'metro-config': MetroConfigDemo,
   'navigation-bar': NavigationBarDemo,
