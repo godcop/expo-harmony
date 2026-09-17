@@ -51,10 +51,6 @@ my-expo-module/
 
 发布产物在写入 `harmony/library.har` 前会重新打包：`oh-package.json5` 的 `dependencies`、`devDependencies` 和 `dynamicDependencies` 不允许使用 `file:`、`link:`、`workspace:` 或本地路径，`oh-package-lock.json5` 会被移除，最终以 portable 格式重新压缩，避免把宿主机路径或本地依赖带进发布产物。
 
-清洗时还会补入 `README.md`、`LICENSE`、`CHANGELOG.md`，放在 HAR 内的 `package/` 目录。优先保留 HAR 已有文档；缺失时，README 和 CHANGELOG 依次从 `harmony/library/`、`harmony/`、npm 包根目录读取。LICENSE 依次从 `harmony/library/`、npm 包根目录、`harmony/` 读取，确保包专用的第三方许可声明优先于仓库共用许可证。源文件中的软链接会被读取为实际内容，HAR 内保存为普通文件。
-
-本地模块可以暂不提供发布文档；存在但内容为空的文档会导致清洗失败。仓库 release 在发布前强制校验 HAR 内的上述三个文档和 `oh-package.json5` 均为非空普通文件，缺失时停止发布。
-
 ## 工具链
 
 `ohpm` 和 `hvigorw` 可分别通过环境变量 `HARMONY_OHPM` 和 `HARMONY_HVIGORW` 指定路径；任一变量指向 JS 脚本（例如 `pm-cli.js` 或 `hvigorw.js`）时，会改用 `HARMONY_NODE`（缺省为当前 Node 可执行文件）来运行。Windows 的 `.bat`、`.cmd` 入口和 PATH 中的命令也受支持。变量中只填写路径，不附加参数或引号。
