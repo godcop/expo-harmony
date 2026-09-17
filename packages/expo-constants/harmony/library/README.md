@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-constants-harmony
+ohpm install @expo-harmony/expo-constants
 ```
 
 ## Author

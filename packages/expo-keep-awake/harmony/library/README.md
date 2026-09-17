@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-keep-awake-harmony
+ohpm install @expo-harmony/expo-keep-awake
 ```
 
 ## Author

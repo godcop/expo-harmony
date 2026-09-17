@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-blur-harmony
+ohpm install @expo-harmony/expo-blur
 ```
 
 ## Author

@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-linear-gradient-harmony
+ohpm install @expo-harmony/expo-linear-gradient
 ```
 
 ## Author

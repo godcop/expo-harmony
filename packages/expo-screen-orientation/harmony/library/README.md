@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-screen-orientation-harmony
+ohpm install @expo-harmony/expo-screen-orientation
 ```
 
 ## Author

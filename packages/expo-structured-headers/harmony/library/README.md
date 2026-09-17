@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-structured-headers-harmony
+ohpm install @expo-harmony/expo-structured-headers
 ```
 
 ## Author

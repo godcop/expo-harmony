@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-calendar-harmony
+ohpm install @expo-harmony/expo-calendar
 ```
 
 ## Author

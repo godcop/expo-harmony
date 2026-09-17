@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-brightness-harmony
+ohpm install @expo-harmony/expo-brightness
 ```
 
 ## Author

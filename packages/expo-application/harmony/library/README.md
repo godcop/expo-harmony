@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-application-harmony
+ohpm install @expo-harmony/expo-application
 ```
 
 ## Author

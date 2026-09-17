@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-live-photo-harmony
+ohpm install @expo-harmony/expo-live-photo
 ```
 
 ## Author

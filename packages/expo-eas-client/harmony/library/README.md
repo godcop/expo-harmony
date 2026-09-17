@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-eas-client-harmony
+ohpm install @expo-harmony/expo-eas-client
 ```
 
 ## Author

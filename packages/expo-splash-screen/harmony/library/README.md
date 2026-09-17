@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-splash-screen-harmony
+ohpm install @expo-harmony/expo-splash-screen
 ```
 
 ## Author

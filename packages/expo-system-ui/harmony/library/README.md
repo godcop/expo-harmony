@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-system-ui-harmony
+ohpm install @expo-harmony/expo-system-ui
 ```
 
 ## Author

@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-haptics-harmony
+ohpm install @expo-harmony/expo-haptics
 ```
 
 ## Author

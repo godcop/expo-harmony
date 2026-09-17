@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-intent-launcher-harmony
+ohpm install @expo-harmony/expo-intent-launcher
 ```
 
 ## Author

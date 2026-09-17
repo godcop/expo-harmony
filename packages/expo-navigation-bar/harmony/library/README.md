@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-navigation-bar-harmony
+ohpm install @expo-harmony/expo-navigation-bar
 ```
 
 ## Author

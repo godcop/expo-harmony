@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-font-harmony
+ohpm install @expo-harmony/expo-font
 ```
 
 ## Author

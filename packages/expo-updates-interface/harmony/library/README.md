@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-updates-interface-harmony
+ohpm install @expo-harmony/expo-updates-interface
 ```
 
 ## Author

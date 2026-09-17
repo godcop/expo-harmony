@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-network-harmony
+ohpm install @expo-harmony/expo-network
 ```
 
 ## Author

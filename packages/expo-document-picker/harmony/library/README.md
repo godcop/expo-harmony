@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-document-picker-harmony
+ohpm install @expo-harmony/expo-document-picker
 ```
 
 ## Author

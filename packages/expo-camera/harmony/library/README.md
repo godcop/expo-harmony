@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-camera-harmony
+ohpm install @expo-harmony/expo-camera
 ```
 
 ## Author

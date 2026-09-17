@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-linking-harmony
+ohpm install @expo-harmony/expo-linking
 ```
 
 ## Author

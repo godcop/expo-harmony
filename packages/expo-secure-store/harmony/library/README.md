@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-secure-store-harmony
+ohpm install @expo-harmony/expo-secure-store
 ```
 
 ## Author

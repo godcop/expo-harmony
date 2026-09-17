@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-blob-harmony
+ohpm install @expo-harmony/expo-blob
 ```
 
 ## Author

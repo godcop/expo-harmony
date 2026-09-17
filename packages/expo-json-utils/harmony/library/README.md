@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-json-utils-harmony
+ohpm install @expo-harmony/expo-json-utils
 ```
 
 ## Author

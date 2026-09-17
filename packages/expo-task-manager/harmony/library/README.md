@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-task-manager-harmony
+ohpm install @expo-harmony/expo-task-manager
 ```
 
 ## Author

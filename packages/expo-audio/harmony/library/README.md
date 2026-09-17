@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-audio-harmony
+ohpm install @expo-harmony/expo-audio
 ```
 
 ## Author

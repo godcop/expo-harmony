@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-app-metrics-harmony
+ohpm install @expo-harmony/expo-app-metrics
 ```
 
 ## Author

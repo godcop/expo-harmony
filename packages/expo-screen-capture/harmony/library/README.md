@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-screen-capture-harmony
+ohpm install @expo-harmony/expo-screen-capture
 ```
 
 ## Author

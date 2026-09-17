@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-sensors-harmony
+ohpm install @expo-harmony/expo-sensors
 ```
 
 ## Author

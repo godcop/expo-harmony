@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-clipboard-harmony
+ohpm install @expo-harmony/expo-clipboard
 ```
 
 ## Author

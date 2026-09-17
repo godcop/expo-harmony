@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-media-library-harmony
+ohpm install @expo-harmony/expo-media-library
 ```
 
 ## Author

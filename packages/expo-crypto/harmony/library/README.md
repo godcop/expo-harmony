@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-crypto-harmony
+ohpm install @expo-harmony/expo-crypto
 ```
 
 ## Author

@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-print-harmony
+ohpm install @expo-harmony/expo-print
 ```
 
 ## Author

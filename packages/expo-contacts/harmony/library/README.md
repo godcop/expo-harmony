@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-contacts-harmony
+ohpm install @expo-harmony/expo-contacts
 ```
 
 ## Author

@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-background-task-harmony
+ohpm install @expo-harmony/expo-background-task
 ```
 
 ## Author

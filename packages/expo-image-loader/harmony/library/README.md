@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-ohpm install expo-image-loader-harmony
+ohpm install @expo-harmony/expo-image-loader
 ```
 
 ## Author
