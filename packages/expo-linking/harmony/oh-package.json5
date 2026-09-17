@@ -1,6 +1,6 @@
 {
   "modelVersion": "5.0.0",
-  "name": "expo-linking-harmony",
+  "name": "@expo-harmony-internal/expo-linking",
   "version": "55.0.16-harmony.4",
   "description": "HarmonyOS port of expo-linking",
   "keywords": [

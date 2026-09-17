@@ -1,6 +1,6 @@
 {
   "modelVersion": "5.0.0",
-  "name": "expo-haptics-harmony",
+  "name": "@expo-harmony-internal/expo-haptics",
   "version": "55.0.14-harmony.3",
   "description": "HarmonyOS port of expo-haptics",
   "keywords": [

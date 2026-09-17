@@ -1,6 +1,6 @@
 {
   "modelVersion": "5.0.0",
-  "name": "expo-live-photo-harmony",
+  "name": "@expo-harmony-internal/expo-live-photo",
   "version": "55.0.15-harmony.1",
   "description": "HarmonyOS port of expo-live-photo",
   "keywords": [

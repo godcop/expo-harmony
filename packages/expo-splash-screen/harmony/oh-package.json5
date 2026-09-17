@@ -1,6 +1,6 @@
 {
   "modelVersion": "5.0.0",
-  "name": "expo-splash-screen-harmony",
+  "name": "@expo-harmony-internal/expo-splash-screen",
   "version": "55.0.21-harmony.5",
   "description": "HarmonyOS port of expo-splash-screen",
   "keywords": [

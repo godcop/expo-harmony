@@ -1,6 +1,6 @@
 {
   "modelVersion": "5.0.0",
-  "name": "expo-calendar-harmony",
+  "name": "@expo-harmony-internal/expo-calendar",
   "version": "55.0.15-harmony.2",
   "description": "HarmonyOS port of expo-calendar",
   "keywords": [

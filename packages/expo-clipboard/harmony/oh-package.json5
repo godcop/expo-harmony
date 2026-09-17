@@ -1,6 +1,6 @@
 {
   "modelVersion": "5.0.0",
-  "name": "expo-clipboard-harmony",
+  "name": "@expo-harmony-internal/expo-clipboard",
   "version": "55.0.13-harmony.2",
   "description": "HarmonyOS port of expo-clipboard",
   "keywords": [

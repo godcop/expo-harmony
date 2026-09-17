@@ -1,6 +1,6 @@
 {
   "modelVersion": "5.0.0",
-  "name": "expo-task-manager-harmony",
+  "name": "@expo-harmony-internal/expo-task-manager",
   "version": "55.0.16-harmony.3",
   "description": "HarmonyOS port of expo-task-manager",
   "keywords": [

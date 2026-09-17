@@ -1,6 +1,6 @@
 {
   "modelVersion": "5.0.0",
-  "name": "expo-application-harmony",
+  "name": "@expo-harmony-internal/expo-application",
   "version": "55.0.15-harmony.3",
   "description": "HarmonyOS port of expo-application",
   "keywords": [

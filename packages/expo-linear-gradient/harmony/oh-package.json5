@@ -1,6 +1,6 @@
 {
   "modelVersion": "5.0.0",
-  "name": "expo-linear-gradient-harmony",
+  "name": "@expo-harmony-internal/expo-linear-gradient",
   "version": "55.0.14-harmony.3",
   "description": "HarmonyOS port of expo-linear-gradient",
   "keywords": [

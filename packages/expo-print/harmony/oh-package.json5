@@ -1,6 +1,6 @@
 {
   "modelVersion": "5.0.0",
-  "name": "expo-print-harmony",
+  "name": "@expo-harmony-internal/expo-print",
   "version": "55.0.15-harmony.1",
   "description": "HarmonyOS port of expo-print",
   "keywords": [

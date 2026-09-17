@@ -1,6 +1,6 @@
 {
   "modelVersion": "5.0.0",
-  "name": "expo-location-harmony",
+  "name": "@expo-harmony-internal/expo-location",
   "version": "55.1.10-harmony.2",
   "description": "HarmonyOS port of expo-location",
   "keywords": [

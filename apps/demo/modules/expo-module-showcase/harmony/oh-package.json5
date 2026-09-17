@@ -1,6 +1,6 @@
 {
   "modelVersion": "5.0.0",
-  "name": "expo_module_showcase-harmony",
+  "name": "@expo-harmony-internal/expo-module-showcase",
   "version": "1.0.0",
   "license": "MIT",
   "dependencies": {

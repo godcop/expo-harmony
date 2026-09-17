@@ -1,6 +1,6 @@
 {
   "modelVersion": "5.0.0",
-  "name": "expo-system-ui-harmony",
+  "name": "@expo-harmony-internal/expo-system-ui",
   "version": "55.0.18-harmony.5",
   "description": "HarmonyOS port of expo-system-ui",
   "keywords": [

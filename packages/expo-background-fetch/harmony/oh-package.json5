@@ -1,6 +1,6 @@
 {
   "modelVersion": "5.0.0",
-  "name": "expo-background-fetch-harmony",
+  "name": "@expo-harmony-internal/expo-background-fetch",
   "version": "55.0.16-harmony.5",
   "description": "HarmonyOS port of expo-background-fetch",
   "keywords": [

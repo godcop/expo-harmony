@@ -1,6 +1,6 @@
 {
   "modelVersion": "5.0.0",
-  "name": "expo-app-metrics-harmony",
+  "name": "@expo-harmony-internal/expo-app-metrics",
   "version": "0.2.2-harmony.3",
   "description": "HarmonyOS port of expo-app-metrics",
   "keywords": [

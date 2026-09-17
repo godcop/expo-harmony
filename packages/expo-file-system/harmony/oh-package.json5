@@ -1,6 +1,6 @@
 {
   "modelVersion": "5.0.0",
-  "name": "expo-file-system-harmony",
+  "name": "@expo-harmony-internal/expo-file-system",
   "version": "55.0.24-harmony.3",
   "description": "HarmonyOS port of expo-file-system",
   "keywords": [

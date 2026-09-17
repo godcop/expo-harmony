@@ -1,6 +1,6 @@
 {
   "modelVersion": "5.0.0",
-  "name": "expo-battery-harmony",
+  "name": "@expo-harmony-internal/expo-battery",
   "version": "55.0.13-harmony.3",
   "description": "HarmonyOS port of expo-battery",
   "keywords": [
