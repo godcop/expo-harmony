@@ -1,0 +1,32 @@
+{
+  "name": "@expo-harmony/expo__local-build-cache-provider",
+  "version": "55.0.13-harmony.0",
+  "description": "HarmonyOS port of @expo/local-build-cache-provider",
+  "keywords": [
+    "react-native",
+    "expo",
+    "expo-harmony",
+    "harmonyos"
+  ],
+  "license": "MIT",
+  "author": "Baoshuo <i@baoshuo.ren>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/renbaoshuo/expo-harmony.git",
+    "directory": "packages/expo__local-build-cache-provider"
+  },
+  "homepage": "https://github.com/renbaoshuo/expo-harmony/tree/master/packages/expo__local-build-cache-provider#readme",
+  "bugs": "https://github.com/renbaoshuo/expo-harmony/issues",
+  "main": "index.js",
+  "react-native": "src/index.ts",
+  "types": "index.d.ts",
+  "peerDependencies": {
+    "@expo/local-build-cache-provider": "55.0.13"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
