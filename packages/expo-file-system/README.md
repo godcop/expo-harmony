@@ -10,7 +10,19 @@
 npm install @expo-harmony/expo-file-system expo-file-system@55.0.24
 ```
 
-HAR 已声明 `ohos.permission.INTERNET` 和 `ohos.permission.FILE_ACCESS_PERSIST`，应用不需要在 `app.json` 中额外配置。
+本包已声明 `ohos.permission.INTERNET`。读写应用沙箱内的文件，以及通过系统选择器临时访问文件或目录，无需额外配置权限。
+
+如果需要在应用重启后继续访问所选文件或目录，需配置 `ohos.permission.FILE_ACCESS_PERSIST`。本包默认不声明该权限，可在 `app.json` 的 `expo.harmony.permissions` 数组中添加以下声明：
+
+```json
+{ "name": "ohos.permission.FILE_ACCESS_PERSIST" }
+```
+
+修改 `app.json` 后，需要重新 prebuild 并构建应用。bare 工程可将上述声明加入入口模块 `module.json5` 的 `requestPermissions` 数组。
+
+该权限从 API 12 起为 `normal` 级别，上架应用市场仍需按华为的 [受限权限说明](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/restricted-permissions#ohospermissionfile_access_persist) 申请。
+
+持久授权成功后，应用会在下次启动时恢复访问。未配置该权限或未能取得持久授权时，本次选择仍可使用，应用重启后可能需要重新选择。
 
 文件操作限定在应用沙箱内：文档目录、缓存目录，以及通过系统选择器授权的路径。路径中出现符号链接时拒绝。
 
@@ -98,7 +110,7 @@ HAR 已声明 `ohos.permission.INTERNET` 和 `ohos.permission.FILE_ACCESS_PERSIS
 
 #### `Directory.pickDirectoryAsync(initialUri?)`
 
-静态方法。打开系统目录选择器，返回 `Promise<Directory>`。`initialUri` 指定选择器的起始位置。用户取消时拒绝。选择后模块会尽量持久化授权，应用下次启动时自动恢复。
+静态方法。打开系统目录选择器，返回 `Promise<Directory>`。`initialUri` 指定选择器的起始位置。用户取消时拒绝。默认使用临时访问授权，应用重启后可能需要重新选择。若需保留授权，请按[安装](#安装)中的说明配置 `ohos.permission.FILE_ACCESS_PERSIST`。
 
 #### `File`
 
@@ -446,7 +458,7 @@ HarmonyOS 上直接返回传入的地址。
 
 #### `StorageAccessFramework.requestDirectoryPermissionsAsync(initialUri?)`
 
-打开系统目录选择器，返回 `Promise<FileSystemRequestDirectoryPermissionsResult>`。授权后返回目录地址并尽量持久化。
+打开系统目录选择器，返回 `Promise<FileSystemRequestDirectoryPermissionsResult>`。授权后返回目录地址。默认使用临时访问授权，应用重启后可能需要重新选择。若需保留授权，请按[安装](#安装)中的说明配置 `ohos.permission.FILE_ACCESS_PERSIST`。
 
 #### `StorageAccessFramework.readDirectoryAsync(dirUri)`
 

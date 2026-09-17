@@ -4,8 +4,7 @@
     "type": "har",
     "deviceTypes": ["default", "tablet", "2in1"],
     "requestPermissions": [
-      { "name": "ohos.permission.INTERNET" },
-      { "name": "ohos.permission.FILE_ACCESS_PERSIST" }
+      { "name": "ohos.permission.INTERNET" }
     ]
   }
 }
