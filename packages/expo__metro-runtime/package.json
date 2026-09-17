@@ -1,0 +1,32 @@
+{
+  "name": "@expo-harmony/expo__metro-runtime",
+  "version": "55.0.11-harmony.0",
+  "description": "HarmonyOS port of @expo/metro-runtime",
+  "keywords": [
+    "react-native",
+    "expo",
+    "expo-harmony",
+    "harmonyos"
+  ],
+  "license": "MIT",
+  "author": "Baoshuo <i@baoshuo.ren>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/renbaoshuo/expo-harmony.git",
+    "directory": "packages/expo__metro-runtime"
+  },
+  "homepage": "https://github.com/renbaoshuo/expo-harmony/tree/master/packages/expo__metro-runtime#readme",
+  "bugs": "https://github.com/renbaoshuo/expo-harmony/issues",
+  "main": "index.js",
+  "react-native": "src/index.ts",
+  "types": "index.d.ts",
+  "peerDependencies": {
+    "@expo/metro-runtime": "55.0.11"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
