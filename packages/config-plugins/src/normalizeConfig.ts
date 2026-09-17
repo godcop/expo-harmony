@@ -7,6 +7,7 @@ import type {
 } from './config';
 import { HarmonyConfigPluginError } from './errors';
 import { toArgb } from './resources';
+import { compareHarmonyApiVersions, parseHarmonySdkVersion } from './sdkVersion';
 
 type HarmonyExpoConfig = ExpoConfigWithHarmony;
 
@@ -26,7 +27,7 @@ interface NormalizedHarmonyConfig {
   querySchemes: string[];
   signingConfigFile?: string;
   skills: NonNullable<HarmonyConfig['skills']>;
-  targetApiVersion: number;
+  targetApiVersion: number | string;
   targetSdkVersionString: string;
   vendor: string;
   versionCode: number;
@@ -47,14 +48,6 @@ const Orientations = new Set([
 const DeviceTypes = new Set<HarmonyDeviceType>(['phone', 'tablet', '2in1']);
 const MinimumApi = 20;
 const TargetApi = 24;
-const SdkVersions = new Map([
-  [13, '5.0.1(13)'],
-  [14, '5.0.2(14)'],
-  [20, '6.0.0(20)'],
-  [21, '6.0.1(21)'],
-  [23, '6.1.0(23)'],
-  [24, '6.1.1(24)'],
-]);
 
 class HarmonyConfigError extends HarmonyConfigPluginError {
   constructor(message: string) {
@@ -94,58 +87,6 @@ function normalizeColor(value: unknown, field: string, fallback: string): string
   }
 
   return toArgb(color);
-}
-
-function parseSdkApi(value: unknown, field: string): number | null {
-  if (value === undefined) return null;
-  if (typeof value === 'number' && Number.isSafeInteger(value) && value > 0) return value;
-  if (typeof value !== 'string') {
-    throw new HarmonyConfigError(`harmony.${field} must be a positive API number or an SDK label.`);
-  }
-
-  const match = /\((\d+)\)$/u.exec(value.trim());
-  const api = Number(match?.[1]);
-
-  if (!match || !Number.isSafeInteger(api) || api <= 0) {
-    throw new HarmonyConfigError(
-      `harmony.${field} must end with its API level in parentheses, for example "6.0.0(20)".`
-    );
-  }
-
-  return api;
-}
-
-function resolveSdkVersion(api: number, field: string, value?: unknown): string {
-  if (value !== undefined) {
-    if (typeof value === 'number' && Number.isSafeInteger(value) && value > 0) {
-      if (value !== api) {
-        throw new HarmonyConfigError(
-          `harmony.${field} is API ${value}, but the configured API level is ${api}.`
-        );
-      }
-    } else {
-      const version = readString(value, `harmony.${field}`);
-      const parsed = parseSdkApi(version, field);
-
-      if (parsed !== api) {
-        throw new HarmonyConfigError(
-          `harmony.${field} describes API ${parsed}, but the configured API level is ${api}.`
-        );
-      }
-
-      return version;
-    }
-  }
-
-  const version = SdkVersions.get(api);
-
-  if (!version) {
-    throw new HarmonyConfigError(
-      `Harmony API ${api} has no built-in SDK label. Set harmony.${field} explicitly so new SDK releases do not require a package update.`
-    );
-  }
-
-  return version;
 }
 
 function normalizeStringArray<T extends string = string>(
@@ -286,24 +227,25 @@ function normalizeHarmonyConfig(config: HarmonyExpoConfig): NormalizedHarmonyCon
   const version = readString(harmony.versionName, 'harmony.versionName', config.version || '1.0.0');
   const code = readPositiveInteger(harmony.versionCode, 'versionCode', 1);
 
-  const target = readPositiveInteger(
-    harmony.targetApiVersion,
-    'targetApiVersion',
-    parseSdkApi(harmony.targetSdkVersion, 'targetSdkVersion') ?? TargetApi
-  );
-  const compatible = readPositiveInteger(
-    parseSdkApi(harmony.compatibleSdkVersion, 'compatibleSdkVersion') ?? undefined,
-    'compatibleSdkVersion',
-    MinimumApi
+  const target = parseHarmonySdkVersion(
+    harmony.targetSdkVersion ?? harmony.targetApiVersion ?? TargetApi, 'harmony.targetSdkVersion'
   );
 
-  if (compatible < MinimumApi) {
-    throw new HarmonyConfigError(
-      `Harmony compatible API must be ${MinimumApi} or newer.`
-    );
+  if (harmony.targetApiVersion !== undefined) {
+    const alias = parseHarmonySdkVersion(harmony.targetApiVersion, 'harmony.targetApiVersion');
+
+    if (compareHarmonyApiVersions(alias.api, target.api) !== 0) {
+      throw new HarmonyConfigError('harmony.targetApiVersion conflicts with harmony.targetSdkVersion.');
+    }
   }
-  if (compatible > target) {
-    throw new HarmonyConfigError('Harmony compatibleSdkVersion cannot exceed targetApiVersion.');
+
+  const compatible = parseHarmonySdkVersion(harmony.compatibleSdkVersion ?? MinimumApi, 'harmony.compatibleSdkVersion');
+
+  if (compareHarmonyApiVersions(compatible.api, MinimumApi) < 0) {
+    throw new HarmonyConfigError(`Harmony compatible API must be ${MinimumApi} or newer.`);
+  }
+  if (compareHarmonyApiVersions(compatible.api, target.api) > 0) {
+    throw new HarmonyConfigError('Harmony compatibleSdkVersion cannot exceed targetSdkVersion.');
   }
 
   const orientation = harmony.orientation || config.orientation || 'default';
@@ -327,7 +269,7 @@ function normalizeHarmonyConfig(config: HarmonyExpoConfig): NormalizedHarmonyCon
     : normalizeStringArray(harmony.abiFilters, 'harmony.abiFilters');
 
   for (const abi of abis) {
-    if (!/^[A-Za-z0-9_-]+$/.test(abi)) {
+    if (!['arm64-v8a', 'x86_64'].includes(abi)) {
       throw new HarmonyConfigError(`Invalid Harmony ABI filter: ${abi}`);
     }
   }
@@ -383,11 +325,7 @@ function normalizeHarmonyConfig(config: HarmonyExpoConfig): NormalizedHarmonyCon
     abilityName: ability,
     backgroundColor: background,
     bundleName: bundle,
-    compatibleSdkVersionString: resolveSdkVersion(
-      compatible,
-      'compatibleSdkVersion',
-      harmony.compatibleSdkVersion
-    ),
+    compatibleSdkVersionString: compatible.native,
     deviceTypes: devices,
     icon: harmony.icon || config.icon,
     label: readString(harmony.label, 'harmony.label', config.name),
@@ -398,12 +336,8 @@ function normalizeHarmonyConfig(config: HarmonyExpoConfig): NormalizedHarmonyCon
     querySchemes: queries,
     signingConfigFile: signing,
     skills,
-    targetApiVersion: target,
-    targetSdkVersionString: resolveSdkVersion(
-      target,
-      'targetSdkVersion',
-      harmony.targetSdkVersion
-    ),
+    targetApiVersion: target.api,
+    targetSdkVersionString: target.native,
     vendor: readString(harmony.vendor, 'harmony.vendor', 'expo-harmony'),
     versionCode: code,
     versionName: version,

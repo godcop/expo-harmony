@@ -8,7 +8,7 @@ export interface HarmonyNativeModule {
 }
 
 export interface HarmonyRuntimeContract {
-  schemaVersion: 1;
+  schemaVersion: 1 | 2;
   platform: 'harmony';
   runtimeVersion: string;
   development: boolean;
@@ -23,8 +23,9 @@ export interface HarmonyRuntimeContract {
   modules: HarmonyNativeModule[];
   config: {
     nativeCompiler: string;
-    targetApiVersion: number;
-    compatibleApiVersion: number;
+    targetApiVersion: number | string;
+    compatibleApiVersion: number | string;
+    nativeLibFilterHash?: string;
     permissions: string[];
     querySchemes: string[];
     backgroundModes: string[];
@@ -64,11 +65,40 @@ function strings(value: unknown): value is string[] {
 const Versions = ['runtimeVersion', 'expo', 'expoModulesCore', 'rnoh', 'react', 'hermes'] as const;
 const Settings = ['permissions', 'querySchemes', 'backgroundModes', 'abiFilters'] as const;
 
+function apiVersion(value: unknown, schema: unknown): number[] | undefined {
+  if (typeof value === 'number' && Number.isSafeInteger(value) && value >= 13 && value < 26) return [value, 0, 0];
+  if (schema === 2 && typeof value === 'string' && /^(?:[1-9]\d{1,2})\.(?:0|[1-9]\d{0,2})\.(?:0|[1-9]\d{0,2})$/.test(value)) {
+    const parts = value.split('.').map(Number);
+    if (parts[0] >= 26) return parts;
+  }
+
+  return undefined;
+}
+
+function compareApiVersions(left: number[], right: number[]): number {
+  for (let index = 0; index < 3; index++) {
+    if (left[index] !== right[index]) return left[index] - right[index];
+  }
+
+  return 0;
+}
+
+export function harmonyRuntimeSchemaVersion(config: HarmonyRuntimeContract['config']): 1 | 2 {
+  return typeof config.targetApiVersion === 'string' || typeof config.compatibleApiVersion === 'string'
+    || config.nativeLibFilterHash !== undefined
+    ? 2
+    : 1;
+}
+
 export function validateHarmonyRuntime(value: unknown): HarmonyCompatibilityIssue[] {
   if (!record(value)) return [{ code: 'INVALID_CONTRACT', field: '', message: 'Runtime contract must be an object.' }];
 
   const issues: HarmonyCompatibilityIssue[] = [];
-  for (const [field, expected] of Object.entries({ schemaVersion: 1, platform: 'harmony', engine: 'hermes-v1', bundleFormat: 'js-source', renderer: 'rnoh' })) {
+  if (value.schemaVersion !== 1 && value.schemaVersion !== 2) {
+    issues.push({ code: 'INVALID_CONTRACT', field: 'schemaVersion', message: 'schemaVersion must be 1 or 2.' });
+  }
+
+  for (const [field, expected] of Object.entries({ platform: 'harmony', engine: 'hermes-v1', bundleFormat: 'js-source', renderer: 'rnoh' })) {
     if (value[field] !== expected) {
       issues.push({ code: field === 'platform' ? 'PLATFORM_MISMATCH' : 'INVALID_CONTRACT', field, message: `${field} must be ${expected}.` });
     }
@@ -101,10 +131,13 @@ export function validateHarmonyRuntime(value: unknown): HarmonyCompatibilityIssu
   }
 
   const config = value.config;
+  const target = record(config) ? apiVersion(config.targetApiVersion, value.schemaVersion) : undefined;
+  const compatible = record(config) ? apiVersion(config.compatibleApiVersion, value.schemaVersion) : undefined;
+
   if (!record(config) || !token(config.nativeCompiler) || !Settings.every(field => strings(config[field]))
-    || !Number.isInteger(config.targetApiVersion) || Number(config.targetApiVersion) < 13
-    || !Number.isInteger(config.compatibleApiVersion) || Number(config.compatibleApiVersion) < 13
-    || Number(config.compatibleApiVersion) > Number(config.targetApiVersion)
+    || !target || !compatible || compareApiVersions(compatible, target) > 0
+    || (config.nativeLibFilterHash !== undefined && (value.schemaVersion !== 2
+      || typeof config.nativeLibFilterHash !== 'string' || !/^[a-f0-9]{64}$/.test(config.nativeLibFilterHash)))
     || (Array.isArray(config.abiFilters) && config.abiFilters.length === 0)) {
     issues.push({ code: 'INVALID_CONTRACT', field: 'config', message: 'Invalid native build configuration.' });
   }
@@ -150,7 +183,7 @@ export function checkHarmonyCompatibility(client: unknown, requirements: unknown
     }
   }
 
-  for (const field of ['nativeCompiler', 'targetApiVersion', 'compatibleApiVersion'] as const) {
+  for (const field of ['nativeCompiler', 'targetApiVersion', 'compatibleApiVersion', 'nativeLibFilterHash'] as const) {
     if (available.config[field] !== required.config[field]) {
       issues.push({ code: 'CONFIG_MISMATCH', field, message: `${field}: project requires ${required.config[field]}, client provides ${available.config[field]}.` });
     }

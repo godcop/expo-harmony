@@ -103,7 +103,6 @@ function resolveInputFile(root, value) {
 
 function withEntryMods(config) {
   config = withEntryBuildProfile(config, (mod) => {
-    const harmony = normalizeHarmonyConfig(mod.modRawConfig);
     const build = readRecord(mod.modResults.buildOption);
     const native = readRecord(build.externalNativeOptions);
 
@@ -115,7 +114,6 @@ function withEntryMods(config) {
         externalNativeOptions: {
           ...native,
           path: './src/main/cpp/CMakeLists.txt',
-          abiFilters: harmony.abiFilters,
         },
       },
       targets: upsertNamed(

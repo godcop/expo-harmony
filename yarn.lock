@@ -1461,6 +1461,7 @@ __metadata:
     "@expo-harmony/expo-blob": "workspace:*"
     "@expo-harmony/expo-blur": "workspace:*"
     "@expo-harmony/expo-brightness": "workspace:*"
+    "@expo-harmony/expo-build-properties": "workspace:*"
     "@expo-harmony/expo-calendar": "workspace:*"
     "@expo-harmony/expo-camera": "workspace:*"
     "@expo-harmony/expo-cellular": "workspace:*"
@@ -1773,6 +1774,19 @@ __metadata:
   peerDependencies:
     "@expo-harmony/expo-modules-core": "workspace:*"
     expo-brightness: 55.0.13
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo-build-properties@workspace:*, @expo-harmony/expo-build-properties@workspace:packages/expo-build-properties":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-build-properties@workspace:packages/expo-build-properties"
+  dependencies:
+    "@expo-harmony/config-plugins": "workspace:*"
+    "@expo/config": "npm:55.0.17"
+    "@types/node": "npm:18.19.0"
+    typescript: "npm:^6.0.3"
+  peerDependencies:
+    expo: 55.0.26
   languageName: unknown
   linkType: soft
 
@@ -2657,6 +2671,7 @@ __metadata:
   resolution: "@expo-harmony/prebuild-config@workspace:packages/prebuild-config"
   dependencies:
     "@expo-harmony/config-plugins": "workspace:*"
+    "@expo-harmony/expo-build-properties": "workspace:*"
     "@expo-harmony/expo-modules-autolinking": "workspace:*"
     "@expo-harmony/template": "workspace:*"
     "@expo/config": "npm:55.0.17"

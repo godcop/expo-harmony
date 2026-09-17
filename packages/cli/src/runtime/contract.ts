@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 
 import { createNativeModuleContracts, ohpmDependenciesFromManifest, verifyModulesAsync, type Manifest, type ModuleDescriptor } from '@expo-harmony/expo-modules-autolinking';
-import { assertHarmonyCompatibility, validateHarmonyRuntime, type HarmonyRuntimeContract } from '@expo-harmony/expo-modules-autolinking/runtime';
+import { assertHarmonyCompatibility, harmonyRuntimeSchemaVersion, validateHarmonyRuntime, type HarmonyRuntimeContract } from '@expo-harmony/expo-modules-autolinking/runtime';
 import JSON5 from 'json5';
 
 import { publishUpdatesConfigurationAsync } from '../updates/export';
@@ -33,7 +33,7 @@ async function createRuntimeContractAsync(
   const native = createRequire(require.resolve(resolution.harmonyPackage + '/package.json'));
 
   const contract: HarmonyRuntimeContract = {
-    schemaVersion: 1,
+    schemaVersion: harmonyRuntimeSchemaVersion(project.native),
     platform: 'harmony',
     runtimeVersion: project.runtimeVersion,
     development: true,
@@ -143,8 +143,10 @@ export async function publishRuntimeContractAsync(
 
   const native = readNativeRuntime(plan);
   requirements.development = plan.buildMode === 'debug';
+
   const contract: HarmonyRuntimeContract = {
     ...requirements,
+    schemaVersion: harmonyRuntimeSchemaVersion(native.config),
     runtimeVersion: await resolveRuntimeVersionAsync(root, project.config, native.app),
     config: native.config,
   };

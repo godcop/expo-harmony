@@ -1,0 +1,53 @@
+{
+  "name": "@expo-harmony/expo-build-properties",
+  "version": "55.0.14-harmony.0",
+  "keywords": [
+    "react-native",
+    "expo",
+    "expo-harmony",
+    "harmonyos"
+  ],
+  "homepage": "https://github.com/renbaoshuo/expo-harmony/tree/master/packages/expo-build-properties#readme",
+  "bugs": "https://github.com/renbaoshuo/expo-harmony/issues",
+  "license": "MIT",
+  "author": "Baoshuo <i@baoshuo.ren>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/renbaoshuo/expo-harmony.git",
+    "directory": "packages/expo-build-properties"
+  },
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepare": "yarn build",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "exports": {
+    ".": {
+      "types": "./build/index.d.ts",
+      "require": "./build/index.js",
+      "default": "./build/index.js"
+    },
+    "./app.plugin.js": "./app.plugin.js",
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@expo-harmony/config-plugins": "workspace:*",
+    "@expo/config": "55.0.17"
+  },
+  "peerDependencies": {
+    "expo": "55.0.26"
+  },
+  "devDependencies": {
+    "@types/node": "18.19.0",
+    "typescript": "^6.0.3"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "description": "HarmonyOS config plugin for native build properties"
+}

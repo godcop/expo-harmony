@@ -48,7 +48,7 @@ npx expo-harmony prebuild
 | 文件                                   | 内容                                                |
 | -------------------------------------- | --------------------------------------------------- |
 | `AppScope/app.json5`                   | 包名、版本号、vendor、应用名和图标引用              |
-| `build-profile.json5`                  | product、module、SDK 版本、ABI 和签名配置           |
+| `build-profile.json5`                  | product、module、SDK 版本、原生编译器和签名配置     |
 | `entry/build-profile.json5`            | Entry 模块的 CMake 路径和 ABI                       |
 | `entry/src/main/module.json5`          | module、Ability、设备类型、权限和 querySchemes      |
 | `entry/src/main/resources/`            | 字符串、颜色和 media 资源                           |

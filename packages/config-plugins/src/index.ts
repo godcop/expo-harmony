@@ -78,3 +78,6 @@ export type { HarmonyResourceFile, HarmonyResourceItem } from './resources';
 export { withHarmonyGeneratedFiles, withRawfile } from './generatedFiles';
 export type { HarmonyFileDescriptor, HarmonyFileMap, HarmonyGeneratedFilesOptions } from './generatedFiles';
 export { HarmonyPermissions, withHarmonyPermissions } from './permissions';
+
+export { parseHarmonySdkVersion, compareHarmonyApiVersions } from './sdkVersion';
+export type { HarmonySdkVersion } from './sdkVersion';

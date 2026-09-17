@@ -34,6 +34,7 @@ export interface HarmonyConfig {
   vendor?: string;
   versionCode?: number;
   versionName?: string;
+  /** @deprecated Configure targetSdkVersion in @expo-harmony/expo-build-properties. */
   targetApiVersion?: number;
   targetSdkVersion?: number | string;
   compatibleSdkVersion?: number | string;

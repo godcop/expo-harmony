@@ -19,7 +19,7 @@
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "scripts": {
-    "prebuild": "yarn workspace @expo-harmony/config-plugins build && yarn workspace @expo-harmony/expo-modules-autolinking build",
+    "prebuild": "yarn workspace @expo-harmony/config-plugins build && yarn workspace @expo-harmony/expo-build-properties build && yarn workspace @expo-harmony/expo-modules-autolinking build",
     "build": "tsc -p tsconfig.json",
     "prepare": "yarn build",
     "typecheck": "tsc --noEmit -p tsconfig.json"
@@ -44,6 +44,7 @@
   },
   "dependencies": {
     "@expo-harmony/config-plugins": "workspace:*",
+    "@expo-harmony/expo-build-properties": "workspace:*",
     "@expo-harmony/expo-modules-autolinking": "workspace:*",
     "@expo-harmony/template": "workspace:*",
     "@expo/config": "55.0.17",

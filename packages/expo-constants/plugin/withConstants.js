@@ -60,7 +60,7 @@ async function writeResourceAsync(root, harmony, config) {
 async function refreshExpoConstantsResourceAsync(root, directory) {
   const config = getConfig(root, {
     isPublicConfig: true,
-    skipPlugins: true,
+    skipPlugins: false,
   }).exp;
 
   const harmony = normalizeHarmonyConfig(config);

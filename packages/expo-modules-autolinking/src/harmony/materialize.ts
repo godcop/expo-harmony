@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import spawn from 'cross-spawn';
 import JSON5 from 'json5';
 import { collectOhpmDeps, resolveOhpmSpecifier } from './ohpm/dependencies';
+import { mirrorPackageLinkAsync } from './ohpm/mirror';
 import { resolveHarmonyCommand } from '../utilities/toolCommand';
 import { terminateProcess } from '../utilities/terminateProcess';
 
@@ -314,6 +315,7 @@ async function materializeLocalSourceAsync(
   options: MaterializeLocalSourceOptions
 ): Promise<MaterializedLocalSource> {
   const module = options.module;
+
   if (module.source !== 'nativeModulesDir' || module.artifact.kind !== 'local-source') {
     throw new HarmonyAutolinkingError(
       'INVALID_OPTIONS',
@@ -323,9 +325,10 @@ async function materializeLocalSourceAsync(
   }
 
   const artifact = module.artifact;
-  const projectRoot = await fs.promises.realpath(options.projectRoot);
-  const packageRoot = await fs.promises.realpath(module.packageRoot);
-  if (!isPathInside(projectRoot, packageRoot)) {
+  const project = await fs.promises.realpath(options.projectRoot);
+  const root = await fs.promises.realpath(module.packageRoot);
+
+  if (!isPathInside(project, root)) {
     throw new HarmonyAutolinkingError(
       'UNSAFE_SOURCE_ARTIFACT',
       'Harmony local modules must live inside the application project root.',
@@ -340,8 +343,8 @@ async function materializeLocalSourceAsync(
     );
   }
 
-  const harPath = await resolveInsideAsync(
-    packageRoot,
+  const har = await resolveInsideAsync(
+    root,
     module.arkTs.harPath,
     'Harmony materialized HAR path',
     { packageName: module.packageName, mustExist: false }
@@ -351,12 +354,20 @@ async function materializeLocalSourceAsync(
   const original = await fs.promises.readFile(file, 'utf8');
   const config = JSON5.parse(original);
   const dependencies = (options.dependencies ?? []).filter(value => value.artifact.kind === 'bundled');
-  const overrides = Object.fromEntries(collectOhpmDeps(dependencies).map(({ descriptor, mapping }) => [
-    mapping.ohPackageName, resolveOhpmSpecifier(descriptor, mapping, { harmonyProjectPath: artifact.build.cwd }),
-  ]));
+  const overrides: Record<string, string> = {};
+  const mirror = { ...process.env, ...options.env }.EXPO_HARMONY_CHECK_MIRROR_ROOT;
+
+  for (const { descriptor, mapping } of collectOhpmDeps(dependencies)) {
+    const link = await mirrorPackageLinkAsync(descriptor.packageLinkPath, artifact.build.cwd, mirror);
+
+    overrides[mapping.ohPackageName] = resolveOhpmSpecifier(
+      { ...descriptor, packageLinkPath: link }, mapping, { harmonyProjectPath: artifact.build.cwd }
+    );
+  }
 
   try {
     await fs.promises.writeFile(file, JSON.stringify({ ...config, overrides: { ...config.overrides, ...overrides } }, null, 2) + '\n');
+
     for (const step of fixedLocalSourceBuildSteps(artifact.build)) {
       await runFixedBuildStepAsync(step, module.packageName, options);
     }
@@ -369,20 +380,22 @@ async function materializeLocalSourceAsync(
     artifact.build.cwd,
     module.packageName
   );
+
   if (!ready) {
     throw new HarmonyAutolinkingError(
       'SOURCE_BUILD_FAILED',
-      `Hvigor did not produce a non-empty HAR at ${normalizeSlashes(path.relative(packageRoot, artifact.outputPath))}.`,
+      `Hvigor did not produce a non-empty HAR at ${normalizeSlashes(path.relative(root, artifact.outputPath))}.`,
       { packageName: module.packageName, stage: 'artifact-materialize' }
     );
   }
 
   await publishArtifactsAsync({
-    allowedRoot: projectRoot,
-    lockPath: path.join(projectRoot, '.expo/harmony/module-materialize.lock'),
-    files: [{ source: artifact.outputPath, target: harPath }],
+    allowedRoot: project,
+    lockPath: path.join(project, '.expo/harmony/module-materialize.lock'),
+    files: [{ source: artifact.outputPath, target: har }],
   });
-  if (!await isNonEmptyRegularHarAsync(harPath, packageRoot, module.packageName)) {
+
+  if (!await isNonEmptyRegularHarAsync(har, root, module.packageName)) {
     throw new HarmonyAutolinkingError(
       'SOURCE_BUILD_FAILED',
       'Harmony HAR materialization produced a missing or empty file.',
@@ -392,7 +405,7 @@ async function materializeLocalSourceAsync(
 
   return {
     packageName: module.packageName,
-    harPath,
+    harPath: har,
   };
 }
 

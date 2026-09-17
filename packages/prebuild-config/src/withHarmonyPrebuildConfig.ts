@@ -4,6 +4,8 @@ import {
   type HarmonyConfigPlugin,
 } from '@expo-harmony/config-plugins';
 
+import { withBuildPropertiesDefaults } from '@expo-harmony/expo-build-properties';
+
 import { HarmonyPrebuildError } from './errors';
 import { withAutolinkingMods } from './mods/withAutolinkingMods';
 import { withEntryMods } from './mods/withEntryMods';
@@ -29,6 +31,7 @@ const withDefaults: HarmonyConfigPlugin<HarmonyPrebuildOptions | void> = (config
   }
 
   config = withPreparationMod(config);
+  config = withBuildPropertiesDefaults(config);
   config = withProjectMods(config);
   config = withEntryMods(config);
   config = withSourceMods(config);

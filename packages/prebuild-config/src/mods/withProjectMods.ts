@@ -109,10 +109,7 @@ export function withProjectMods(config) {
         const product = {
           ...existing,
           name: productName,
-          compatibleSdkVersion: harmony.compatibleSdkVersionString,
-          targetSdkVersion: harmony.targetSdkVersionString,
           runtimeOS: 'HarmonyOS',
-          buildOption: { ...(existing.buildOption || {}), nativeCompiler: 'BiSheng' },
           ...(signing ? { signingConfig: signing.name } : {}),
         };
 

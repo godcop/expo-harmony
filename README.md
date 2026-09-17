@@ -34,6 +34,7 @@
 - [expo-blob](./packages/expo-blob/)：符合 Web 标准的 React Native Blob 实现。
 - [expo-blur](./packages/expo-blur/)：模糊其下方所有内容的 React 组件。
 - [expo-brightness](./packages/expo-brightness/)：获取和设置屏幕亮度。
+- [expo-build-properties](./packages/expo-build-properties/)：配置 HarmonyOS 的 SDK、ABI、原生编译器、SO 打包与 release 构建选项。
 - [expo-calendar](./packages/expo-calendar/)：访问系统日历、事件、提醒及相关记录。
 - [expo-camera](./packages/expo-camera/)：访问设备摄像头。
 - [expo-cellular](./packages/expo-cellular/)：获取用户蜂窝网络服务提供商信息。

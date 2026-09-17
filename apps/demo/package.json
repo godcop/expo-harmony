@@ -46,6 +46,7 @@
     "@expo-harmony/expo-blob": "workspace:*",
     "@expo-harmony/expo-blur": "workspace:*",
     "@expo-harmony/expo-brightness": "workspace:*",
+    "@expo-harmony/expo-build-properties": "workspace:*",
     "@expo-harmony/expo-calendar": "workspace:*",
     "@expo-harmony/expo-camera": "workspace:*",
     "@expo-harmony/expo-cellular": "workspace:*",

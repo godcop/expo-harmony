@@ -1,11 +1,12 @@
 import fs from 'node:fs';
+import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 
 import { getConfig } from '@expo/config';
-import { compileHarmonyModsAsync, normalizeHarmonyConfig, type ExpoConfigWithHarmony } from '@expo-harmony/config-plugins';
-import { withHarmonyPrebuildConfig } from '@expo-harmony/prebuild-config';
+import { compileHarmonyModsAsync, normalizeHarmonyConfig, parseHarmonySdkVersion, type ExpoConfigWithHarmony } from '@expo-harmony/config-plugins';
 import type { HarmonyRuntimeContract } from '@expo-harmony/expo-modules-autolinking/runtime';
+import { withHarmonyPrebuildConfig } from '@expo-harmony/prebuild-config';
 import JSON5 from 'json5';
 
 import { fingerprintHarmonyAsync } from './fingerprint';
@@ -72,27 +73,83 @@ export async function readMetroRuntimeAsync(root: string): Promise<HarmonyMetroR
   return config?.resolver?.resolveRequest?.harmonyRuntime;
 }
 
+function onlyKeys(value, keys: string[]): boolean {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+    && Object.keys(value).every(key => keys.includes(key));
+}
+
+function optionalStrings(value): boolean {
+  return value === undefined || (Array.isArray(value) && value.every(item => typeof item === 'string' && item.length > 0));
+}
+
+function supportedReleaseOptions(modes): boolean {
+  if (modes === undefined) return true;
+  if (!Array.isArray(modes) || modes.length > 1) return false;
+
+  return modes.every((mode) => {
+    if (!onlyKeys(mode, ['name', 'arkOptions', 'nativeLib']) || mode.name !== 'release') return false;
+
+    if (mode.nativeLib !== undefined) {
+      const symbol = mode.nativeLib?.debugSymbol;
+
+      if (!onlyKeys(mode.nativeLib, ['debugSymbol']) || !onlyKeys(symbol, ['strip', 'exclude'])
+        || typeof symbol.strip !== 'boolean' || !optionalStrings(symbol.exclude)) return false;
+    }
+
+    if (mode.arkOptions !== undefined) {
+      const obfuscation = mode.arkOptions?.obfuscation;
+      const rules = obfuscation?.ruleOptions;
+
+      if (!onlyKeys(mode.arkOptions, ['obfuscation']) || !onlyKeys(obfuscation, ['ruleOptions'])
+        || !onlyKeys(rules, ['enable', 'files']) || typeof rules.enable !== 'boolean'
+        || !optionalStrings(rules.files)) return false;
+    }
+
+    return true;
+  });
+}
+
+function nativeLibFilterHash(filter): string | undefined {
+  if (filter === undefined) return undefined;
+  if (!onlyKeys(filter, ['excludes', 'pickFirsts', 'pickLasts', 'enableOverride'])
+    || !['excludes', 'pickFirsts', 'pickLasts'].every(key => optionalStrings(filter[key]))
+    || (filter.enableOverride !== undefined && typeof filter.enableOverride !== 'boolean')) {
+    throw new HarmonyCliError('ERR_HARMONY_RUNTIME_CONFIG', 'Unsupported nativeLib.filter configuration.', { operation: 'runtime-contract' });
+  }
+
+  const values = {};
+
+  for (const key of ['excludes', 'pickFirsts', 'pickLasts']) {
+    if (filter[key]?.length) values[key] = [...new Set(filter[key])].sort();
+  }
+  if (filter.enableOverride) values['enableOverride'] = true;
+
+  return Object.keys(values).length ? createHash('sha256').update(JSON.stringify(values)).digest('hex') : undefined;
+}
+
 function nativeConfig(profile, module, build, product: string, ability: string): HarmonyRuntimeContract['config'] {
   const selected = profile?.app?.products?.find(item => item.name === product);
   const entry = module?.abilities?.find(item => item.name === ability);
+
   if (!selected || !entry || !build
     || /(?:USE_HERMES|HERMES_V1_ENABLED)(?::BOOL)?=(?:OFF|FALSE|0)/i.test(build.buildOption?.externalNativeOptions?.arguments || '')
     || Object.keys(selected.buildOption || {}).some(key => key !== 'nativeCompiler')
     || profile.app.buildModeSet?.some(mode => mode.buildOption)
-    || build.buildOptionSet?.length || build.targets?.some(target => target.buildOption)) {
+    || !supportedReleaseOptions(build.buildOptionSet) || build.targets?.some(target => target.buildOption)) {
     throw new HarmonyCliError(
       'ERR_HARMONY_RUNTIME_CONFIG',
-      'Runtime contracts require an existing Harmony product and ability, Hermes v1, and native options without per-target or per-mode overrides.',
+      'Runtime contracts require an existing Harmony product and ability, Hermes v1, and no per-target or per-mode overrides except release debugSymbol and ArkTS obfuscation rules.',
       { operation: 'runtime-contract' }
     );
   }
 
-  const api = (value: unknown) => typeof value === 'number' ? value : Number(/\((\d+)\)$/.exec(String(value))?.[1] ?? value);
+  const hash = nativeLibFilterHash(build.buildOption?.nativeLib?.filter);
 
   return {
     nativeCompiler: selected.buildOption?.nativeCompiler,
-    targetApiVersion: api(selected.targetSdkVersion),
-    compatibleApiVersion: api(selected.compatibleSdkVersion),
+    targetApiVersion: parseHarmonySdkVersion(selected.targetSdkVersion, 'targetSdkVersion').api,
+    compatibleApiVersion: parseHarmonySdkVersion(selected.compatibleSdkVersion, 'compatibleSdkVersion').api,
+    ...(hash ? { nativeLibFilterHash: hash } : {}),
     permissions: [...new Set<string>((module.requestPermissions || []).map(item => item.name))].sort(),
     querySchemes: [...new Set<string>(module.querySchemes || [])].sort(),
     backgroundModes: [...new Set<string>(entry.backgroundModes || [])].sort(),
