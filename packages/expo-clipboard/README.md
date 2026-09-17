@@ -12,7 +12,7 @@ npm install @expo-harmony/expo-clipboard expo-clipboard@55.0.13
 
 鸿蒙适配会通过 Autolinking 自动接入，无需额外配置。最低支持 HarmonyOS 5.0.2（API 14），宿主的 `compatibleSdkVersion` 也需满足此要求。
 
-读取剪贴板需要 `ohos.permission.READ_PASTEBOARD`，本包已经声明并配置好用途说明（也可以参照下方的 `clipboardPermission` 配置自定义文本），正常情况下无需再次声明。这个权限只在读内容时用到，读之前如果没有就弹窗申请；弹窗只在前台出现，后台读取直接失败，用户拒绝后返回 `ERR_NO_PERMISSION`。权限声明挂在 `EntryAbility` 名下，Host 的入口 Ability 如果叫别的名字，需要改成自己的 Ability 名称。写入、查询内容类型和监听变化都不读内容，不会申请这个权限。
+写入剪贴板、查询内容类型和监听变化不需要读取权限。读取文字、图片或 URL 需要 `ohos.permission.READ_PASTEBOARD`，本包默认不声明该权限，使用前需按下文申请并配置。
 
 业务代码依旧使用官方包：
 
@@ -20,8 +20,29 @@ npm install @expo-harmony/expo-clipboard expo-clipboard@55.0.13
 import * as Clipboard from 'expo-clipboard';
 
 await Clipboard.setStringAsync('Hello HarmonyOS');
+// 读取前需完成下方的权限配置。
 const text = await Clipboard.getStringAsync();
 ```
+
+## 读取权限
+
+`ohos.permission.READ_PASTEBOARD` 属于受限权限（ACL），需按华为的 [受限权限说明](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/restricted-permissions#ohospermissionread_pasteboard) 申请。
+
+取得授权后，在 `app.json` 的 `expo.harmony.permissions` 数组中添加以下声明：
+
+```json
+{
+  "name": "ohos.permission.READ_PASTEBOARD",
+  "reason": "$string:expo_clipboard_read_permission_reason",
+  "usedScene": { "abilities": ["EntryAbility"], "when": "inuse" }
+}
+```
+
+`reason` 引用本包提供的默认用途说明。若入口 Ability 的名称不是 `EntryAbility`，请替换为实际名称。
+
+修改 `app.json` 后，需要重新 prebuild 并构建应用。bare 工程可将上述声明加入入口模块 `module.json5` 的 `requestPermissions` 数组。应用签名需使用包含获批权限的 Profile 文件。
+
+读取时若尚未获得用户授权，会在应用处于前台时申请权限。PC/2in1 设备首次申请时由系统默认授予，用户可在系统设置中修改授权状态。用户拒绝，或尚未授权时在后台读取，都会抛出 `ERR_NO_PERMISSION`。剪贴板中没有对应类型的内容时，读取接口返回空字符串或 `null`，不会申请权限。
 
 ## Config Plugin
 
@@ -35,7 +56,7 @@ const text = await Clipboard.getStringAsync();
 }
 ```
 
-该选项只接受非空字符串，不支持用 `false` 关闭权限。未配置时使用默认文案「用于粘贴您复制的文字、链接和图片」。修改配置后需要重新 prebuild 并构建应用。
+该选项只接受非空字符串，用于修改权限用途说明，不会声明读取权限。未配置时使用默认文案「用于粘贴您复制的文字、链接和图片」。如不再需要读取剪贴板，可移除 `expo.harmony.permissions` 中的权限声明。修改配置后需要重新 prebuild 并构建应用。
 
 ## API 对照表
 
@@ -43,7 +64,7 @@ const text = await Clipboard.getStringAsync();
 
 > **未实现的内容**
 >
-> - `ClipboardPasteButton`：官方只在 iOS 上提供该组件，HarmonyOS 上没有对应的系统粘贴控件，渲染结果为空。
+> - `ClipboardPasteButton`：HarmonyOS 上不可用，渲染结果为空。
 
 ### Constants
 
