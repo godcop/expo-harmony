@@ -1659,6 +1659,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@expo-harmony/expo-auth-session@workspace:packages/expo-auth-session":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-auth-session@workspace:packages/expo-auth-session"
+  peerDependencies:
+    expo-auth-session: 55.0.16
+    react: "*"
+    react-native: "*"
+  languageName: unknown
+  linkType: soft
+
 "@expo-harmony/expo-background-fetch@workspace:*, @expo-harmony/expo-background-fetch@workspace:packages/expo-background-fetch":
   version: 0.0.0-use.local
   resolution: "@expo-harmony/expo-background-fetch@workspace:packages/expo-background-fetch"
@@ -1846,6 +1856,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@expo-harmony/expo-checkbox@workspace:packages/expo-checkbox":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-checkbox@workspace:packages/expo-checkbox"
+  peerDependencies:
+    expo-checkbox: 55.0.4
+    react: "*"
+    react-native: "*"
+    react-native-web: "*"
+  languageName: unknown
+  linkType: soft
+
 "@expo-harmony/expo-clipboard@workspace:*, @expo-harmony/expo-clipboard@workspace:packages/expo-clipboard":
   version: 0.0.0-use.local
   resolution: "@expo-harmony/expo-clipboard@workspace:packages/expo-clipboard"
@@ -1922,6 +1943,24 @@ __metadata:
   peerDependencies:
     "@expo-harmony/expo-modules-core": "workspace:*"
     expo-crypto: 55.0.15
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo-dev-client-components@workspace:packages/expo-dev-client-components":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-dev-client-components@workspace:packages/expo-dev-client-components"
+  peerDependencies:
+    expo-dev-client-components: 55.0.3
+    react: "*"
+    react-native: "*"
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo-dev-client@workspace:packages/expo-dev-client":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-dev-client@workspace:packages/expo-dev-client"
+  peerDependencies:
+    expo-dev-client: 55.0.35
   languageName: unknown
   linkType: soft
 
@@ -2377,6 +2416,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@expo-harmony/expo-processing@workspace:packages/expo-processing":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-processing@workspace:packages/expo-processing"
+  peerDependencies:
+    expo-processing: 55.0.10
+  languageName: unknown
+  linkType: soft
+
 "@expo-harmony/expo-router@workspace:*, @expo-harmony/expo-router@workspace:packages/expo-router":
   version: 0.0.0-use.local
   resolution: "@expo-harmony/expo-router@workspace:packages/expo-router"
@@ -2518,6 +2565,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@expo-harmony/expo-standard-web-crypto@workspace:packages/expo-standard-web-crypto":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-standard-web-crypto@workspace:packages/expo-standard-web-crypto"
+  peerDependencies:
+    expo-standard-web-crypto: 55.0.11
+  languageName: unknown
+  linkType: soft
+
 "@expo-harmony/expo-status-bar@workspace:packages/expo-status-bar":
   version: 0.0.0-use.local
   resolution: "@expo-harmony/expo-status-bar@workspace:packages/expo-status-bar"
@@ -2632,6 +2687,126 @@ __metadata:
     react-native: "npm:0.84.1"
   peerDependencies:
     expo: 55.0.26
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo__config-types@workspace:packages/expo__config-types":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo__config-types@workspace:packages/expo__config-types"
+  peerDependencies:
+    "@expo/config-types": 55.0.5
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo__config@workspace:packages/expo__config":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo__config@workspace:packages/expo__config"
+  peerDependencies:
+    "@expo/config": 55.0.17
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo__devtools@workspace:packages/expo__devtools":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo__devtools@workspace:packages/expo__devtools"
+  peerDependencies:
+    "@expo/devtools": 55.0.3
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo__env@workspace:packages/expo__env":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo__env@workspace:packages/expo__env"
+  peerDependencies:
+    "@expo/env": 2.1.2
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo__fingerprint@workspace:packages/expo__fingerprint":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo__fingerprint@workspace:packages/expo__fingerprint"
+  peerDependencies:
+    "@expo/fingerprint": 0.16.7
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo__image-utils@workspace:packages/expo__image-utils":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo__image-utils@workspace:packages/expo__image-utils"
+  peerDependencies:
+    "@expo/image-utils": 0.8.14
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo__json-file@workspace:packages/expo__json-file":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo__json-file@workspace:packages/expo__json-file"
+  peerDependencies:
+    "@expo/json-file": 10.0.15
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo__local-build-cache-provider@workspace:packages/expo__local-build-cache-provider":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo__local-build-cache-provider@workspace:packages/expo__local-build-cache-provider"
+  peerDependencies:
+    "@expo/local-build-cache-provider": 55.0.13
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo__metro-runtime@workspace:packages/expo__metro-runtime":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo__metro-runtime@workspace:packages/expo__metro-runtime"
+  peerDependencies:
+    "@expo/metro-runtime": 55.0.11
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo__package-manager@workspace:packages/expo__package-manager":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo__package-manager@workspace:packages/expo__package-manager"
+  peerDependencies:
+    "@expo/package-manager": 1.10.5
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo__pkcs12@workspace:packages/expo__pkcs12":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo__pkcs12@workspace:packages/expo__pkcs12"
+  peerDependencies:
+    "@expo/pkcs12": 0.4.2
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo__require-utils@workspace:packages/expo__require-utils":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo__require-utils@workspace:packages/expo__require-utils"
+  peerDependencies:
+    "@expo/require-utils": 55.0.5
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo__router-server@workspace:packages/expo__router-server":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo__router-server@workspace:packages/expo__router-server"
+  peerDependencies:
+    "@expo/router-server": 55.0.18
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo__schema-utils@workspace:packages/expo__schema-utils":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo__schema-utils@workspace:packages/expo__schema-utils"
+  peerDependencies:
+    "@expo/schema-utils": 55.0.4
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo__schemer@workspace:packages/expo__schemer":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo__schemer@workspace:packages/expo__schemer"
+  peerDependencies:
+    "@expo/schemer": 2.1.4
   languageName: unknown
   linkType: soft
 

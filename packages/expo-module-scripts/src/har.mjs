@@ -36,14 +36,32 @@ function isBundledNativeTypeDependency(packageRoot, manifest, name, specifier) {
   }
 }
 
-export async function sanitizeHarmonyHar(file, { sourceManifest: source, workspaceVersions: versions = {} } = {}) {
+export async function sanitizeHarmonyHar(file, { sourceManifest: source, workspaceVersions: versions = {}, moduleRoot } = {}) {
   const temp = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'expo-har-'));
   const output = path.join(temp, 'library.har');
 
   try {
-    await tar.x({ cwd: temp, file, strict: true });
+    const linkedDocuments = new Set();
+    // Async extraction can reject while entries are still being written, racing cleanup.
+    tar.x({
+      cwd: temp,
+      file,
+      strict: true,
+      sync: true,
+      filter: (name, entry) => {
+        if (moduleRoot && entry.type === 'SymbolicLink' && ['package/LICENSE', 'package/README.md', 'package/CHANGELOG.md'].includes(name)) {
+          linkedDocuments.add(path.posix.basename(name));
+          return false;
+        }
+        return true;
+      },
+    });
 
     const root = path.join(temp, 'package');
+    for (const name of linkedDocuments) {
+      // Read the authored document, not the link target relative to the extracted HAR.
+      await fs.promises.copyFile(path.join(moduleRoot, name), path.join(root, name));
+    }
     const target = path.join(root, 'oh-package.json5');
     const manifest = JSON5.parse(await fs.promises.readFile(target, 'utf8'));
 
