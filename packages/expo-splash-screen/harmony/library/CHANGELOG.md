@@ -1,1 +1,5 @@
-[Commit history](https://github.com/renbaoshuo/expo-harmony/commits/master/packages/expo-splash-screen)
+# Changelog
+
+Version: 55.0.21-harmony.5
+
+[Commit History](https://github.com/renbaoshuo/expo-harmony/commits/master/packages/expo-splash-screen)

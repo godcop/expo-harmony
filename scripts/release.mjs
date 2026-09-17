@@ -49,6 +49,12 @@ function validateTag(tag) {
   if (typeof tag !== 'string' || !/^[a-z][a-z0-9-]{0,59}$/.test(tag) || tag === 'v') throw new Error('Use a tag such as latest or next (at most 60 characters).');
 }
 
+function harmonyChangelog(pkg, version) {
+  const packagePath = path.relative(root, pkg.directory).split(path.sep).join('/');
+  const historyUrl = `https://github.com/renbaoshuo/expo-harmony/commits/master/${packagePath}`;
+  return `# Changelog\n\nVersion: ${version}\n\n[Commit History](${historyUrl})\n`;
+}
+
 async function saveRelease(file, artifacts) {
   await fs.writeFile(`${file}.tmp`, `${JSON.stringify(artifacts, null, 2)}\n`);
   await fs.rename(`${file}.tmp`, file);
@@ -222,6 +228,7 @@ async function main() {
     validateTag(tag);
     if ((await rl.question(options['no-bump'] ? '使用当前版本构建打包？[y/N] ' : '更新版本并构建打包？[y/N] ')).trim().toLowerCase() !== 'y') return;
     for (const pkg of options['no-bump'] ? [] : packages) {
+      const version = versions.get(pkg.manifest.name);
       const updated = updateManifests(pkg, versions);
       if (JSON.stringify(updated.manifest) !== JSON.stringify(pkg.manifest)) {
         await fs.writeFile(path.join(pkg.directory, 'package.json'), `${JSON.stringify(updated.manifest, null, 2)}\n`);
@@ -231,6 +238,9 @@ async function main() {
         if (JSON.stringify(entry.data) !== JSON.stringify(pkg.native[index].data)) {
           await fs.writeFile(entry.file, `${JSON.stringify(entry.data, null, 2)}\n`);
         }
+      }
+      if (version && updated.native.some(entry => entry.file === path.join(pkg.directory, 'harmony/library/oh-package.json5'))) {
+        await fs.writeFile(path.join(pkg.directory, 'harmony/library/CHANGELOG.md'), harmonyChangelog(pkg, version));
       }
       pkg.manifest = updated.manifest;
     }

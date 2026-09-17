@@ -1,1 +1,5 @@
-[Commit history](https://github.com/renbaoshuo/expo-harmony/commits/master/packages/expo-keep-awake)
+# Changelog
+
+Version: 55.0.8-harmony.3
+
+[Commit History](https://github.com/renbaoshuo/expo-harmony/commits/master/packages/expo-keep-awake)
