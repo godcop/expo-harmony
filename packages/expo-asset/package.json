@@ -18,7 +18,10 @@
     "directory": "packages/expo-asset"
   },
   "main": "index.js",
-  "react-native": "src/index.ts",
+  "react-native": {
+    "./index.js": "./src/index.ts",
+    "./build/AssetSourceResolver.js": "./src/AssetSourceResolver.js"
+  },
   "types": "index.d.ts",
   "scripts": {
     "harmony:clean": "expo-harmony-module prepare --clean-only",
@@ -48,13 +51,5 @@
   "harmony": {
     "alias": "expo-asset",
     "redirectInternalImports": true
-  },
-  "exports": {
-    ".": {
-      "react-native": "./src/index.ts",
-      "default": "./index.js"
-    },
-    "./build/AssetSourceResolver": "./src/AssetSourceResolver.js",
-    "./*": "./*"
   }
 }
