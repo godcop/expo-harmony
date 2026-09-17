@@ -1,0 +1,32 @@
+{
+  "name": "@expo-harmony/expo__pkcs12",
+  "version": "0.4.2-harmony.0",
+  "description": "HarmonyOS port of @expo/pkcs12",
+  "keywords": [
+    "react-native",
+    "expo",
+    "expo-harmony",
+    "harmonyos"
+  ],
+  "license": "MIT",
+  "author": "Baoshuo <i@baoshuo.ren>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/renbaoshuo/expo-harmony.git",
+    "directory": "packages/expo__pkcs12"
+  },
+  "homepage": "https://github.com/renbaoshuo/expo-harmony/tree/master/packages/expo__pkcs12#readme",
+  "bugs": "https://github.com/renbaoshuo/expo-harmony/issues",
+  "main": "index.js",
+  "react-native": "src/index.ts",
+  "types": "index.d.ts",
+  "peerDependencies": {
+    "@expo/pkcs12": "0.4.2"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
