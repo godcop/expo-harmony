@@ -8,6 +8,13 @@
     "expo-harmony",
     "eas-client"
   ],
+  "homepage": "https://github.com/renbaoshuo/expo-harmony/tree/master/packages/expo-eas-client#readme",
+  "repository": "https://github.com/renbaoshuo/expo-harmony",
+  "author": {
+    "name": "Baoshuo",
+    "email": "i@baoshuo.ren",
+    "url": "https://github.com/renbaoshuo"
+  },
   "license": "MIT",
   "main": "Index.ets",
   "dependencies": {
