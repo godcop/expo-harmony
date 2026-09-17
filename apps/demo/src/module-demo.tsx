@@ -54,6 +54,7 @@ import { SensorsDemo } from './modules/sensors';
 import { SharingDemo } from './modules/sharing';
 import { SplashScreenDemo } from './modules/splash-screen';
 import { SystemUIDemo } from './modules/system-ui';
+import { SymbolsDemo } from './modules/symbols';
 import { TemplateDemo } from './modules/template';
 
 import { UpdatesDemo } from './modules/updates';
@@ -125,6 +126,7 @@ const MODULE_DEMOS = {
   'sharing': SharingDemo,
   'splash-screen': SplashScreenDemo,
   'system-ui': SystemUIDemo,
+  'symbols': SymbolsDemo,
   'template': TemplateDemo,
 } satisfies Record<ModuleId, ComponentType>;
 
