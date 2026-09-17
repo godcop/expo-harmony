@@ -10,15 +10,16 @@
 npm install @expo-harmony/expo-contacts expo-contacts@55.0.14
 ```
 
-鸿蒙适配会通过 Autolinking 自动接入，使用默认权限说明时无需额外配置。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也需满足此要求。
+鸿蒙适配会通过 Autolinking 自动接入。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也需满足此要求。
 
-HAR 已经声明通讯录读写权限并配置好用途说明（也可以参照下方的配置插件自定义文本），`usedScene` 默认指向 `EntryAbility`；宿主入口 Ability 如果叫别的名字，需要在 `module.json5` 里改成自己的名称。读取联系人和查询群组、容器需要读权限，新增、修改、删除以及群组成员变更需要读写权限。系统选择器和新建表单不申请整个通讯录的读取权限。
+系统联系人选择器 `presentContactPickerAsync()` 和新建联系人表单 `presentFormAsync()` 不需要通讯录读写权限。读取联系人、群组和容器需要 `ohos.permission.READ_CONTACTS`，新增、修改、删除联系人和变更群组成员还需要 `ohos.permission.WRITE_CONTACTS`。本包默认不声明这两项权限，使用前需按下文申请并配置。
 
 业务代码依旧使用官方包：
 
 ```ts
 import * as Contacts from 'expo-contacts';
 
+// 读取前需完成下方的权限配置。
 const permission = await Contacts.requestPermissionsAsync();
 if (permission.granted) {
   const result = await Contacts.getContactsAsync({
@@ -28,6 +29,33 @@ if (permission.granted) {
   console.log(result.data);
 }
 ```
+
+## 读写权限
+
+`ohos.permission.READ_CONTACTS` 和 `ohos.permission.WRITE_CONTACTS` 属于受限权限（ACL），需按华为的 [受限权限说明](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/restricted-permissions#ohospermissionread_contacts) 申请。申请范围限于通讯录克隆、备份、同步等场景。
+
+取得授权后，在 `app.json` 的 `expo.harmony.permissions` 数组中添加以下声明：
+
+```json
+[
+  {
+    "name": "ohos.permission.READ_CONTACTS",
+    "reason": "$string:expo_contacts_read_permission_reason",
+    "usedScene": { "abilities": ["EntryAbility"], "when": "inuse" }
+  },
+  {
+    "name": "ohos.permission.WRITE_CONTACTS",
+    "reason": "$string:expo_contacts_write_permission_reason",
+    "usedScene": { "abilities": ["EntryAbility"], "when": "inuse" }
+  }
+]
+```
+
+`reason` 引用本包提供的默认用途说明。若入口 Ability 的名称不是 `EntryAbility`，请替换为实际名称。
+
+修改 `app.json` 后，需要重新 prebuild 并构建应用。bare 工程可将上述声明加入入口模块 `module.json5` 的 `requestPermissions` 数组。应用签名需使用包含获批权限的 Profile 文件。
+
+读写联系人前，需调用 `requestPermissionsAsync()` 向用户申请读写两项权限。两项都获准时，返回结果中的 `granted` 才为 `true`。缺少所需权限时，读写接口会抛出 `ERR_CONTACTS_MISSING_PERMISSION`。`canAskAgain` 为 `false` 时，需引导用户到系统设置中授权。
 
 ## Config Plugin
 
@@ -49,7 +77,7 @@ if (permission.granted) {
 }
 ```
 
-`contactsPermission` 可以一次设置读写的用途说明，`readContactsPermission` 和 `writeContactsPermission` 分别优先于它。选项只接受非空字符串，不支持用 `false` 关闭权限。未配置时沿用默认文案「用于读取和选择您的联系人信息」和「用于添加、更新和删除您的联系人」。修改配置后需要重新 prebuild 并构建应用。
+`contactsPermission` 可以一次设置读写的用途说明，`readContactsPermission` 和 `writeContactsPermission` 分别优先于它。这些选项只接受非空字符串，用于修改权限用途说明，不会声明通讯录读写权限。未配置时沿用默认文案「用于读取和选择您的联系人信息」和「用于添加、更新和删除您的联系人」。修改配置后需要重新 prebuild 并构建应用。
 
 ## API 对照表
 
