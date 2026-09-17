@@ -14,13 +14,14 @@ import { planWorkspaceBuild } from '../packages/expo-module-scripts/src/workspac
 const root = fileURLToPath(new URL('../', import.meta.url));
 const args = process.argv.slice(2);
 if (args.includes('--help')) {
-  console.log('yarn release [--prepare-only] [--registry npm|ohpm|all]\nyarn release:publish <artifact-directory> [--registry npm|ohpm|all]\nInteractively prepare a release, or publish an existing release.json without rebuilding. Defaults to both registries (OHPM, then npm). Completed publications are skipped.');
+  console.log('yarn release [--prepare-only] [--no-bump] [--registry npm|ohpm|all]\nyarn release:prepare [--no-bump] [--registry npm|ohpm|all]\nyarn release:publish <artifact-directory> [--registry npm|ohpm|all]\nInteractively prepare a release, or publish an existing release.json without rebuilding. Use --no-bump to prepare only the selected packages at their current versions without updating manifests. Defaults to both registries (OHPM, then npm). Completed publications are skipped.');
   process.exit(0);
 }
 const { values: options } = parseArgs({
   args,
   options: {
     'prepare-only': { type: 'boolean' },
+    'no-bump': { type: 'boolean' },
     'publish-only': { type: 'string' },
     registry: { type: 'string', default: 'all' },
   },
@@ -202,19 +203,25 @@ async function main() {
     const selected = new Map();
     for (const index of new Set(indices)) {
       const pkg = choices[index];
+      if (options['no-bump']) {
+        selected.set(pkg.manifest.name, pkg.manifest.version);
+        continue;
+      }
       let suggested = '';
       try { suggested = bump(pkg.manifest.version); } catch { /* Ask for a custom version. */ }
       const version = (await rl.question(`${pkg.manifest.name} 新版本 [${suggested || '必填'}]: `)).trim() || suggested;
       selected.set(pkg.manifest.name, version);
     }
-    const versions = planRelease(packages, selected);
+    const versions = options['no-bump'] ? selected : planRelease(packages, selected);
     for (const [name, version] of versions) {
-      console.log(`${name}: ${packages.find(pkg => pkg.manifest.name === name).manifest.version} → ${version}${selected.has(name) ? '' : '（依赖联动）'}`);
+      console.log(options['no-bump']
+        ? `${name}: ${version}（保持版本）`
+        : `${name}: ${packages.find(pkg => pkg.manifest.name === name).manifest.version} → ${version}${selected.has(name) ? '' : '（依赖联动）'}`);
     }
     const tag = (await rl.question('发布 tag [latest，OHPM 不传 --tag]: ')).trim() || 'latest';
     validateTag(tag);
-    if ((await rl.question('更新版本并构建打包？[y/N] ')).trim().toLowerCase() !== 'y') return;
-    for (const pkg of packages) {
+    if ((await rl.question(options['no-bump'] ? '使用当前版本构建打包？[y/N] ' : '更新版本并构建打包？[y/N] ')).trim().toLowerCase() !== 'y') return;
+    for (const pkg of options['no-bump'] ? [] : packages) {
       const updated = updateManifests(pkg, versions);
       if (JSON.stringify(updated.manifest) !== JSON.stringify(pkg.manifest)) {
         await fs.writeFile(path.join(pkg.directory, 'package.json'), `${JSON.stringify(updated.manifest, null, 2)}\n`);
