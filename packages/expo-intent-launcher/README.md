@@ -12,6 +12,8 @@ npm install @expo-harmony/expo-intent-launcher expo-intent-launcher@55.0.12
 
 鸿蒙适配会通过 Autolinking 自动接入，无需额外配置。最低支持 HarmonyOS 5.0.2（API 14），宿主的 `compatibleSdkVersion` 也需满足此要求。
 
+使用 `startActivityAsync()` 启动已知的 UIAbility 不需要查询应用信息的权限。使用 `openApplication()` 打开本应用、使用 `getApplicationIconAsync()` 读取本应用图标也不需要该权限。这两个方法用于其他应用时，需要 `ohos.permission.GET_BUNDLE_INFO_PRIVILEGED`，本包默认不声明该权限，使用前需按下文申请并配置。
+
 业务代码依旧使用官方包：
 
 ```ts
@@ -24,6 +26,20 @@ const result = await IntentLauncher.startActivityAsync('com.example.action.EDIT'
   extra: { text: 'Hello' },
 });
 ```
+
+## 应用信息查询权限
+
+`ohos.permission.GET_BUNDLE_INFO_PRIVILEGED` 属于华为的 [企业类应用可用权限](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/permissions-for-enterprise-apps#ohospermissionget_bundle_info_privileged)，API 14 起向企业普通应用开放，符合条件的应用需按该说明申请。面向应用市场发布的普通应用不能按一般受限权限（ACL）的流程申请该权限。
+
+取得授权后，在 `app.json` 的 `expo.harmony.permissions` 数组中添加以下声明：
+
+```json
+{
+  "name": "ohos.permission.GET_BUNDLE_INFO_PRIVILEGED"
+}
+```
+
+修改 `app.json` 后，需要重新 prebuild 并构建应用。bare 工程可将上述声明加入入口模块 `module.json5` 的 `requestPermissions` 数组。应用签名需使用包含获批权限的 Profile 文件。
 
 ## API 对照表
 
@@ -41,11 +57,17 @@ const result = await IntentLauncher.startActivityAsync('com.example.action.EDIT'
 
 #### `IntentLauncher.openApplication(packageName)`
 
-无返回值，查找目标应用启用、导出的桌面入口并启动，`packageName` 对应 bundleName。同步返回，系统异步报告的启动失败只能记录到原生日志。目标应用不存在或没有启用、导出的桌面入口时抛出 `ERR_PACKAGE_NOT_FOUND`，查询失败时抛出 `ERR_INTENT_LAUNCHER_BUNDLE_INFO`，调用启动接口失败时抛出 `ERR_INTENT_LAUNCHER_OPEN_APPLICATION`。查询自身包信息无需额外权限，查询其他应用受系统包信息查询权限与可见性限制。
+无返回值，打开目标应用已启用且已导出的桌面入口，`packageName` 对应 bundleName。此方法同步返回，不等待应用启动完成，返回后发生的启动失败不会抛给调用方。
+
+打开本应用无需查询应用信息的权限，打开其他应用需要上述权限。目标应用不存在或没有已启用且已导出的桌面入口时抛出 `ERR_PACKAGE_NOT_FOUND`，查询应用信息失败时抛出 `ERR_INTENT_LAUNCHER_BUNDLE_INFO`，发起启动时发生同步错误则抛出 `ERR_INTENT_LAUNCHER_OPEN_APPLICATION`。
+
+已知目标 UIAbility 名称时，可以使用 `startActivityAsync()` 并指定 `packageName` 和 `className`，无需查询目标应用信息。该方法会等待目标返回结果，需要目标 UIAbility 支持返回结果。
 
 #### `IntentLauncher.getApplicationIconAsync(packageName)`
 
-返回 `Promise<string>`，目标应用的 PNG 图标，带 `data:image/png;base64,` 前缀，可直接用作图片源。图标读取或编码失败时返回空字符串。目标应用不存在时抛出 `ERR_PACKAGE_NOT_FOUND`，查询失败时抛出 `ERR_INTENT_LAUNCHER_BUNDLE_INFO`。
+返回 `Promise<string>`，读取目标应用的 PNG 图标，带 `data:image/png;base64,` 前缀，可直接用作图片源。图标读取或编码失败时返回空字符串。
+
+读取本应用图标无需查询应用信息的权限，读取其他应用图标需要上述权限。目标应用不存在时抛出 `ERR_PACKAGE_NOT_FOUND`，查询应用信息失败时抛出 `ERR_INTENT_LAUNCHER_BUNDLE_INFO`，例如没有查询其他应用的权限。
 
 ### Interfaces
 
