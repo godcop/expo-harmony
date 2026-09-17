@@ -12,18 +12,56 @@ npm install @expo-harmony/expo-media-library expo-media-library@55.0.17
 
 本包适配 Expo SDK 55 的 `expo-media-library`，原生模块通过 Expo Harmony 自动链接，不需要配置插件。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。
 
-HAR 声明了 `ohos.permission.READ_IMAGEVIDEO` 和 `ohos.permission.WRITE_IMAGEVIDEO`。这两项属于受限开放权限，应用需要符合华为的申请条件；权限的 `usedScene` 默认挂在 `EntryAbility` 的 `inuse` 场景上，宿主的入口 Ability 使用其他名称时要改成实际名称。
+查询图片、视频和相册需要 `ohos.permission.READ_IMAGEVIDEO`，保存和删除资源需要 `ohos.permission.WRITE_IMAGEVIDEO`。本包默认不声明这两项权限，使用前需按下文申请并配置。
 
 业务代码从官方包导入：
 
 ```ts
 import * as MediaLibrary from 'expo-media-library';
 
-const { assets, endCursor, hasNextPage } = await MediaLibrary.getAssetsAsync({
-  first: 20,
-  mediaType: ['photo', 'video'],
-});
+// 使用前需完成下方的权限配置。
+const permission = await MediaLibrary.requestPermissionsAsync();
+if (permission.granted) {
+  const { assets, endCursor, hasNextPage } = await MediaLibrary.getAssetsAsync({
+    first: 20,
+    mediaType: ['photo', 'video'],
+  });
+}
 ```
+
+## 图库权限
+
+`ohos.permission.READ_IMAGEVIDEO` 和 `ohos.permission.WRITE_IMAGEVIDEO` 属于受限权限（ACL），需按华为的 [受限权限说明](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/restricted-permissions#ohospermissionread_imagevideo) 申请。
+
+只需让用户选择图片或视频时，可以使用 `expo-image-picker` 的系统选择器，无需申请图库读写权限。
+
+取得授权后，在 `app.json` 的 `expo.harmony.permissions` 数组中添加以下读取权限声明：
+
+```json
+{
+  "name": "ohos.permission.READ_IMAGEVIDEO",
+  "reason": "$string:expo_media_library_read_permission_reason",
+  "usedScene": { "abilities": ["EntryAbility"], "when": "inuse" }
+}
+```
+
+写入权限使用以下声明，也添加到该数组中：
+
+```json
+{
+  "name": "ohos.permission.WRITE_IMAGEVIDEO",
+  "reason": "$string:expo_media_library_write_permission_reason",
+  "usedScene": { "abilities": ["EntryAbility"], "when": "inuse" }
+}
+```
+
+`reason` 引用本包提供的默认用途说明。若入口 Ability 的名称不是 `EntryAbility`，请替换为实际名称。
+
+修改 `app.json` 后，需要重新 prebuild 并构建应用。bare 工程可将上述声明加入入口模块 `module.json5` 的 `requestPermissions` 数组。应用签名需使用包含获批权限的 Profile 文件。
+
+使用前需调用 `requestPermissionsAsync()` 向用户申请读写权限，并在返回的 `granted` 为 `true` 后调用图库接口。未取得所需权限时，调用会抛出 `ERR_MEDIA_LIBRARY_PERMISSION`。
+
+若只使用 `saveToLibraryAsync()` 保存文件，可以只声明写入权限，并调用 `requestPermissionsAsync(true)` 申请用户授权。`createAssetAsync()` 需要同时取得读取和写入权限。
 
 ## API 对照表
 
