@@ -14,6 +14,8 @@ export interface ReactNativeRuntime {
   readonly bundle: JSBundleProvider | undefined;
   start(): Promise<void>;
   reload(reason: string): Promise<void>;
+  /** Releases an owned app instance while retaining the runtime for a later start/reload. */
+  suspend(): Promise<void>;
   destroy(): Promise<void>;
   subscribe(listener: ReactRuntimeListener): () => void;
 }

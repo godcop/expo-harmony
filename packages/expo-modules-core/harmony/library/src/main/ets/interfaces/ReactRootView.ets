@@ -14,6 +14,8 @@ export interface ReactRootViewContext {
   readonly wrappedCustomRNComponentBuilder?: WrappedCustomRNComponentBuilder;
   readonly onSetUp: (instance: RNInstance) => Promise<void> | void;
   readonly ready: boolean;
+  /** A native replacement root is mounted while React is not ready. */
+  readonly isCustomRoot?: boolean;
   readonly defaultRoot: WrappedBuilder<[ReactRootViewContext]>;
 }
 

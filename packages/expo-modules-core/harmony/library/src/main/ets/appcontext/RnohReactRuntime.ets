@@ -6,7 +6,7 @@ import { RnohContextLifecycle } from './RnohContextLifecycle';
 import { hasLoadedRnohBundle, waitForRnohBundle } from './RnohBundle';
 
 export interface RnohReactRuntimeOptions {
-  options?: RNInstanceOptions;
+  options?: RNInstanceOptions | (() => RNInstanceOptions);
   instance?: RNInstance;
   replace?: (reason: string) => Promise<RNInstance>;
   bundle?: () => JSBundleProvider;
@@ -145,6 +145,44 @@ export class RnohReactRuntime implements ReactNativeRuntime {
     });
   }
 
+  suspend(): Promise<void> {
+    return this.enqueue(async (): Promise<void> => {
+      if (this.options.options === undefined) {
+        throw new ExpoModuleError('ERR_REACT_HOST_OWNER', 'This runtime wraps an externally owned React instance and cannot suspend it.');
+      }
+
+      const previous = this.current;
+      const wasLoaded = this.loaded;
+      this.replacing = true;
+      this.loaded = false;
+
+      try {
+        this.changed(undefined);
+        if (this.current !== undefined) await this.lifetime.destroyInstance(this.current);
+        this.unbind();
+        this.current = undefined;
+        this.provider = undefined;
+      } catch (error) {
+        if (previous !== undefined && this.lifetime.owns(previous)) {
+          this.loaded = wasLoaded;
+          if (wasLoaded) this.changed(previous);
+        } else {
+          this.unbind();
+          this.current = undefined;
+          this.provider = undefined;
+        }
+
+        throw new ExpoModuleError(
+          error instanceof ExpoModuleError ? error.code : 'ERR_REACT_HOST_RUNTIME',
+          error instanceof Error ? error.message : String(error),
+          error as Object,
+        );
+      } finally {
+        this.replacing = false;
+      }
+    });
+  }
+
   destroy(): Promise<void> {
     if (this.options.options === undefined) {
       return Promise.reject(new ExpoModuleError('ERR_REACT_HOST_OWNER', 'Only the external owner may destroy this React instance.'));
@@ -181,7 +219,9 @@ export class RnohReactRuntime implements ReactNativeRuntime {
     if (this.loaded) return;
     if (this.current === undefined) {
       if (this.options.options === undefined) throw new ExpoModuleError('ERR_REACT_HOST_OWNER', 'The external runtime is no longer available.');
-      this.current = await this.core.createAndRegisterRNInstance(this.options.options);
+      // A launcher may select a different runtime between instance creations.
+      const options = typeof this.options.options === 'function' ? this.options.options() : this.options.options;
+      this.current = await this.core.createAndRegisterRNInstance(options);
     }
     const instance = this.current;
     if (this.detach === undefined) this.bind(instance);

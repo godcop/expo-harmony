@@ -22,6 +22,9 @@ export abstract class ExpoAbilityLifecycleSubscriber {
     this.context = context;
   }
 
+  // Runs before ordinary subscribers and React Native see the Want. A native
+  // host may consume its control URI without forwarding it to application routers.
+  onWillReceiveWant(_want: Want): void {}
   onCreate(_want: Want, _launch?: AbilityConstant.LaunchParam): void {}
   onNewWant(_want: Want, _launch: AbilityConstant.LaunchParam): void {}
   onWillForeground(): void {}

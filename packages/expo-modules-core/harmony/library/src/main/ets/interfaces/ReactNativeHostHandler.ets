@@ -19,6 +19,9 @@ export interface ReactNativeHost {
 
 export interface ReactNativeHostHandler {
   getUseDeveloperSupport?(): boolean | undefined;
+  // A handler may select a provider when a development client needs an exact
+  // Metro URL (including query parameters) instead of only a file or asset.
+  getJSBundleProvider?(debug: boolean): JSBundleProvider | undefined | Promise<JSBundleProvider | undefined>;
   // ArkTS must await bundle selection instead of blocking its UI thread.
   getJSBundleFile?(debug: boolean): string | undefined | Promise<string | undefined>;
   getBundleAssetName?(debug: boolean): string | undefined | Promise<string | undefined>;

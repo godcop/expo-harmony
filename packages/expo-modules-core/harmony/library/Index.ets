@@ -1,4 +1,5 @@
 export * from './src/main/ets/public-api';
+export { ExpoNetworkInspection } from './src/main/ets/appcontext/ExpoNetworkInspection';
 
 export { ExpoModulesCorePackage as default, ExpoModulesCorePackage } from './src/main/ets/ExpoModulesCorePackage';
 export { ReactRuntimeBinding, ReactRuntimeContext, ReactRuntimeBindingRegistration } from './src/main/ets/interfaces/ReactRuntimeBinding';
