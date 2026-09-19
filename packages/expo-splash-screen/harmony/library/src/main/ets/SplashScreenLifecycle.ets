@@ -2,6 +2,7 @@ import { common } from '@kit.AbilityKit';
 import { DrawableDescriptor, UIContext } from '@kit.ArkUI';
 import { resourceManager } from '@kit.LocalizationKit';
 import { ExpoAbilityLifecycleSubscriber, ExpoModuleError } from '@expo-harmony/expo-modules-core';
+import type { ReactActivityHandler, ReactRootViewContext } from '@expo-harmony/expo-modules-core';
 
 import { SplashScreenStateMachine } from './SplashScreenStateMachine';
 
@@ -397,6 +398,18 @@ export class ExpoSplashScreenLifecycleSubscriber extends ExpoAbilityLifecycleSub
 
   override onDestroy(): void {
     SplashScreenCoordinator.destroyAbility(this.context);
+  }
+}
+
+// A native launcher has no React content-appeared event. Release its covering
+// splash now; beginRuntime() restores the normal splash policy for the app.
+export class ExpoSplashScreenReactActivityHandler implements ReactActivityHandler {
+  constructor(_context: common.Context) {}
+
+  onRootViewMounted(context: ReactRootViewContext): void {
+    if (context.isCustomRoot && !context.ready) {
+      SplashScreenCoordinator.prepareAbility(context.core.uiAbilityContext).hide();
+    }
   }
 }
 
