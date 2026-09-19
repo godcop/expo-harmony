@@ -1,0 +1,10 @@
+{
+  "platforms": ["harmony"],
+  "harmony": {
+    "modules": ["ExpoDevLauncherModule"],
+    "runtimeBindings": ["ExpoDevLauncherDevMenuBinding"],
+    "reactNativeHostHandlers": ["ExpoDevLauncherReactNativeHostHandler"],
+    "reactActivityHandlers": ["ExpoDevLauncherReactActivityHandler"],
+    "abilityLifecycleSubscribers": ["ExpoDevLauncherLifecycleSubscriber"]
+  }
+}
