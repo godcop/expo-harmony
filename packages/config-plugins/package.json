@@ -46,9 +46,6 @@
     "@expo/config-types": "^55.0.5",
     "json5": "2.2.3"
   },
-  "peerDependencies": {
-    "@expo/config": "55.0.17"
-  },
   "devDependencies": {
     "@types/node": "18.19.0",
     "typescript": "^6.0.3"

@@ -56,7 +56,7 @@ module.exports = defineExpoHarmonyConfig({
 | `abiFilters` | `['arm64-v8a', 'x86_64']` |
 | `signingConfigFile` | 签名配置文件路径，不设置则忽略 |
 
-SDK/ABI 的这些旧字段继续兼容，新项目建议使用 [expo-build-properties](../expo-build-properties/README.md)。`targetSdkVersion` 和 `compatibleSdkVersion` 可以写数字或带 API 级别的 SDK 标签；API 26 起使用 `26.0.0` 这样的分段版本。内置旧标签覆盖 API 13、14、20、21、23、24，已知 API 不接受错误的标签。`targetApiVersion` 与 `targetSdkVersion` 同时存在时须一致。`backgroundColor` 写 `#RRGGBB` 或 `#RRGGBBAA`，写入原生工程时转成 ARGB。`jsEngine` 目前只能是 `hermes`。
+SDK/ABI 的这些旧字段继续兼容，新项目建议使用 `@expo-harmony/expo-build-properties`。`targetSdkVersion` 和 `compatibleSdkVersion` 可以写数字或带 API 级别的 SDK 标签；API 26 起使用 `26.0.0` 这样的分段版本。内置旧标签覆盖 API 13、14、20、21、23、24，已知 API 不接受错误的标签。`targetApiVersion` 与 `targetSdkVersion` 同时存在时须一致。`backgroundColor` 写 `#RRGGBB` 或 `#RRGGBBAA`，写入原生工程时转成 ARGB。`jsEngine` 目前只能是 `hermes`。
 
 `normalizeHarmonyConfig(config)` 返回补齐默认值并校验后的配置。
 
