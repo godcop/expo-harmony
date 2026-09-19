@@ -12,6 +12,7 @@ import { progress, type Log } from '../log';
 import { toPosixPath } from '../path';
 import { runCheckedAsync } from '../process';
 import { timedAsync } from '../profile';
+import { resolveTimeoutMs } from '../timeout';
 
 export interface NativeBuildResult {
   export: null | { assetCount: number; bundleSha256: string; sourceMapSha256: string };
@@ -70,7 +71,7 @@ export async function buildNativeAsync(
     },
     message: 'Hvigor build',
     operation: 'hvigor-build',
-    timeoutMs: 15 * 60_000,
+    timeoutMs: resolveTimeoutMs('hvigor-build', 15 * 60_000),
   }));
 
   if (!isNonEmptyRegularFile(plan.expectedHap)) {

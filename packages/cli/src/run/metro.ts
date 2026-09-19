@@ -4,6 +4,7 @@ import { readDevelopmentSessionAsync } from '../development/session';
 import { HarmonyCliError } from '../errors';
 import { formatDiagnostics, startManagedProcess, type ProcessResult } from '../process';
 import { resolveExpoCli } from '../expo';
+import { resolveTimeoutMs } from '../timeout';
 
 type MetroStatus = 'free' | 'metro' | 'occupied';
 
@@ -155,7 +156,7 @@ async function startExpoMetroAsync(
   );
 
   const startedAt = Date.now();
-  const timeoutMs = options.readyTimeoutMs || 1800000;
+  const timeoutMs = resolveTimeoutMs('metro-ready', 30 * 60_000, options.readyTimeoutMs);
 
   try {
     while (Date.now() - startedAt < timeoutMs) {

@@ -4,6 +4,7 @@ import { listEmulatorsAsync, startEmulator } from './emulators';
 import { HarmonyCliError } from '../errors';
 import { type HarmonyTool } from '../native/toolchain';
 import { formatDiagnostics, spawnAsync, type ProcessResult } from '../process';
+import { resolveTimeoutMs } from '../timeout';
 
 interface Device {
   aliases: string[];
@@ -74,7 +75,7 @@ async function runHdcAsync(
     cwd: options.cwd,
     operation: options.operation || 'hdc',
     outputLimit: options.outputLimit || 256 * 1024,
-    timeoutMs: options.timeoutMs || 60_000,
+    timeoutMs: resolveTimeoutMs(options.operation || 'hdc', 60_000, options.timeoutMs),
   });
 
   if (!options.allowFailure && hasCommandFailure(result)) {
@@ -95,7 +96,7 @@ async function listConnectedDevicesAsync(hdc: HarmonyTool, options: HdcOptions):
     cwd: options.cwd,
     message: 'Cannot list Harmony devices',
     operation: 'list-devices',
-    timeoutMs: options.timeoutMs || 15_000,
+    timeoutMs: resolveTimeoutMs('list-devices', 15_000, options.timeoutMs),
   });
   const targets = parseHdcTargets(result.stdout || result.stderr);
   return targets.filter(target => target.state.toLowerCase() === 'connected');
@@ -173,7 +174,7 @@ async function selectDeviceAsync(
   }
 
   options.onProgress?.(`Waiting for Harmony emulator ${instance.name} to connect`);
-  const deadline = Date.now() + (options.timeoutMs || 120_000);
+  const deadline = Date.now() + resolveTimeoutMs('start-emulator', 120_000, options.timeoutMs);
   while (Date.now() < deadline) {
     launch?.assertRunning();
     const devices = await listConnectedDevicesAsync(hdc, {
@@ -223,7 +224,7 @@ async function installHapAsync(
     cwd: options.cwd,
     message: `Cannot install the Harmony HAP on ${device.id}`,
     operation: 'install-hap',
-    timeoutMs: options.timeoutMs || 2 * 60_000,
+    timeoutMs: resolveTimeoutMs('install-hap', 2 * 60_000, options.timeoutMs),
   });
 }
 
@@ -247,7 +248,7 @@ async function configureMetroPortAsync(
   const forwards = await runHdcAsync(hdc, ['-t', device.id, 'fport', 'ls'], {
     cwd: options.cwd,
     operation: 'list-metro-ports',
-    timeoutMs: 15_000,
+    timeoutMs: resolveTimeoutMs('list-metro-ports', 15_000, options.timeoutMs),
   });
 
   for (const line of forwards.stdout.split(/\r?\n/u)) {
@@ -258,7 +259,7 @@ async function configureMetroPortAsync(
     await runHdcAsync(hdc, ['-t', device.id, 'fport', 'rm', remote, local], {
       cwd: options.cwd,
       operation: 'remove-metro-port',
-      timeoutMs: 15_000,
+      timeoutMs: resolveTimeoutMs('remove-metro-port', 15_000, options.timeoutMs),
     });
   }
 
@@ -267,7 +268,7 @@ async function configureMetroPortAsync(
     cwd: options.cwd,
     message: `Cannot reverse Metro port ${port} for ${device.id}`,
     operation: 'reverse-metro-port',
-    timeoutMs: 15_000,
+    timeoutMs: resolveTimeoutMs('reverse-metro-port', 15_000, options.timeoutMs),
   });
 }
 
@@ -288,7 +289,7 @@ async function launchAppAsync(
     allowFailure: true,
     cwd: options.cwd,
     operation: 'force-stop-app',
-    timeoutMs: 15_000,
+    timeoutMs: resolveTimeoutMs('force-stop-app', 15_000),
   });
 
   await runHdcAsync(hdc, [
@@ -303,7 +304,7 @@ async function launchAppAsync(
     cwd: options.cwd,
     message: `Cannot launch ${bundleName} on ${device.id}`,
     operation: 'launch-app',
-    timeoutMs: 30_000,
+    timeoutMs: resolveTimeoutMs('launch-app', 30_000),
   });
 }
 

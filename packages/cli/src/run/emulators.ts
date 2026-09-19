@@ -4,6 +4,7 @@ import spawn from 'cross-spawn';
 
 import { HarmonyCliError } from '../errors';
 import { formatDiagnostics, spawnAsync } from '../process';
+import { resolveTimeoutMs } from '../timeout';
 import { type HarmonyTool } from '../native/toolchain';
 
 interface HarmonyEmulator {
@@ -21,7 +22,7 @@ async function listEmulatorsAsync(
       capture: true,
       cwd: options.cwd,
       operation: 'list-emulators',
-      timeoutMs: options.timeoutMs || 15_000,
+      timeoutMs: resolveTimeoutMs('list-emulators', 15_000, options.timeoutMs),
     });
   } catch (cause) {
     throw new HarmonyCliError(

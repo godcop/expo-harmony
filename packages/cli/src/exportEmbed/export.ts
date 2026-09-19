@@ -10,6 +10,7 @@ import { HarmonyCliError } from '../errors';
 import { withHarmonyProjectLockAsync } from '../projectLock';
 import { resolveHarmonyBuildPlanAsync } from '../native/project';
 import { formatDiagnostics, spawnAsync } from '../process';
+import { resolveTimeoutMs } from '../timeout';
 import { resolveExpoHermesBuilder } from '../expo';
 import {
   assertHermesBundle, assertSourceMap, exportPaths,
@@ -88,7 +89,7 @@ async function exportEmbedUnlockedAsync(
       },
       operation: 'expo-export-embed',
       outputLimit: 4 * 1024 * 1024,
-      timeoutMs: options.timeoutMs || 10 * 60_000,
+      timeoutMs: resolveTimeoutMs('expo-export-embed', 10 * 60_000, options.timeoutMs),
     });
 
     if (result.code !== 0 || result.timedOut) {

@@ -8,6 +8,7 @@ import { verifyModulesAsync } from '@expo-harmony/expo-modules-autolinking';
 import { isRnohAutolinkingDisabled, validateHarmonySigningConfigFile } from '@expo-harmony/prebuild-config/internal';
 
 import { spawnAsync } from '../process';
+import { resolveTimeoutMs } from '../timeout';
 import { withHarmonyProjectLockAsync } from '../projectLock';
 import { resolveHarmonyBuildPlanIfPresentAsync } from '../native/project';
 import { resolveHarmonyToolchain, type HarmonyTool } from '../native/toolchain';
@@ -221,7 +222,7 @@ async function doctorUnlockedAsync(root: string, options: DoctorOptions = {}): P
         capture: true,
         cwd: root,
         operation: `doctor-${id}`,
-        timeoutMs: 10_000,
+        timeoutMs: resolveTimeoutMs('doctor', 10_000),
       });
 
       checks.push(result.code === 0 && !result.timedOut

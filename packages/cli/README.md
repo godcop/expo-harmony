@@ -80,7 +80,7 @@ npx expo-harmony prebuild --check
 
 `--clean` 删除原生工程后重新生成。如果工程缺少 CNG 清单或模板标记，或者目录是符号链接、位于项目之外，命令会拒绝删除。
 
-`--check` 比较现有文件与当前配置生成的文件，不修改项目文件。没有差异时退出码为 0；有差异时列出变更，退出码为 2。它不能与其他会修改工程的选项一起使用。
+`--check` 比较现有文件与当前配置生成的文件，不修改项目文件。没有差异时退出码为 0，有差异时列出变更并以退出码 2 结束。这个选项不能和会修改工程的选项一起使用。
 
 ## Build
 
@@ -94,7 +94,7 @@ npx expo-harmony build --sync
 
 默认构建 Debug 版本。使用 `--variant release` 构建 Release 版本时，命令会将 JS Bundle 和资源打包进应用。
 
-项目没有原生工程时，命令会先运行 prebuild。已有 CNG 工程时，会检查生成的文件是否需要更新；有差异时停止构建，可以使用 `--sync` 重新生成后继续构建。bare 工程按现有原生配置构建，不支持 `--sync`。
+项目没有原生工程时，命令会先运行 prebuild。已有 CNG 工程时，会检查生成的文件是否需要更新，有差异就停止构建，可以用 `--sync` 重新生成后继续构建。bare 工程按现有原生配置构建，不支持 `--sync`。
 
 ## Doctor
 
@@ -154,7 +154,7 @@ npx expo-harmony run \
   --port 8081
 ```
 
-`run` 构建 HAP，在设备或模拟器上安装并启动应用。它使用项目中已有的原生工程；如果工程不存在，会先运行 prebuild。
+`run` 构建 HAP，在设备或模拟器上安装并启动应用。它使用项目中已有的原生工程，工程不存在时先运行 prebuild。
 
 常用选项：
 
@@ -169,7 +169,7 @@ npx expo-harmony run \
 
 Debug 模式下，如果 Metro 由这个命令启动，日志会显示在当前终端，按 Ctrl+C 退出。
 
-未指定 `--device` 时，优先使用已连接的设备。没有连接的设备时，先等待正在启动的模拟器；如果也没有正在启动的模拟器，就启动本地唯一的模拟器。有多个可选设备或模拟器时，需要用 `--device` 指定。
+未指定 `--device` 时，优先使用已连接的设备。没有连接的设备时，先等待正在启动的模拟器，没有的话就启动本地唯一的模拟器。有多个可选设备或模拟器时，需要用 `--device` 指定。
 
 按名称选择或自动启动模拟器时，CLI 会等待模拟器开机并连接 HDC，最多等待 120 秒。退出 CLI 或 Metro 后，模拟器继续运行。
 
@@ -190,6 +190,28 @@ CLI 先读取环境变量指定的工具路径，再查找 DevEco Studio 的安�
 | `HARMONY_NODE` | 指定 OHPM、Hvigor 使用的 Node.js 路径 |
 | `EXPO_HARMONY_NODE` | 指定原生构建过程中运行 Expo Harmony CLI 的 Node.js 路径，要求 Node.js 20 或更高版本 |
 | `DEVECO_SDK_HOME`、`HARMONY_HOME` 或 `OHOS_SDK_HOME` | 指定 HarmonyOS SDK 根目录 |
+
+### 超时
+
+OHPM 安装、Hvigor 构建、等待模拟器这些步骤都有超时，默认值见下表，可以通过环境变量覆盖。变量名为 `EXPO_HARMONY_<操作名大写下划线>_TIMEOUT_MS`，单位为毫秒，例如 `EXPO_HARMONY_OHPM_INSTALL_TIMEOUT_MS`。设置成 0、负数或无法解析的值时，这个变量会被忽略，并给出警告。
+
+| 环境变量 | 对应操作 | 默认值 |
+| --- | --- | --- |
+| `EXPO_HARMONY_OHPM_INSTALL_TIMEOUT_MS` | OHPM 依赖安装 | 30 分钟 |
+| `EXPO_HARMONY_HVIGOR_BUILD_TIMEOUT_MS` | Hvigor 构建 | 15 分钟 |
+| `EXPO_HARMONY_EXPO_EXPORT_EMBED_TIMEOUT_MS` | `export:embed`（Hermes 打包） | 10 分钟 |
+| `EXPO_HARMONY_METRO_READY_TIMEOUT_MS` | 等待 Metro 就绪 | 30 分钟 |
+| `EXPO_HARMONY_START_EMULATOR_TIMEOUT_MS` | 等待模拟器连接 HDC | 2 分钟 |
+| `EXPO_HARMONY_INSTALL_HAP_TIMEOUT_MS` | 安装 HAP 到设备 | 2 分钟 |
+| `EXPO_HARMONY_LAUNCH_APP_TIMEOUT_MS` | 启动应用 | 30 秒 |
+| `EXPO_HARMONY_LIST_DEVICES_TIMEOUT_MS` | HDC 列出设备 | 15 秒 |
+| `EXPO_HARMONY_LIST_EMULATORS_TIMEOUT_MS` | 列出模拟器实例 | 15 秒 |
+| `EXPO_HARMONY_FORCE_STOP_APP_TIMEOUT_MS` | 强制停止应用 | 15 秒 |
+| `EXPO_HARMONY_LIST_METRO_PORTS_TIMEOUT_MS` | 列出 Metro 端口转发 | 15 秒 |
+| `EXPO_HARMONY_REMOVE_METRO_PORT_TIMEOUT_MS` | 移除 Metro 端口转发 | 15 秒 |
+| `EXPO_HARMONY_REVERSE_METRO_PORT_TIMEOUT_MS` | 反向转发 Metro 端口 | 15 秒 |
+| `EXPO_HARMONY_HDC_TIMEOUT_MS` | 其他 HDC 命令 | 60 秒 |
+| `EXPO_HARMONY_DOCTOR_TIMEOUT_MS` | Doctor 工具检查 | 10 秒 |
 
 ## Author
 

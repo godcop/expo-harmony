@@ -153,6 +153,8 @@ npm run run:harmony
 
 不指定 `--device` 时，优先用已连接设备；没有设备就等启动中的模拟器，否则自动拉起唯一的本地模拟器。自动拉起需要 DevEco Studio 6.1.0 或更新版本。
 
+各步骤（OHPM 安装、Hvigor 构建、等待模拟器等）的超时默认值可以通过 `EXPO_HARMONY_<操作名大写下划线>_TIMEOUT_MS` 环境变量调整，例如 `EXPO_HARMONY_OHPM_INSTALL_TIMEOUT_MS`（默认 30 分钟）。完整列表见 [CLI README 的超时一节](../packages/cli/README.md#超时)。
+
 iOS 和 Android 的命令没有任何变化，`expo run:ios`、`expo run:android` 照旧。
 
 ## 签名

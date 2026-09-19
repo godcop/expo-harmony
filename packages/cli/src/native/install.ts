@@ -1,6 +1,7 @@
 import type { HarmonyBuildPlan } from './types';
 import type { HarmonyToolchain } from './toolchain';
 import { runCheckedAsync } from '../process';
+import { resolveTimeoutMs } from '../timeout';
 
 export async function installHarmonyDependenciesAsync(
   plan: Pick<HarmonyBuildPlan, 'harmonyRoot'>,
@@ -12,6 +13,6 @@ export async function installHarmonyDependenciesAsync(
     cwd: plan.harmonyRoot,
     message: 'OHPM install',
     operation: 'ohpm-install',
-    timeoutMs: options.timeoutMs || 30 * 60_000,
+    timeoutMs: resolveTimeoutMs('ohpm-install', 30 * 60_000, options.timeoutMs),
   });
 }
