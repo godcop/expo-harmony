@@ -42,6 +42,7 @@
 - [expo-constants](./packages/expo-constants/)：获取在应用整个安装期间保持不变的系统信息。
 - [expo-contacts](./packages/expo-contacts/)：访问手机的系统联系人。
 - [expo-crypto](./packages/expo-crypto/)：通用的加密操作。
+- [expo-dev-menu](./packages/expo-dev-menu/)：Expo 开发菜单的原生实现，提供菜单界面、FAB、偏好和源码浏览。
 - [expo-dev-menu-interface](./packages/expo-dev-menu-interface/)：提供 Expo Dev Menu 的管理、桥接、宿主代理和键盘响应接口定义。
 - [expo-device](./packages/expo-device/)：获取设备硬件相关的系统信息。
 - [expo-document-picker](./packages/expo-document-picker/)：通过系统界面选择文档并读取文件信息。

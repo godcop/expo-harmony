@@ -1,0 +1,17 @@
+{
+  "platforms": [
+    "harmony"
+  ],
+  "harmony": {
+    "modules": [
+      "ExpoDevMenuModule",
+      "DevMenuPreferencesModule"
+    ],
+    "runtimeBindings": [
+      "ExpoDevMenuRuntimeBinding"
+    ],
+    "reactActivityHandlers": [
+      "ExpoDevMenuReactActivityHandler"
+    ]
+  }
+}
