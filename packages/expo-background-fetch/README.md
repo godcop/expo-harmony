@@ -106,7 +106,7 @@ Work Scheduler 不可用、config plugin 未应用、任务名或选项不合法
 
 ## 原生初始化
 
-本模块自带一个应用级生命周期订阅器，应用一启动（AbilityStage 阶段）就会向 TaskManager 注册原生 consumer；即使进程由后台任务冷启动、尚未打开任何界面，注册也能完成。使用 CNG 时，AbilityStage 入口由 prebuild 自动生成；升级已有的 Bare 工程时，请按 [接入说明](../../docs/BareInstallation.md) 在 `module.json5` 中登记 `module.srcEntry`。系统的调度回调仍由 WorkScheduler Extension 接收，该订阅器只负责注册，不会替代 runtime loader，也不会自动启动 RN。
+不需要写原生初始化代码。模块在应用启动时自动向 TaskManager 注册，进程由后台任务冷启动、尚未打开界面时也一样。CNG 工程的入口由 prebuild 自动生成。升级已有的 Bare 工程时，需要在 `module.json5` 中登记 `module.srcEntry`，见 [接入说明](https://github.com/renbaoshuo/expo-harmony/blob/master/docs/BareInstallation.md)。
 
 ## Author
 
