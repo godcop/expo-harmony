@@ -34,8 +34,8 @@
     "@expo-harmony/expo-modules-core": "workspace:*",
     "expo-modules-core": "55.0.25",
     "expo-sharing": "55.0.20",
-    "react": "19.2.3",
-    "react-native": "0.84.1"
+    "react": "^19.2.0",
+    "react-native": "^0.83.6 || ^0.84.1"
   },
   "devDependencies": {
     "@expo-harmony/expo-module-scripts": "workspace:*",
