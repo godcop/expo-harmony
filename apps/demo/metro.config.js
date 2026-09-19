@@ -10,6 +10,13 @@ if (isHarmony) process.env.EXPO_UNSTABLE_LOG_BOX ??= '1';
 const config = getDefaultConfig(projectRoot);
 
 if (isHarmony) {
+  const enhance = config.server.enhanceMiddleware;
+  const devtools = require('./metro/devtools');
+  config.server.enhanceMiddleware = (middleware, server) => {
+    const next = enhance ? enhance(middleware, server) : middleware;
+    return (request, response, fallback) => devtools(request, response, () => next(request, response, fallback));
+  };
+
   // Native HAR build trees contain copies of RNOH and are not JS source roots.
   const blockList = config.resolver.blockList;
   config.resolver.blockList = [

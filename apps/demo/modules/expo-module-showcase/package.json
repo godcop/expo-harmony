@@ -35,7 +35,10 @@
     "@expo-harmony/expo-manifests": "workspace:*",
     "@expo-harmony/expo-module-scripts": "workspace:*",
     "@expo-harmony/expo-structured-headers": "workspace:*",
-    "@expo-harmony/expo-updates-interface": "workspace:*"
+    "@expo-harmony/expo-updates-interface": "workspace:*",
+    "expo": "55.0.26",
+    "react": "19.2.0",
+    "react-native": "0.83.6"
   },
   "engines": {
     "node": ">=20"

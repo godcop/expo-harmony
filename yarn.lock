@@ -1430,8 +1430,6 @@ __metadata:
     "@types/node": "npm:18.19.0"
     json5: "npm:2.2.3"
     typescript: "npm:^6.0.3"
-  peerDependencies:
-    "@expo/config": 55.0.17
   languageName: unknown
   linkType: soft
 
@@ -1469,6 +1467,7 @@ __metadata:
     "@expo-harmony/expo-constants": "workspace:*"
     "@expo-harmony/expo-contacts": "workspace:*"
     "@expo-harmony/expo-crypto": "workspace:*"
+    "@expo-harmony/expo-dev-client": "workspace:*"
     "@expo-harmony/expo-device": "workspace:*"
     "@expo-harmony/expo-document-picker": "workspace:*"
     "@expo-harmony/expo-eas-client": "workspace:*"
@@ -1499,9 +1498,11 @@ __metadata:
     "@expo-harmony/expo-sensors": "workspace:*"
     "@expo-harmony/expo-sharing": "workspace:*"
     "@expo-harmony/expo-splash-screen": "workspace:*"
+    "@expo-harmony/expo-symbols": "workspace:*"
     "@expo-harmony/expo-system-ui": "workspace:*"
     "@expo-harmony/expo-task-manager": "workspace:*"
     "@expo-harmony/expo-updates": "workspace:*"
+    "@expo-harmony/expo__log-box": "workspace:*"
     "@expo-harmony/metro-config": "workspace:*"
     "@expo-harmony/prebuild-config": "workspace:*"
     "@expo-harmony/template": "workspace:*"
@@ -1535,11 +1536,13 @@ __metadata:
     expo-constants: "npm:55.0.17"
     expo-contacts: "npm:55.0.14"
     expo-crypto: "npm:55.0.15"
+    expo-dev-client: "npm:55.0.35"
     expo-device: "npm:55.0.17"
     expo-document-picker: "npm:55.0.13"
     expo-eas-client: "npm:55.0.5"
     expo-file-system: "npm:55.0.24"
     expo-font: "npm:55.0.8"
+    expo-glass-effect: "npm:55.0.11"
     expo-haptics: "npm:55.0.14"
     expo-image: "npm:55.0.11"
     expo-image-loader: "npm:55.0.1"
@@ -1563,6 +1566,7 @@ __metadata:
     expo-sensors: "npm:55.0.15"
     expo-sharing: "npm:55.0.20"
     expo-splash-screen: "npm:55.0.21"
+    expo-symbols: "npm:55.0.9"
     expo-system-ui: "npm:55.0.18"
     expo-task-manager: "npm:~55.0.16"
     expo-updates: "npm:55.0.24"
@@ -1956,11 +1960,72 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@expo-harmony/expo-dev-client@workspace:packages/expo-dev-client":
+"@expo-harmony/expo-dev-client@workspace:*, @expo-harmony/expo-dev-client@workspace:packages/expo-dev-client":
   version: 0.0.0-use.local
   resolution: "@expo-harmony/expo-dev-client@workspace:packages/expo-dev-client"
+  dependencies:
+    "@expo-harmony/expo-dev-launcher": "workspace:*"
   peerDependencies:
     expo-dev-client: 55.0.35
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo-dev-launcher@workspace:*, @expo-harmony/expo-dev-launcher@workspace:packages/expo-dev-launcher":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-dev-launcher@workspace:packages/expo-dev-launcher"
+  dependencies:
+    "@expo-harmony/config-plugins": "workspace:*"
+    "@expo-harmony/expo-dev-menu": "workspace:*"
+    "@expo-harmony/expo-dev-menu-interface": "workspace:*"
+    "@expo-harmony/expo-eas-client": "workspace:*"
+    "@expo-harmony/expo-manifests": "workspace:*"
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@expo-harmony/expo-updates-interface": "workspace:*"
+    "@expo/config-plugins": "npm:55.0.10"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    expo: "npm:55.0.26"
+    expo-dev-launcher: "npm:55.0.36"
+    expo-modules-core: "npm:55.0.25"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    expo-dev-launcher: 55.0.36
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo-dev-menu-interface@workspace:*, @expo-harmony/expo-dev-menu-interface@workspace:packages/expo-dev-menu-interface":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-dev-menu-interface@workspace:packages/expo-dev-menu-interface"
+  dependencies:
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    expo: "npm:55.0.26"
+    expo-dev-menu-interface: "npm:55.0.2"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+  peerDependencies:
+    expo-dev-menu-interface: 55.0.2
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo-dev-menu@workspace:*, @expo-harmony/expo-dev-menu@workspace:packages/expo-dev-menu":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-dev-menu@workspace:packages/expo-dev-menu"
+  dependencies:
+    "@expo-harmony/expo-dev-menu-interface": "workspace:*"
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    expo: "npm:55.0.26"
+    expo-dev-menu: "npm:55.0.30"
+    expo-modules-core: "npm:55.0.25"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    expo-dev-menu: 55.0.30
   languageName: unknown
   linkType: soft
 
@@ -2275,9 +2340,12 @@ __metadata:
   dependencies:
     "@expo-harmony/expo-module-scripts": "workspace:*"
     "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    expo: "npm:55.0.26"
     expo-manifests: "npm:55.0.17"
     react: "npm:19.2.3"
     react-native: "npm:0.84.1"
+  peerDependencies:
+    expo: 55.0.26
   languageName: unknown
   linkType: soft
 
@@ -2339,6 +2407,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@expo-harmony/expo-modules-core@workspace:packages/expo-modules-core"
   dependencies:
+    "@babel/core": "npm:7.29.7"
     "@expo-harmony/expo-module-scripts": "workspace:*"
     "@react-native-oh/react-native-harmony": "npm:0.84.1"
     "@react-native-ohos/react-native-worklets": "npm:1.0.0"
@@ -2375,8 +2444,8 @@ __metadata:
     "@expo-harmony/expo-modules-core": "workspace:*"
     expo-modules-core: 55.0.25
     expo-navigation-bar: 55.0.13
-    react: 19.2.3
-    react-native: 0.84.1
+    react: ^19.2.0
+    react-native: ^0.83.6 || ^0.84.1
   languageName: unknown
   linkType: soft
 
@@ -2540,8 +2609,8 @@ __metadata:
     "@expo-harmony/expo-modules-core": "workspace:*"
     expo-modules-core: 55.0.25
     expo-sharing: 55.0.20
-    react: 19.2.3
-    react-native: 0.84.1
+    react: ^19.2.0
+    react-native: ^0.83.6 || ^0.84.1
   languageName: unknown
   linkType: soft
 
@@ -2597,6 +2666,30 @@ __metadata:
     "@react-native-oh/react-native-harmony": "npm:0.84.1"
     react: "npm:19.2.3"
     react-native: "npm:0.84.1"
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo-symbols@workspace:*, @expo-harmony/expo-symbols@workspace:packages/expo-symbols":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-symbols@workspace:packages/expo-symbols"
+  dependencies:
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    "@types/react": "npm:19.2.2"
+    expo: "npm:55.0.26"
+    expo-font: "npm:55.0.8"
+    expo-modules-core: "npm:55.0.25"
+    expo-symbols: "npm:55.0.9"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+    typescript: "npm:6.0.3"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    expo-modules-core: 55.0.25
+    expo-symbols: 55.0.9
+    react: ^19.2.0
+    react-native: ^0.83.6 || ^0.84.1
   languageName: unknown
   linkType: soft
 
@@ -2664,6 +2757,7 @@ __metadata:
     "@expo-harmony/expo-updates-interface": "workspace:*"
     "@react-native-oh/react-native-harmony": "npm:0.84.1"
     expo: "npm:55.0.26"
+    expo-eas-client: "npm:55.0.5"
     expo-modules-core: "npm:55.0.25"
     expo-updates: "npm:55.0.24"
     react: "npm:19.2.3"
@@ -2751,6 +2845,31 @@ __metadata:
   resolution: "@expo-harmony/expo__local-build-cache-provider@workspace:packages/expo__local-build-cache-provider"
   peerDependencies:
     "@expo/local-build-cache-provider": 55.0.13
+  languageName: unknown
+  linkType: soft
+
+"@expo-harmony/expo__log-box@workspace:*, @expo-harmony/expo__log-box@workspace:packages/expo__log-box":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo__log-box@workspace:packages/expo__log-box"
+  dependencies:
+    "@expo-harmony/config-plugins": "workspace:*"
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@expo/config-plugins": "npm:55.0.10"
+    "@expo/log-box": "npm:55.0.12"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    expo: "npm:55.0.26"
+    expo-modules-core: "npm:55.0.25"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+    stacktrace-parser: "npm:0.1.11"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@expo/log-box": 55.0.12
+    expo: 55.0.26
+    expo-modules-core: 55.0.25
+    react: ^19.2.0
+    react-native: ^0.83.6 || ^0.84.1
   languageName: unknown
   linkType: soft
 
@@ -2853,7 +2972,10 @@ __metadata:
     "@expo/config-plugins": "npm:55.0.10"
     "@react-native-community/cli-config": "npm:15.1.3"
     "@types/node": "npm:18.19.0"
+    expo: "npm:55.0.26"
     json5: "npm:2.2.3"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
     typescript: "npm:6.0.3"
   peerDependencies:
     expo: 55.0.26
@@ -7886,6 +8008,54 @@ __metadata:
   languageName: node
   linkType: hard
 
+"expo-dev-client@npm:55.0.35":
+  version: 55.0.35
+  resolution: "expo-dev-client@npm:55.0.35"
+  dependencies:
+    expo-dev-launcher: "npm:55.0.36"
+    expo-dev-menu: "npm:55.0.30"
+    expo-dev-menu-interface: "npm:55.0.2"
+    expo-manifests: "npm:~55.0.17"
+    expo-updates-interface: "npm:~55.1.6"
+  peerDependencies:
+    expo: "*"
+  checksum: 10c0/0cdba1f77fed19d7b53ec070e6ea3e37913a1cd88175a0caffd1d67ccb2c8c1d51edaed2de118e4368835c02efbdef87dbee03ff45ed75589d7b78e919dd862c
+  languageName: node
+  linkType: hard
+
+"expo-dev-launcher@npm:55.0.36":
+  version: 55.0.36
+  resolution: "expo-dev-launcher@npm:55.0.36"
+  dependencies:
+    "@expo/schema-utils": "npm:^55.0.4"
+    expo-dev-menu: "npm:55.0.30"
+    expo-manifests: "npm:~55.0.17"
+  peerDependencies:
+    expo: "*"
+  checksum: 10c0/cfd032056546ddcd2da0c71ab735f613b15c009138ab04984e75f8fafc954e125f3e0f5ab4db1a31342edd4460376b96e1b9fcfc0c4c9ffedbb17ee43b2cc1d0
+  languageName: node
+  linkType: hard
+
+"expo-dev-menu-interface@npm:55.0.2":
+  version: 55.0.2
+  resolution: "expo-dev-menu-interface@npm:55.0.2"
+  peerDependencies:
+    expo: "*"
+  checksum: 10c0/e13f4f235df2d3d9e35026553a3b49350ea08a7a1285634f15f8e957a39e3cf522f1f6a81a89396c66bfec452e664094e1711cf516db077da2d12ae844e3cabe
+  languageName: node
+  linkType: hard
+
+"expo-dev-menu@npm:55.0.30":
+  version: 55.0.30
+  resolution: "expo-dev-menu@npm:55.0.30"
+  dependencies:
+    expo-dev-menu-interface: "npm:55.0.2"
+  peerDependencies:
+    expo: "*"
+  checksum: 10c0/c8d965de6dd8e97974974b9b54884ce71cdb9ee2b99badeaaa845c1e819958ae72c2f805b432966738cf03de96a8cb1be5e1f9b9475e5e6cf5badaa5803552b6
+  languageName: node
+  linkType: hard
+
 "expo-device@npm:55.0.17":
   version: 55.0.17
   resolution: "expo-device@npm:55.0.17"
@@ -7946,7 +8116,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"expo-glass-effect@npm:^55.0.11":
+"expo-glass-effect@npm:55.0.11, expo-glass-effect@npm:^55.0.11":
   version: 55.0.11
   resolution: "expo-glass-effect@npm:55.0.11"
   peerDependencies:
@@ -8146,6 +8316,9 @@ __metadata:
     "@expo-harmony/expo-module-scripts": "workspace:*"
     "@expo-harmony/expo-structured-headers": "workspace:*"
     "@expo-harmony/expo-updates-interface": "workspace:*"
+    expo: "npm:55.0.26"
+    react: "npm:19.2.0"
+    react-native: "npm:0.83.6"
   peerDependencies:
     "@expo-harmony/expo-modules-core": "workspace:*"
     expo-modules-core: ^55.0.0
@@ -8389,7 +8562,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"expo-symbols@npm:^55.0.9":
+"expo-symbols@npm:55.0.9, expo-symbols@npm:^55.0.9":
   version: 55.0.9
   resolution: "expo-symbols@npm:55.0.9"
   dependencies:
@@ -13623,7 +13796,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"stacktrace-parser@npm:^0.1.10":
+"stacktrace-parser@npm:0.1.11, stacktrace-parser@npm:^0.1.10":
   version: 0.1.11
   resolution: "stacktrace-parser@npm:0.1.11"
   dependencies:

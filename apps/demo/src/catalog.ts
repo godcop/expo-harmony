@@ -10,6 +10,8 @@ export type ModuleCategory = typeof MODULE_CATEGORIES[number];
 
 export const MODULES = [
   { id: 'expo', title: 'Expo 宿主', packageName: '@expo-harmony/expo', category: '核心运行时', summary: '官方 Expo 入口、宿主重载与模块生命周期。' },
+  { id: 'expo-modules-core', title: 'Expo Modules Core', packageName: '@expo-harmony/expo-modules-core', category: '核心运行时', summary: '原生模块注册表、事件发射器与 Expo 运行时桥接。' },
+  { id: 'devtools', title: '开发工具 DevTools', packageName: '@expo-harmony/expo-dev-client', category: '核心运行时', summary: 'Expo 网络检查、文件传输、请求取消与运行时重新加载。' },
   { id: 'dev-launcher', title: '开发启动器', packageName: '@expo-harmony/expo-dev-launcher', category: '核心运行时', summary: '项目加载、URL 错误边界、启动器常量、Home 与历史记录。' },
   { id: 'dev-menu', title: '开发菜单', packageName: '@expo-harmony/expo-dev-menu', category: '核心运行时', summary: '菜单回调、偏好往返、FAB、源码浏览与宿主接口联动。' },
   { id: 'log-box', title: 'Expo LogBox', packageName: '@expo-harmony/expo__log-box', category: '核心运行时', summary: '多日志、堆栈、原生复制、未捕获异常与错误恢复。' },
@@ -19,7 +21,6 @@ export const MODULES = [
   { id: 'structured-headers', title: '结构化响应头', packageName: '@expo-harmony/expo-structured-headers', category: '核心运行时', summary: '字典、列表与单项响应头的原生解析和序列化。' },
   { id: 'updates-interface', title: 'Updates 原生接口', packageName: '@expo-harmony/expo-updates-interface', category: '核心运行时', summary: '原生控制器、状态 Context 和带类型的事件订阅。' },
   { id: 'updates', title: '应用更新', packageName: '@expo-harmony/expo-updates', category: '核心运行时', summary: '更新检查、资源下载、缓存启动、签名与回滚。' },
-  { id: 'expo-modules-core', title: 'Expo Modules Core', packageName: '@expo-harmony/expo-modules-core', category: '核心运行时', summary: '原生模块注册表、事件发射器与 Expo 运行时桥接。' },
   { id: 'expo-module-showcase', title: 'Expo Modules 测试', packageName: 'modules/expo-module-showcase', category: '核心运行时', summary: '使用本地模块测试原生调用、事件、共享对象、原生组件与页面，覆盖 Android、iOS 和 HarmonyOS。' },
   { id: 'expo-router', title: 'Expo Router', packageName: 'expo-router', category: '核心运行时', summary: '基于文件的路由、类型化参数、堆栈导航与深链接。' },
   { id: 'expo-task-manager', title: '任务管理器', packageName: '@expo-harmony/expo-task-manager', category: '核心运行时', summary: '全局任务定义与持久化的原生注册。' },
