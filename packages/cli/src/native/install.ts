@@ -12,6 +12,6 @@ export async function installHarmonyDependenciesAsync(
     cwd: plan.harmonyRoot,
     message: 'OHPM install',
     operation: 'ohpm-install',
-    timeoutMs: options.timeoutMs || 5 * 60_000,
+    timeoutMs: options.timeoutMs || 30 * 60_000,
   });
 }
