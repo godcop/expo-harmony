@@ -109,6 +109,7 @@
           "toolsButton": true
         }
       ],
+      "@expo-harmony/expo__log-box",
       "@expo-harmony/prebuild-config",
       [
         "@expo-harmony/expo-build-properties",

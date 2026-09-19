@@ -12,6 +12,7 @@ export const MODULES = [
   { id: 'expo', title: 'Expo 宿主', packageName: '@expo-harmony/expo', category: '核心运行时', summary: '官方 Expo 入口、宿主重载与模块生命周期。' },
   { id: 'dev-launcher', title: '开发启动器', packageName: '@expo-harmony/expo-dev-launcher', category: '核心运行时', summary: '项目加载、URL 错误边界、启动器常量、Home 与历史记录。' },
   { id: 'dev-menu', title: '开发菜单', packageName: '@expo-harmony/expo-dev-menu', category: '核心运行时', summary: '菜单回调、偏好往返、FAB、源码浏览与宿主接口联动。' },
+  { id: 'log-box', title: 'Expo LogBox', packageName: '@expo-harmony/expo__log-box', category: '核心运行时', summary: '多日志、堆栈、原生复制、未捕获异常与错误恢复。' },
   { id: 'eas-client', title: 'EAS 客户端', packageName: '@expo-harmony/expo-eas-client', category: '核心运行时', summary: '安装级客户端身份、确定性采样与持久化。' },
   { id: 'manifests', title: 'Manifest 清单', packageName: '@expo-harmony/expo-manifests', category: '核心运行时', summary: '内置与远程清单的原生字段读取和校验。' },
   { id: 'json-utils', title: 'JSON 字段读取', packageName: '@expo-harmony/expo-json-utils', category: '核心运行时', summary: '原生 JSON 字段读取、类型转换、可空值和错误边界。' },

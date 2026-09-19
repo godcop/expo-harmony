@@ -66,10 +66,12 @@ import { StructuredHeadersDemo } from './modules/structured-headers';
 import { UpdatesInterfaceDemo } from './modules/updates-interface';
 import { DevLauncherDemo } from './modules/dev-launcher';
 import { DevMenuDemo } from './modules/dev-menu';
+import { LogBoxDemo } from './modules/log-box';
 
 const MODULE_DEMOS = {
   'dev-launcher': DevLauncherDemo,
   'dev-menu': DevMenuDemo,
+  'log-box': LogBoxDemo,
   'expo': ExpoDemo,
   'eas-client': EASClientDemo,
   'manifests': ManifestsDemo,

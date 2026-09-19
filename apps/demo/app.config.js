@@ -1,6 +1,7 @@
 'use strict';
 
 module.exports = ({ config }) => {
+  if (process.env.EXPO_HARMONY === '1') process.env.EXPO_UNSTABLE_LOG_BOX ??= '1';
   const signingConfigFile = process.env.EXPO_HARMONY_SIGNING_CONFIG_FILE;
   const check = process.env.EXPO_UPDATES_CHECK_AUTOMATICALLY;
   return {

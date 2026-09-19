@@ -89,6 +89,7 @@
     "@expo-harmony/expo-system-ui": "workspace:*",
     "@expo-harmony/expo-task-manager": "workspace:*",
     "@expo-harmony/expo-updates": "workspace:*",
+    "@expo-harmony/expo__log-box": "workspace:*",
     "@expo-harmony/metro-config": "workspace:*",
     "@expo-harmony/prebuild-config": "workspace:*",
     "@expo-harmony/template": "workspace:*",

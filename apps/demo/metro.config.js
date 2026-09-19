@@ -6,6 +6,7 @@ const path = require('node:path');
 
 const projectRoot = __dirname;
 const isHarmony = process.env.EXPO_METRO_TARGET === 'harmony';
+if (isHarmony) process.env.EXPO_UNSTABLE_LOG_BOX ??= '1';
 const config = getDefaultConfig(projectRoot);
 
 if (isHarmony) {
@@ -22,9 +23,11 @@ if (isHarmony) {
   ];
 }
 
-module.exports = withHarmonyConfig(config, {
+const harmonyConfig = withHarmonyConfig(config, {
   enabled: isHarmony,
   projectRoot,
   // RNOH 0.84 and Expo SDK 55 use different React renderer versions.
   aliases: { react: 'react-harmony' },
 });
+
+module.exports = isHarmony ? require('@expo-harmony/expo__log-box/metro').withLogBox(harmonyConfig) : harmonyConfig;
