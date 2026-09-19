@@ -33,7 +33,7 @@ npm install @expo-harmony/prebuild-config
 }
 ```
 
-`bundleName` 必填，其余字段有默认值。完整列表见 [@expo-harmony/config-plugins](../config-plugins/README.md)。
+`bundleName` 必填，其余字段有默认值。完整列表见 `@expo-harmony/config-plugins` 的 README。
 
 生成或更新原生工程：
 
