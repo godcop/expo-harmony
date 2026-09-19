@@ -1,0 +1,19 @@
+{
+  "platforms": [
+    "harmony"
+  ],
+  "harmony": {
+    "modules": [
+      "ExpoLogBoxModule"
+    ],
+    "rootViewComponents": [
+      "ExpoLogBoxRootView"
+    ],
+    "reactNativeHostHandlers": [
+      "ExpoLogBoxReactNativeHostHandler"
+    ],
+    "runtimeBindings": [
+      "ExpoLogBoxRuntimeBinding"
+    ]
+  }
+}

@@ -64,6 +64,7 @@
 - [expo-location](./packages/expo-location/)：读取地理位置、轮询当前位置或订阅位置更新事件。
 - [expo-manifests](./packages/expo-manifests/)：提供 Expo 更新清单的原生模型，可在原生代码中读取和校验。
 - [expo-media-library](./packages/expo-media-library/)：访问设备上的图片和视频等媒体资源。
+- [@expo/log-box](./packages/expo__log-box/)：使用官方 Expo LogBox 界面显示 HarmonyOS 开发构建中的原生与 JavaScript 错误。
 - [expo-module-scripts](./packages/expo-module-scripts/)：为 HarmonyOS 下的 Expo Module 提供构建与打包命令支持。
 - [expo-modules-autolinking](./packages/expo-modules-autolinking/)：自动链接 Expo 模块和 RNOH 原生模块。
 - [expo-modules-core](./packages/expo-modules-core/)：提供 Expo Modules 所需的原生运行时。
