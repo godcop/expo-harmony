@@ -103,9 +103,10 @@ export class ExpoIntentLauncherModule extends ExpoModule {
     const logger = this.context.logger;
     let want: Want;
     try {
-      const info = bundle === this.context.uiAbilityContext.abilityInfo.bundleName
-        ? bundleManager.getBundleInfoForSelfSync(LAUNCH_BUNDLE_FLAGS)
-        : bundleManager.getBundleInfoSync(bundle, LAUNCH_BUNDLE_FLAGS);
+      const info =
+        bundle === this.context.uiAbilityContext.abilityInfo.bundleName
+          ? bundleManager.getBundleInfoForSelfSync(LAUNCH_BUNDLE_FLAGS)
+          : bundleManager.getBundleInfoSync(bundle, LAUNCH_BUNDLE_FLAGS);
       want = applicationWant(info);
     } catch (error) {
       if (error instanceof ExpoModuleError) {
@@ -139,9 +140,10 @@ export class ExpoIntentLauncherModule extends ExpoModule {
     const logger = this.context.logger;
     let info: bundleManager.BundleInfo;
     try {
-      info = bundle === this.context.uiAbilityContext.abilityInfo.bundleName
-        ? await bundleManager.getBundleInfoForSelf(bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_APPLICATION)
-        : await bundleManager.getBundleInfo(bundle, bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_APPLICATION);
+      info =
+        bundle === this.context.uiAbilityContext.abilityInfo.bundleName
+          ? await bundleManager.getBundleInfoForSelf(bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_APPLICATION)
+          : await bundleManager.getBundleInfo(bundle, bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_APPLICATION);
     } catch (error) {
       if (error instanceof ExpoModuleError) {
         throw new ExpoModuleError(error.code, error.message, error.cause, error.path);
