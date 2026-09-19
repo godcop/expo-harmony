@@ -64,8 +64,10 @@ import { ManifestsDemo } from './modules/manifests';
 import { JSONUtilsDemo } from './modules/json-utils';
 import { StructuredHeadersDemo } from './modules/structured-headers';
 import { UpdatesInterfaceDemo } from './modules/updates-interface';
+import { DevMenuDemo } from './modules/dev-menu';
 
 const MODULE_DEMOS = {
+  'dev-menu': DevMenuDemo,
   'expo': ExpoDemo,
   'eas-client': EASClientDemo,
   'manifests': ManifestsDemo,
