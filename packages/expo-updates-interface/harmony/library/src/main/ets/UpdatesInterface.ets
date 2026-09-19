@@ -65,6 +65,7 @@ export interface UpdatesRollback {
 
 export class UpdatesControllerRegistry {
   private static controllerRef?: WeakRef<UpdatesInterface>;
+  private static readonly developmentLauncherRequests = new Set<string>();
 
   static get controller(): UpdatesInterface | undefined {
     const controller = UpdatesControllerRegistry.controllerRef?.deref();
@@ -74,5 +75,17 @@ export class UpdatesControllerRegistry {
 
   static set controller(value: UpdatesInterface | undefined) {
     UpdatesControllerRegistry.controllerRef = value === undefined ? undefined : new WeakRef(value);
+  }
+
+  static requestDevelopmentLauncherInitialization(bundleName: string): void {
+    UpdatesControllerRegistry.developmentLauncherRequests.add(bundleName);
+  }
+
+  static isDevelopmentLauncherInitializationRequested(bundleName: string): boolean {
+    return UpdatesControllerRegistry.developmentLauncherRequests.has(bundleName);
+  }
+
+  static completeDevelopmentLauncherInitialization(bundleName: string): void {
+    UpdatesControllerRegistry.developmentLauncherRequests.delete(bundleName);
   }
 }
