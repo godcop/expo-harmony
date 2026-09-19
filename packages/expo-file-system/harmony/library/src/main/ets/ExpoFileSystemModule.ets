@@ -4,6 +4,7 @@ import {
   ExpoEither,
   ExpoModule,
   ExpoModuleContext,
+  ExpoNetworkInspection,
   ExpoModuleDefinition,
   ExpoModuleError,
   ExpoSharedObject,
@@ -296,9 +297,43 @@ class ExpoFileSystemService {
 
   private async fetch(task: NetworkTask, request: rcp.Request): Promise<rcp.Response> {
     assertNetworkTask(task);
+
     if (task.session === undefined) task.session = rcp.createSession();
     task.request = request;
-    return Promise.race([task.session.fetch(request), task.cancellation]);
+
+    const content = request.content;
+    const inspection = ExpoNetworkInspection.start(
+      request.url.toString(),
+      request.method,
+      ExpoNetworkInspection.headers(request.headers ?? {}),
+      typeof content === 'string' || content instanceof ArrayBuffer ? content : undefined,
+    );
+    const destination = request.destination;
+    if (inspection !== undefined && typeof destination === 'function') {
+      request.destination = async (chunk: ArrayBuffer): Promise<void> => {
+        inspection.data(chunk);
+        await destination(chunk);
+      };
+    }
+
+    try {
+      const response = await Promise.race([task.session.fetch(request), task.cancellation]);
+
+      inspection?.response(response.statusCode, ExpoNetworkInspection.headers(response.headers));
+      if (response.body !== undefined) inspection?.data(response.body);
+      inspection?.finish();
+
+      return response;
+    } catch (error) {
+      inspection?.fail(task.cancelled);
+
+      throw new ExpoFileSystemError(
+        error instanceof ExpoFileSystemError ? error.code : 'ERR_FILESYSTEM_NETWORK',
+        error instanceof Error ? error.message : String(error),
+        error as Object,
+        error instanceof ExpoFileSystemError ? error.path : undefined,
+      );
+    }
   }
 
   async download(input: DownloadRequest): Promise<DownloadResult | RawDownloadResult | null> {
