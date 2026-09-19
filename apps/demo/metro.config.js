@@ -9,6 +9,12 @@ const isHarmony = process.env.EXPO_METRO_TARGET === 'harmony';
 const config = getDefaultConfig(projectRoot);
 
 if (isHarmony) {
+  // Native HAR build trees contain copies of RNOH and are not JS source roots.
+  const blockList = config.resolver.blockList;
+  config.resolver.blockList = [
+    ...(Array.isArray(blockList) ? blockList : blockList ? [blockList] : []),
+    /[\\/]harmony[\\/]/,
+  ];
   // Yarn keeps Router's native sidecars in its workspace node_modules.
   config.resolver.nodeModulesPaths = [
     ...config.resolver.nodeModulesPaths,
