@@ -1,6 +1,6 @@
 {
   "name": "@expo-harmony/expo-intent-launcher",
-  "version": "55.0.12-harmony.1",
+  "version": "55.0.12-harmony.2",
   "description": "HarmonyOS port of expo-intent-launcher",
   "keywords": [
     "react-native",

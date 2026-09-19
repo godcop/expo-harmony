@@ -1,6 +1,6 @@
 {
   "name": "@expo-harmony/expo-updates",
-  "version": "55.0.24-harmony.1",
+  "version": "55.0.24-harmony.2",
   "description": "HarmonyOS port of expo-updates",
   "keywords": [
     "react-native",
@@ -18,11 +18,11 @@
   "main": "Index.ets",
   "license": "MIT",
   "dependencies": {
-    "@expo-harmony/expo-modules-core": "55.0.25-harmony.3",
-    "@expo-harmony/expo-manifests": "55.0.17-harmony.1",
-    "@expo-harmony/expo-structured-headers": "55.0.2-harmony.1",
-    "@expo-harmony/expo-updates-interface": "55.1.6-harmony.1",
-    "@expo-harmony/expo-eas-client": "55.0.5-harmony.1",
+    "@expo-harmony/expo-modules-core": "55.0.25-harmony.4",
+    "@expo-harmony/expo-manifests": "55.0.17-harmony.2",
+    "@expo-harmony/expo-structured-headers": "55.0.2-harmony.2",
+    "@expo-harmony/expo-updates-interface": "55.1.6-harmony.2",
+    "@expo-harmony/expo-eas-client": "55.0.5-harmony.2",
     "@rnoh/react-native-openharmony": "0.84.1",
     "libexpo_updates.so": "file:./src/main/cpp/types/libexpo_updates"
   }

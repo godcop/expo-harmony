@@ -1,7 +1,7 @@
 {
   "modelVersion": "5.0.0",
   "name": "@expo-harmony-internal/expo-app-metrics",
-  "version": "0.2.2-harmony.3",
+  "version": "0.2.2-harmony.4",
   "description": "HarmonyOS port of expo-app-metrics",
   "keywords": [
     "react-native",
