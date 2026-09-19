@@ -1,0 +1,8 @@
+{
+  "app": {
+    "bundleName": "dev.expo.application.build",
+    "vendor": "expo-harmony",
+    "versionCode": 550002,
+    "versionName": "55.0.2-harmony.0"
+  }
+}

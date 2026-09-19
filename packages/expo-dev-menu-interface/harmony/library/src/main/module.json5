@@ -1,0 +1,7 @@
+{
+  "module": {
+    "name": "expo_dev_menu_interface",
+    "type": "har",
+    "deviceTypes": ["default", "tablet", "2in1"]
+  }
+}
