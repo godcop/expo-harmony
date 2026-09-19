@@ -28,6 +28,7 @@
 - [expo-application](./packages/expo-application/)：获取原生应用的 ID、名称和构建版本等信息。
 - [expo-asset](./packages/expo-asset/)：下载资源并在其他库中使用。
 - [expo-audio](./packages/expo-audio/)：提供音频播放与录制的 API。
+- [expo-auth-session](./packages/expo-auth-session/)：处理基于浏览器的身份认证。
 - [expo-background-fetch](./packages/expo-background-fetch/)：执行后台抓取任务。
 - [expo-background-task](./packages/expo-background-task/)：运行后台任务。
 - [expo-battery](./packages/expo-battery/)：获取设备电池信息并监听相关事件。
@@ -38,11 +39,13 @@
 - [expo-calendar](./packages/expo-calendar/)：访问系统日历、事件、提醒及相关记录。
 - [expo-camera](./packages/expo-camera/)：访问设备摄像头。
 - [expo-cellular](./packages/expo-cellular/)：获取用户蜂窝网络服务提供商信息。
+- [expo-checkbox](./packages/expo-checkbox/)：提供基础复选框功能的 React 组件。
 - [expo-clipboard](./packages/expo-clipboard/)：读取和写入剪贴板内容。
 - [expo-constants](./packages/expo-constants/)：获取在应用整个安装期间保持不变的系统信息。
 - [expo-contacts](./packages/expo-contacts/)：访问手机的系统联系人。
 - [expo-crypto](./packages/expo-crypto/)：通用的加密操作。
 - [expo-dev-client](./packages/expo-dev-client/)：提供 Expo 开发客户端入口，聚合开发启动器与开发菜单。
+- [expo-dev-client-components](./packages/expo-dev-client-components/)：expo-dev-client 共用的 JS 组件与配置。
 - [expo-dev-launcher](./packages/expo-dev-launcher/)：Expo 开发构建的原生启动器，支持项目地址、最近项目、mDNS 发现和系统扫码。
 - [expo-dev-menu](./packages/expo-dev-menu/)：Expo 开发菜单的原生实现，提供菜单界面、FAB、偏好和源码浏览。
 - [expo-dev-menu-interface](./packages/expo-dev-menu-interface/)：提供 Expo Dev Menu 的管理、桥接、宿主代理和键盘响应接口定义。
@@ -65,13 +68,29 @@
 - [expo-location](./packages/expo-location/)：读取地理位置、轮询当前位置或订阅位置更新事件。
 - [expo-manifests](./packages/expo-manifests/)：提供 Expo 更新清单的原生模型，可在原生代码中读取和校验。
 - [expo-media-library](./packages/expo-media-library/)：访问设备上的图片和视频等媒体资源。
+- [@expo/config](./packages/expo__config/)：用于操作 app.json 的库。
+- [@expo/config-types](./packages/expo__config-types/)：Expo 配置对象 app.config.ts 的类型。
+- [@expo/devtools](./packages/expo__devtools/)：Expo 的 DevTools 插件辅助工具。
+- [@expo/env](./packages/expo__env/)：把 .env 文件中的环境变量注入 process.env。
+- [@expo/fingerprint](./packages/expo__fingerprint/)：为 React Native 工程生成指纹。
+- [@expo/image-utils](./packages/expo__image-utils/)：供 Expo CLI 处理图片的包。
+- [@expo/json-file](./packages/expo__json-file/)：读写和修改 JSON 文件的模块。
+- [@expo/local-build-cache-provider](./packages/expo__local-build-cache-provider/)：Expo 的本地构建缓存提供者。
 - [@expo/log-box](./packages/expo__log-box/)：使用官方 Expo LogBox 界面显示 HarmonyOS 开发构建中的原生与 JavaScript 错误。
+- [@expo/metro-runtime](./packages/expo__metro-runtime/)：让 Metro 打包器高级特性生效的工具。
+- [@expo/package-manager](./packages/expo__package-manager/)：在项目中查找和安装依赖包。
+- [@expo/pkcs12](./packages/expo__pkcs12/)：Node.js 的 PKCS#12 工具。
+- [@expo/require-utils](./packages/expo__require-utils/)：可复用的 require 与 Node 模块解析工具。
+- [@expo/router-server](./packages/expo__router-server/)：为 Expo Router 项目提供静态渲染与服务端 API。
+- [@expo/schema-utils](./packages/expo__schema-utils/)：可复用的 JSON Schema（Draft 04）校验库。
+- [@expo/schemer](./packages/expo__schemer/)：Expo 的集中式 schema 校验库。
 - [expo-module-scripts](./packages/expo-module-scripts/)：为 HarmonyOS 下的 Expo Module 提供构建与打包命令支持。
 - [expo-modules-autolinking](./packages/expo-modules-autolinking/)：自动链接 Expo 模块和 RNOH 原生模块。
 - [expo-modules-core](./packages/expo-modules-core/)：提供 Expo Modules 所需的原生运行时。
 - [expo-navigation-bar](./packages/expo-navigation-bar/)：与系统导航栏进行交互。
 - [expo-network](./packages/expo-network/)：获取设备网络信息，如 IP 地址、MAC 地址和飞行模式状态。
 - [expo-print](./packages/expo-print/)：提供打印功能。
+- [expo-processing](./packages/expo-processing/)：在 Expo 中使用 Processing.js 的工具。
 - [expo-router](./packages/expo-router/)：面向 React Native 和 Web 应用的基于文件的路由库。
 - [expo-screen-capture](./packages/expo-screen-capture/)：阻止应用界面被截屏或录屏，并监听截图事件。
 - [expo-screen-orientation](./packages/expo-screen-orientation/)：管理设备的屏幕方向。
@@ -79,6 +98,7 @@
 - [expo-sensors](./packages/expo-sensors/)：访问设备的加速度计、陀螺仪、磁力计、气压计、环境光、设备运动和计步器。
 - [expo-sharing](./packages/expo-sharing/)：与其他应用分享和接收数据。
 - [expo-splash-screen](./packages/expo-splash-screen/)：控制原生启动画面的显示行为。
+- [expo-standard-web-crypto](./packages/expo-standard-web-crypto/)：W3C Crypto API 的部分实现。
 - [expo-status-bar](./packages/expo-status-bar/)：提供与 React Native StatusBar 一致的接口，但其默认值更适合 Expo 环境。
 - [expo-structured-headers](./packages/expo-structured-headers/)：解析和序列化 Structured Fields（RFC 8941）响应头。
 - [expo-symbols](./packages/expo-symbols/)：显示系统 Symbol 图标。
