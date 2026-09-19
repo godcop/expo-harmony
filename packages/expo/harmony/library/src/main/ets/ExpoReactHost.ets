@@ -14,6 +14,7 @@ import {
 import { bundleManager, common } from '@kit.AbilityKit';
 import { JSBundleProvider, MetroJSBundleProvider, RNInstance, RNInstanceOptions, RNOHCoreContext } from '@rnoh/react-native-openharmony';
 import { ExpoJSBundleProvider, ExpoResourceBundle } from './ExpoJSBundleProvider';
+import { withDeveloperSupport } from './ExpoRNInstanceOptions';
 import type { RNInstanceConfig } from '@rnoh/react-native-openharmony/src/main/ets/RNApp';
 import type { ExpoHarmonyHostProvider } from './ExpoModulesPackage';
 
@@ -190,7 +191,13 @@ export class ExpoReactHost {
   ): ReactNativeRuntime {
     const external = typeof (source as RNInstance).getId === 'function';
     const runtime = new RnohReactRuntime(core, {
-      options: external ? undefined : (source as RNInstanceOptions),
+      options: external
+        ? undefined
+        : (): RNInstanceOptions => {
+            const options = source as RNInstanceOptions;
+            // Resolve after the launcher's selection gate, on every reload as well.
+            return withDeveloperSupport(options, this.delegate.useDeveloperSupport(options.enableDebugger ?? this.debug));
+          },
       instance: external ? (source as RNInstance) : undefined,
       replace,
       bundle,
@@ -234,9 +241,17 @@ export class ExpoReactHost {
       host: this,
       core,
       owner: family,
+      isHeadless: !ui,
       reload: (reason: string): Promise<void> => {
         if (record.destroyed) throw new ExpoModuleError('ERR_RELOAD_UNAVAILABLE', 'The React instance was destroyed.');
         return ExpoReloadRegistry.require(instance.getId())(reason);
+      },
+      suspend: (): Promise<void> => {
+        const runtime = this.owners.get(instance);
+        if (record.destroyed || runtime === undefined || runtime.instance !== instance) {
+          throw new ExpoModuleError('ERR_REACT_HOST_OWNER', 'The active React runtime does not own this instance.');
+        }
+        return runtime.suspend();
       },
     };
     const destroyed = observeRnohDestroy(instance, (): void => {

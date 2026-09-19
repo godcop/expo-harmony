@@ -1,5 +1,5 @@
 import type { common } from '@kit.AbilityKit';
-import { RNInstance } from '@rnoh/react-native-openharmony';
+import { JSBundleProvider, RNInstance } from '@rnoh/react-native-openharmony';
 import {
   ExpoModuleError,
   ReactNativeHost,
@@ -92,6 +92,15 @@ export class ExpoReactHostDelegate {
     for (const handler of this.handlers) {
       const path = await handler.getJSBundleFile?.(debug);
       if (path !== undefined) return path;
+    }
+    return undefined;
+  }
+
+  async getJSBundleProvider(debug: boolean): Promise<JSBundleProvider | undefined> {
+    this.requireInitialized();
+    for (const handler of this.handlers) {
+      const provider = await handler.getJSBundleProvider?.(debug);
+      if (provider !== undefined) return provider;
     }
     return undefined;
   }

@@ -16,6 +16,20 @@ import {
 interface ExpoUnmanagedRNInstanceConfig {
   rnInstance: RNInstance;
 }
+
+class ExpoRootGestureModifier implements GestureModifier {
+  private handlers: ReactActivityHandler[];
+  private context: ReactRootViewContext;
+  constructor(handlers: ReactActivityHandler[], context: ReactRootViewContext) {
+    this.handlers = handlers;
+    this.context = context;
+  }
+  applyGesture(event: UIGestureEvent): void {
+    event.clearGestures();
+    this.handlers.forEach((handler: ReactActivityHandler): void => handler.applyRootViewGestures?.(this.context, event));
+  }
+}
+
 export type ExpoRNInstanceReplacement = (reason: string) => Promise<RNInstance>;
 @Builder
 export function buildExpoDefaultRoot(context: ReactRootViewContext): void {
@@ -36,6 +50,16 @@ struct ExpoReactRootView {
   @Require public builder!: ReactRootViewBuilder;
   @Require public context!: ReactRootViewContext;
   @Prop public ready: boolean = false;
+  public handlers: ReactActivityHandler[] = [];
+  private readonly rootToken: Object = new Object();
+
+  aboutToAppear(): void {
+    this.handlers.forEach((handler: ReactActivityHandler): void => handler.onRootViewMounted?.(this.context, this.getUIContext(), this.rootToken));
+  }
+
+  aboutToDisappear(): void {
+    this.handlers.forEach((handler: ReactActivityHandler): void => handler.onRootViewUnmounted?.(this.context, this.rootToken));
+  }
 
   build(): void {
     // Keep this literal at the call site so ArkUI tracks ready changes.
@@ -50,6 +74,7 @@ struct ExpoReactRootView {
       wrappedCustomRNComponentBuilder: this.context.wrappedCustomRNComponentBuilder,
       onSetUp: this.context.onSetUp,
       ready: this.ready,
+      isCustomRoot: this.context.isCustomRoot,
       defaultRoot: this.context.defaultRoot,
     });
   }
@@ -75,6 +100,7 @@ export struct ExpoRNApp {
   private mounted: boolean = false;
   private preparationSerial: number = 0;
   private selectedRoot: ReactRootViewBuilder | undefined = undefined;
+  private activityHandlers: ReactActivityHandler[] = [];
 
   aboutToAppear(): void {
     this.mounted = true;
@@ -94,6 +120,7 @@ export struct ExpoRNApp {
         .slice()
         .sort((left, right) => ModulePriorities.get(right.packageName) - ModulePriorities.get(left.packageName))
         .map((registration) => registration.create(context.core.uiAbilityContext));
+      this.activityHandlers = handlers;
       this.selectedRoot = this.rootViewBuilder ?? ExpoReactRootViewFactory.create(handlers, context);
       const delay = ExpoReactRootViewFactory.getDelayLoadAppHandler(handlers, context);
       if (delay !== undefined) await delay;
@@ -158,6 +185,7 @@ export struct ExpoRNApp {
       wrappedCustomRNComponentBuilder: this.wrappedCustomRNComponentBuilder,
       onSetUp: (_instance: RNInstance): void => {},
       ready,
+      isCustomRoot: this.selectedRoot !== undefined,
       defaultRoot: wrapBuilder(buildExpoDefaultRoot),
     };
   }
@@ -173,17 +201,35 @@ export struct ExpoRNApp {
   @Builder
   private renderRoot(): void {
     if (this.selectedRoot !== undefined) {
-      ExpoReactRootView({ builder: this.selectedRoot, context: this.rootContext(this.ready), ready: this.ready });
+      ExpoReactRootView({ builder: this.selectedRoot, context: this.rootContext(this.ready), ready: this.ready, handlers: this.activityHandlers });
     } else {
-      ExpoReactRootView({ builder: wrapBuilder(buildExpoDefaultRoot), context: this.rootContext(this.ready), ready: this.ready });
+      ExpoReactRootView({
+        builder: wrapBuilder(buildExpoDefaultRoot),
+        context: this.rootContext(this.ready),
+        ready: this.ready,
+        handlers: this.activityHandlers,
+      });
     }
   }
 
   build(): void {
-    ForEach(
-      [this.generation],
-      (_generation: number): void => this.renderRoot(),
-      (generation: number): string => `${generation}`,
-    );
+    Stack() {
+      ForEach(
+        [this.generation],
+        (_generation: number): void => this.renderRoot(),
+        (generation: number): string => `${generation}`,
+      )
+    }
+    .width('100%')
+    .height('100%')
+    .gestureModifier(new ExpoRootGestureModifier(this.activityHandlers, this.rootContext(this.ready)))
+    .onKeyEvent((event: KeyEvent): void => {
+      for (const handler of this.activityHandlers) {
+        if (handler.onRootViewKeyEvent?.(this.rootContext(this.ready), event)) {
+          event.stopPropagation();
+          return;
+        }
+      }
+    });
   }
 }

@@ -66,6 +66,15 @@ export class ExpoHarmonyLifecycleDispatcher {
 
     for (const entry of scope.entries.slice()) {
       try {
+        entry.subscriber.onWillReceiveWant(want);
+      } catch (error) {
+        this.onDestroy(context);
+        throw new ExpoModuleError('ERR_ABILITY_LIFECYCLE', `Unable to prepare launch intent '${entry.id}'.`, error as Object);
+      }
+    }
+
+    for (const entry of scope.entries.slice()) {
+      try {
         entry.subscriber.onCreate(want, launch);
       } catch (error) {
         this.onDestroy(context);
@@ -91,6 +100,7 @@ export class ExpoHarmonyLifecycleDispatcher {
   }
 
   onNewWant(context: common.UIAbilityContext, want: Want, launch: AbilityConstant.LaunchParam): void {
+    this.dispatch(context, 'onWillReceiveWant', (subscriber: ExpoAbilityLifecycleSubscriber): void => subscriber.onWillReceiveWant(want));
     this.dispatch(context, 'onNewWant', (subscriber: ExpoAbilityLifecycleSubscriber): void => subscriber.onNewWant(want, launch));
   }
 

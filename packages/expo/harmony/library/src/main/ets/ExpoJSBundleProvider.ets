@@ -66,14 +66,17 @@ export class ExpoJSBundleProvider extends JSBundleProvider {
   }
 
   async getBundle(progress?: (value: number) => void, switched?: (provider: JSBundleProvider) => void): Promise<JsBundle> {
-    const path = await this.delegate.getJSBundleFile(this.debug);
-    if (path !== undefined) {
-      this.selected = path.startsWith('assets://')
-        ? new ExpoResourceBundle(this.context, path.slice('assets://'.length))
-        : new FileJSBundleProvider(path, this.getAppKeys());
-    } else {
-      const asset = await this.delegate.getBundleAssetName(this.debug);
-      this.selected = asset === undefined ? this.fallback : new ExpoResourceBundle(this.context, asset);
+    this.selected = await this.delegate.getJSBundleProvider(this.debug);
+    if (this.selected === undefined) {
+      const path = await this.delegate.getJSBundleFile(this.debug);
+      if (path !== undefined) {
+        this.selected = path.startsWith('assets://')
+          ? new ExpoResourceBundle(this.context, path.slice('assets://'.length))
+          : new FileJSBundleProvider(path, this.getAppKeys());
+      } else {
+        const asset = await this.delegate.getBundleAssetName(this.debug);
+        this.selected = asset === undefined ? this.fallback : new ExpoResourceBundle(this.context, asset);
+      }
     }
 
     if (this.selected !== this.fallback) switched?.(this.selected);

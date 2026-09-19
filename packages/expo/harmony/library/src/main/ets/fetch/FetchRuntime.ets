@@ -1,4 +1,4 @@
-import { ExpoModuleContext } from '@expo-harmony/expo-modules-core';
+import { ExpoModuleContext, ExpoNetworkInspection } from '@expo-harmony/expo-modules-core';
 import fs from '@ohos.file.fs';
 import { rcp } from '@kit.RemoteCommunicationKit';
 import util from '@ohos.util';
@@ -50,6 +50,7 @@ export class FetchTask {
 }
 
 export class FetchAttempt {
+  inspection?: ExpoNetworkInspection;
   request: rcp.Request;
   status: number = 0;
   statusText: string | null = null;
@@ -104,6 +105,11 @@ export class FetchAttempt {
       return;
     }
     this.metadataSettled = true;
+    const headers: Record<string, string> = {};
+    this.headers.forEach((pair: string[]): void => {
+      headers[pair[0]] = pair[1];
+    });
+    this.inspection?.response(this.status, headers);
     this.resolveMetadata();
   }
 
@@ -172,6 +178,7 @@ export class ExpoFetchRuntime {
         else if (requestMethodRequiresBody(method)) request.content = new ArrayBuffer(0);
 
         const attempt = new FetchAttempt(request);
+        attempt.inspection = ExpoNetworkInspection.start(target, method, sent as Record<string, string>, body ?? undefined);
         task.activeAttempt = attempt;
         this.startAttempt(task, attempt);
         // RCP reports the status and headers before the body finishes. Await
@@ -208,6 +215,9 @@ export class ExpoFetchRuntime {
             throw new ExpoFetchError(error.code, error.message, error.cause);
           }
 
+          // Headers may arrive before the redirect body finishes. Do not expose
+          // the collected prefix as a complete response when discarding it.
+          attempt.inspection?.finish(false);
           attempt.discarded = true;
           this.destroySession(task);
           const next = url.URL.parseURL(location ?? '', target).toString();
@@ -380,7 +390,9 @@ export class ExpoFetchRuntime {
           ? chunksToBuffer(task.queued)
           : await readFileBuffer(this.context.filePathForRead(task.localFilePath), task.localFileSize);
 
-      return new util.TextDecoder('utf-8').decode(new Uint8Array(buffer));
+      // Harmony's legacy decoder can return undefined for an empty buffer.
+      // Fetch text() must resolve to the empty string, including after a 303.
+      return buffer.byteLength === 0 ? '' : new util.TextDecoder('utf-8').decode(new Uint8Array(buffer));
     } catch (error) {
       if (task.localFilePath !== null) {
         throw new ExpoFetchError(
@@ -501,6 +513,7 @@ export class ExpoFetchRuntime {
           // Supplying onDataReceive also disables RCP's whole-body buffering.
           onDataReceive: (chunk: ArrayBuffer): void => {
             if (attempt.discarded || task.completed) return;
+            attempt.inspection?.data(chunk);
             if (attempt.accepted) this.receiveChunk(task, chunk);
             else attempt.chunks.push(chunk);
           },
@@ -517,9 +530,11 @@ export class ExpoFetchRuntime {
         attempt.receiveStatus(response.statusCode, response.reasonPhrase);
         attempt.receiveHeaders(headerPairs(response.headers));
         attempt.ended = true;
+        attempt.inspection?.finish();
         if (attempt.accepted) this.finishAttempt(task);
       })
       .catch((error: Object): void => {
+        attempt.inspection?.fail(false);
         // Closing a redirect's session must not fail the next request.
         if (attempt.discarded || task.completed) return;
         this.failTask(
@@ -624,6 +639,7 @@ export class ExpoFetchRuntime {
     if (task.completed) return;
 
     task.error = error;
+    task.activeAttempt?.inspection?.fail(error.code === 'ERR_FETCH_REQUEST_CANCELED');
     task.activeAttempt?.failMetadata(error);
     this.completeTask(task);
   }
@@ -635,6 +651,7 @@ export class ExpoFetchRuntime {
   private destroySession(task: FetchTask): void {
     const attempt = task.activeAttempt;
     if (attempt !== null) {
+      attempt.inspection?.fail(true);
       attempt.discarded = true;
       attempt.chunks = [];
       attempt.failMetadata(task.error ?? new ExpoFetchError('ERR_FETCH_REQUEST_CANCELED', 'Fetch request has been canceled'));
