@@ -1,0 +1,28 @@
+# OHPM requires a TTY for its hidden prompt. Keep the passphrase in memory only.
+set timeout -1
+fconfigure stdin -encoding utf-8
+if {[gets stdin passphrase] < 0} { exit 1 }
+spawn -noecho {*}$argv
+set answered 0
+expect {
+    -re {(?i)passphrase of the private key:[ \t]*} {
+        if {$answered} {
+            send_error "\nOHPM 再次请求私钥口令，请检查口令后重新运行发布。\n"
+            close
+            wait
+            exit 1
+        }
+        set answered 1
+        # OHPM's raw input handler rejects chunks containing control characters.
+        # Send the line ending separately so it cannot discard the passphrase.
+        send -- $passphrase
+        after 100
+        send -- "\r"
+        exp_continue
+    }
+    eof {
+        set result [wait]
+        if {[lindex $result 2] != 0 || [llength $result] > 4} { exit 1 }
+        exit [lindex $result 3]
+    }
+}

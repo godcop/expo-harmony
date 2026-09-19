@@ -8,13 +8,14 @@ import { spawnSync } from 'node:child_process';
 import JSON5 from 'json5';
 import tar from 'tar';
 import { bump, planRelease, updateManifests } from './release-plan.mjs';
+import { publishOhpm as publishOhpmWithPassphrase, readOhpmPassphrase } from './release-ohpm.mjs';
 import { assertPortableHarmonyHarSync } from '../packages/expo-module-scripts/src/har.mjs';
 import { planWorkspaceBuild } from '../packages/expo-module-scripts/src/workspace.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const args = process.argv.slice(2);
 if (args.includes('--help')) {
-  console.log('yarn release [--prepare-only] [--no-bump] [--registry npm|ohpm|all]\nyarn release:prepare [--no-bump] [--registry npm|ohpm|all]\nyarn release:publish <artifact-directory> [--registry npm|ohpm|all]\nInteractively prepare a release, or publish an existing release.json without rebuilding. Use --no-bump to prepare only the selected packages at their current versions without updating manifests. Defaults to both registries (OHPM, then npm). Completed publications are skipped.');
+  console.log('yarn release [--prepare-only] [--no-bump] [--registry npm|ohpm|all]\nyarn release:prepare [--no-bump] [--registry npm|ohpm|all]\nyarn release:publish <artifact-directory> [--registry npm|ohpm|all]\nInteractively prepare a release, or publish an existing release.json without rebuilding. Use --no-bump to prepare only the selected packages at their current versions without updating manifests. Defaults to both registries (OHPM, then npm). Completed publications are skipped. OHPM publishing requires expect and asks for the private-key passphrase once per run (hidden input, kept in memory only).');
   process.exit(0);
 }
 const { values: options } = parseArgs({
@@ -39,10 +40,11 @@ function run(command, argv, options = {}) {
   return result.stdout;
 }
 
-async function runOhpm(argv) {
+async function runOhpm(argv, passphrase) {
   const { resolveHarmonyCommand } = await import('@expo-harmony/expo-modules-autolinking/tool-command');
   const command = resolveHarmonyCommand('ohpm', argv);
-  run(command.command, command.args);
+  if (passphrase === undefined) run(command.command, command.args);
+  else publishOhpmWithPassphrase(command.command, command.args, passphrase, root);
 }
 
 function validateTag(tag) {
@@ -77,15 +79,22 @@ async function publishArtifacts(artifacts, releaseFile, rl) {
   })));
   const destination = options.registry === 'all' ? 'OHPM → npm' : options.registry;
   if ((await rl.question(`按清单顺序将尚未完成的产物发布到 ${destination}？[y/N] `)).trim().toLowerCase() !== 'y') return;
+  // Release the terminal before opening the hidden prompt or running publishers.
+  rl.close();
+  let passphrase;
+  if (publishOhpm && pending.some(artifact => artifact.har && !artifact.published.ohpm)) {
+    passphrase = await readOhpmPassphrase();
+  }
   for (const artifact of pending) {
     if (!publishOhpm || !artifact.har || artifact.published.ohpm) continue;
     // OHPM reserves "latest" and rejects it as an explicit tag.
     const tagArgs = artifact.tag === 'latest' ? [] : ['--tag', artifact.tag];
-    await runOhpm(['publish', artifact.har, ...tagArgs]);
+    await runOhpm(['publish', artifact.har, ...tagArgs], passphrase);
     artifact.published.ohpm = true;
     await saveRelease(releaseFile, artifacts);
     console.log(`已提交到 OHPM：${artifact.name}@${artifact.version}（公仓上架状态请在 OHPM 确认）`);
   }
+  passphrase = undefined;
   for (const artifact of pending) {
     if (!publishNpm || artifact.published.npm) continue;
     run('npm', ['publish', artifact.file, '--access', 'public', '--tag', artifact.tag]);
