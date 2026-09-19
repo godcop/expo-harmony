@@ -5,7 +5,7 @@ import { HarmonyCliError } from '../errors';
 import { resolveExpoCli } from '../expo';
 import { resolveHarmonyBuildPlanAsync } from '../native/project';
 import { resolveRuntimeRequirementsAsync } from '../runtime/contract';
-import { createHarmonyLaunchLink, HarmonyManifestPath } from './protocol';
+import { canonicalHarmonyManifestURL, createHarmonyLaunchLink, HarmonyManifestPath } from './protocol';
 
 async function createManifestResponseAsync(middleware, options, require: NodeRequire) {
   const { ExpoGoManifestHandlerMiddleware: Manifest, ResponseContentType: Types } = require('./build/src/start/server/middleware/ExpoGoManifestHandlerMiddleware');
@@ -24,7 +24,7 @@ async function createManifestResponseAsync(middleware, options, require: NodeReq
 
   const name = exp.harmony?.bundleName || (await resolveHarmonyBuildPlanAsync(middleware.projectRoot)).bundleName;
   const id = exp.extra?.eas?.projectId;
-  const address = `${bundle.origin}${HarmonyManifestPath}?platform=harmony`;
+  const address = canonicalHarmonyManifestURL(`${bundle.origin}${options.harmonyManifestPath ?? `${HarmonyManifestPath}?platform=harmony`}`);
   const manifest = JSON.stringify({
     id: crypto.randomUUID(),
     createdAt: new Date().toISOString(),
@@ -80,6 +80,23 @@ export function installHarmonyManifest(root: string) {
   const { parsePlatformHeader } = require('./build/src/start/server/middleware/resolvePlatform');
   const create = BundlerDevServer.prototype.getManifestMiddlewareAsync;
 
+  // Reuse Expo's terminal QR renderer and dev-session publishing with our
+  // registered link, rather than emitting a second, incompatible QR code.
+  const nativeURL = BundlerDevServer.prototype.getNativeRuntimeUrl;
+  const redirectURL = BundlerDevServer.prototype.getRedirectUrl;
+  BundlerDevServer.prototype.getNativeRuntimeUrl = function (options = {}) {
+    const address = this.getUrlCreator().constructUrl({ ...options, scheme: 'http' });
+    if (!address) return nativeURL.call(this, options);
+    const manifest = new URL(HarmonyManifestPath, address);
+    manifest.searchParams.set('platform', 'harmony');
+    return createHarmonyLaunchLink(manifest.toString());
+  };
+  BundlerDevServer.prototype.getRedirectUrl = function (platform = null) {
+    return platform === null || platform === 'harmony'
+      ? this.getNativeRuntimeUrl()
+      : redirectURL.call(this, platform);
+  };
+
   // Expo installs the manifest before Metro's enhancer; adapt only the created instance.
   BundlerDevServer.prototype.getManifestMiddlewareAsync = async function (this: object, ...args) {
     const middleware = await create.apply(this, args);
@@ -91,11 +108,15 @@ export function installHarmonyManifest(root: string) {
 
       // Bypass only the upstream platform assertion without changing the actual request.
       const url = new URL(request.url, 'http://localhost');
+      url.searchParams.delete('platform');
+      url.searchParams.append('platform', 'harmony');
+      const manifest = new URL(canonicalHarmonyManifestURL(url.toString()));
+      const harmonyManifestPath = manifest.pathname + manifest.search;
       url.searchParams.set('platform', 'ios');
       const copy = Object.create(request);
       copy.url = url.pathname + url.search;
 
-      return { ...parse.call(middleware, copy), platform: 'harmony' };
+      return { ...parse.call(middleware, copy), platform: 'harmony', harmonyManifestPath };
     };
     middleware._getManifestResponseAsync = options => options.platform === 'harmony'
       ? createManifestResponseAsync(middleware, options, require)

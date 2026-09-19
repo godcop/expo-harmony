@@ -2,11 +2,12 @@ import { HarmonyCliError } from '../errors';
 
 export const HarmonyManifestPath = '/manifest';
 
-function validateManifestUrl(value: string): URL {
+export function canonicalHarmonyManifestURL(value: string): string {
   let url: URL;
 
   try {
     url = new URL(value);
+    decodeURIComponent(url.search);
   } catch (cause) {
     throw new HarmonyCliError(
       'ERR_HARMONY_MANIFEST_URL',
@@ -16,7 +17,8 @@ function validateManifestUrl(value: string): URL {
   }
 
   if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.hash
-    || !['/', '/manifest', '/index.exp'].includes(url.pathname) || url.searchParams.toString() !== 'platform=harmony') {
+    || !['/', HarmonyManifestPath, '/index.exp'].includes(url.pathname)
+    || url.searchParams.getAll('platform').length !== 1 || url.searchParams.get('platform') !== 'harmony') {
     throw new HarmonyCliError(
       'ERR_HARMONY_MANIFEST_URL',
       'Expected an HTTP(S) Expo manifest URL with platform=harmony and without credentials or a fragment.',
@@ -24,14 +26,17 @@ function validateManifestUrl(value: string): URL {
     );
   }
 
-  return url;
+  url.pathname = HarmonyManifestPath;
+  // Keep all other query values (including repetitions) in order. Platform has
+  // one canonical position, and URLSearchParams normalizes equivalent encoding.
+  url.searchParams.delete('platform');
+  url.searchParams.append('platform', 'harmony');
+  return url.toString();
 }
 
 export function createHarmonyLaunchLink(manifest: string): string {
-  validateManifestUrl(manifest);
-
   const url = new URL('expo-harmony://open');
-  url.searchParams.set('url', manifest);
+  url.searchParams.set('url', canonicalHarmonyManifestURL(manifest));
 
   return url.toString();
 }

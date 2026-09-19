@@ -14,7 +14,7 @@ npm install --save-dev @expo-harmony/cli
 
 通过 Expo 配置生成原生工程的项目（CNG），还需要在 Expo 配置中注册 `@expo-harmony/prebuild-config` 插件。
 
-手工维护 `harmony/` 工程的项目可以使用 bare 模式，按原生工程中的配置构建和运行，无需注册 prebuild 插件。接入步骤见 [bare 文档](../../docs/BARE_WORKFLOW.md)。
+手工维护 `harmony/` 工程的项目可以使用 bare 模式，按原生工程中的配置构建和运行，无需注册 prebuild 插件。
 
 构建 HAP 需要 HarmonyOS SDK（含 HMS 和 OpenHarmony 组件）、OHPM 和 Hvigor。连接设备或模拟器还需要 HDC。可以运行 `npx expo-harmony doctor` 检查环境。
 

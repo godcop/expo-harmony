@@ -233,6 +233,14 @@ async function configureMetroPortAsync(
   port: number,
   options: HdcOptions = {}
 ): Promise<void> {
+  if (options.devicePort === undefined && port !== 8081) {
+    // RNOH's default provider uses 8081; launcher manifests retain Metro's
+    // advertised port for the bundle, assets, HMR and inspector URLs.
+    await configureMetroPortAsync(hdc, device, port, { ...options, devicePort: 8081 });
+    await configureMetroPortAsync(hdc, device, port, { ...options, devicePort: port });
+    return;
+  }
+
   const deviceEndpoint = `tcp:${options.devicePort || 8081}`;
   const hostEndpoint = `tcp:${port}`;
 
