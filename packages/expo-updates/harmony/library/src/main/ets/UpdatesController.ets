@@ -53,7 +53,14 @@ export class UpdatesController {
 
   static initializeAsDevLauncherWithoutStarting(context: common.ApplicationContext): UpdatesDevLauncherController {
     const info = bundleManager.getBundleInfoForSelfSync(bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_APPLICATION);
-    if (UpdatesController.controllers.has(info.name))
+    const current = UpdatesController.controllers.get(info.name);
+    if (current instanceof UpdatesDevLauncherController) {
+      const adapter = new ExpoUpdatesDevLauncherAdapter(context, current);
+      UpdatesController.adapters.set(info.name, adapter);
+      UpdatesControllerRegistry.controller = adapter;
+      return current;
+    }
+    if (current !== undefined)
       throw new ExpoUpdatesError('ERR_UPDATES_INITIALIZATION', 'Initialize the development launcher before initializing Updates.');
 
     const controller = new UpdatesDevLauncherController(context, UpdatesController.configuration(context, info.name, false));

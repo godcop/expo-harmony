@@ -48,6 +48,7 @@
     "@expo-harmony/expo-eas-client": "workspace:*",
     "@expo-harmony/expo-manifests": "workspace:*",
     "@expo-harmony/expo-structured-headers": "workspace:*",
-    "@expo-harmony/expo-updates-interface": "workspace:*"
+    "@expo-harmony/expo-updates-interface": "workspace:*",
+    "expo-eas-client": "55.0.5"
   }
 }

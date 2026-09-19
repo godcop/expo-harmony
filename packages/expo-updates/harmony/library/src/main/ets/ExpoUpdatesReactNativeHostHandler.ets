@@ -1,5 +1,7 @@
+import { bundleManager } from '@kit.AbilityKit';
 import type { common } from '@kit.AbilityKit';
 import { ReactNativeHostHandler } from '@expo-harmony/expo-modules-core';
+import { UpdatesControllerRegistry } from '@expo-harmony/expo-updates-interface';
 import type { RNInstance } from '@rnoh/react-native-openharmony';
 import { UpdatesController } from './UpdatesController';
 
@@ -11,7 +13,13 @@ export class ExpoUpdatesReactNativeHostHandler implements ReactNativeHostHandler
   }
 
   onWillCreateReactInstance(debug: boolean): void {
-    UpdatesController.initialize(this.context, debug);
+    const info = bundleManager.getBundleInfoForSelfSync(bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_APPLICATION);
+    if (debug && UpdatesControllerRegistry.isDevelopmentLauncherInitializationRequested(info.name)) {
+      UpdatesController.initializeAsDevLauncherWithoutStarting(this.context);
+      UpdatesControllerRegistry.completeDevelopmentLauncherInitialization(info.name);
+    } else {
+      UpdatesController.initialize(this.context, debug);
+    }
   }
 
   getUseDeveloperSupport(): boolean | undefined {
