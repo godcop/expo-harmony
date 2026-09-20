@@ -10,3 +10,5 @@ oh-package-lock.json5
 *.har
 entry/src/main/resources/rawfile/*.hbc
 entry/src/main/resources/rawfile/*.map
+.cxx/
+**/.cxx/
