@@ -26,6 +26,7 @@ Expo 支持在已有的 React Native 应用中按需引入工具和模块，整�
 | `@react-native-oh/react-native-harmony`                              | `0.84.1`            |
 | `@react-native-oh/react-native-harmony-cli`                          | `0.84.1`            |
 | 原生包 `@rnoh/react-native-openharmony`                              | `0.84.1`            |
+| `hermes-compiler`                                                   | `250829098.0.9`     |
 | `react-native-worklets` / `@react-native-ohos/react-native-worklets` | `0.7.4` / `1.0.0`   |
 
 只接入 HarmonyOS 平台时，React 和 React Native 的版本跟随 RNOH 即可。项目中已有的 iOS、Android 工程可以保留各自需要的版本；如果需要同时使用两套 React 和 React Native，请参照[两套 React Native 如何共存](./QuickStart.md#两套-react-native-如何共存)配置 Metro 别名。
@@ -44,7 +45,7 @@ npm install @expo-harmony/cli @expo-harmony/metro-config @expo-harmony/expo-modu
 再安装 RNOH 和 Worklets 相关依赖：
 
 ```sh
-npm install @react-native-oh/react-native-harmony@0.84.1 @react-native-oh/react-native-harmony-cli@0.84.1
+npm install --save-exact @react-native-oh/react-native-harmony@0.84.1 @react-native-oh/react-native-harmony-cli@0.84.1
 npm install react-native-worklets@0.7.4 @react-native-ohos/react-native-worklets@1.0.0
 ```
 
@@ -52,11 +53,14 @@ npm install react-native-worklets@0.7.4 @react-native-ohos/react-native-worklets
 
 ```sh
 npm install @expo/metro-runtime@55.0.12 @expo/metro-config@55.0.26 @expo/log-box@55.0.12
-npm install metro@0.83.3 metro-config@0.83.7 hermes-compiler@250829098.0.9
+npm install metro@0.83.3 metro-config@0.83.7
+npm install --save-exact hermes-compiler@250829098.0.9
 npm install --save-dev @babel/core@7.29.7 @react-native-community/cli@15.1.3
 ```
 
 安装后请核对各包的 `peerDependencies`，例如当前的 Battery 适配包要求 `expo-battery@55.0.13`。Expo 官方文档中的版本会随 SDK 更新而变化，本文的版本组合以示例工程为准。
+
+`hermes-compiler` 必须作为应用的直接依赖安装，与原生 RNOH HAR 内嵌的 Hermes 配套，供运行时契约读取版本和 Release 字节码编译使用。CLI 不再限制固定版本组合，但仍检查项目依赖与原生构建的实际版本是否一致；解析方式和升级说明见 [QuickStart 的安装依赖一节](./QuickStart.md#安装依赖)。
 
 ## 配置 JS 入口和打包工具
 

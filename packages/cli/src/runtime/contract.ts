@@ -49,15 +49,6 @@ async function createRuntimeContractAsync(
     config: project.native,
   };
 
-  if (contract.rnoh !== '0.84.1' || contract.react !== '19.2.3' || contract.hermes !== '250829098.0.9'
-    || !contract.expo.startsWith('55.') || !modules.some(module => module.packageName === '@expo-harmony/expo-modules-core')) {
-    throw new HarmonyCliError(
-      'ERR_HARMONY_RUNTIME_UNSUPPORTED',
-      'The fixed development runtime requires Expo SDK 55, Harmony Expo Modules Core, RNOH 0.84.1, React 19.2.3, and Hermes 250829098.0.9. Check the Metro React alias.',
-      { operation: 'runtime-contract' }
-    );
-  }
-
   const issues = validateHarmonyRuntime(contract);
   if (issues.length > 0) {
     throw new HarmonyCliError(

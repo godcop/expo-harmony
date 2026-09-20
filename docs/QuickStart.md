@@ -11,14 +11,19 @@
 
 ## 安装依赖
 
+以下命令在应用根目录执行。本文使用 Expo SDK 55（`expo@55.0.26`、`expo-modules-core@55.0.25`），Harmony 侧配套 RNOH `0.84.1`、React `19.2.3` 和 Hermes `250829098.0.9`：
+
 ```sh
-npm install @expo-harmony/cli @expo-harmony/metro-config @react-native-oh/react-native-harmony@0.84.1 @react-native-oh/react-native-harmony-cli@0.84.1 react-harmony@npm:react@19.2.3
+npm install @expo-harmony/cli @expo-harmony/metro-config @expo-harmony/expo-modules-core
+npm install --save-exact @react-native-oh/react-native-harmony@0.84.1 @react-native-oh/react-native-harmony-cli@0.84.1 react-harmony@npm:react@19.2.3 hermes-compiler@250829098.0.9
 ```
 
 几点说明：
 
 - `@react-native-oh/react-native-harmony` 是 RNOH 的 JS 侧运行时，`@react-native-oh/react-native-harmony-cli` 是它的配套 CLI，两者版本必须配套，当前是 0.84.1。
 - `react-harmony` 是一个 npm alias，实际安装 `react@19.2.3`，装在 `react-harmony` 这个名字下。为什么需要第二份 react，见 [后文](#两套-react-native-如何共存)。
+- `@expo-harmony/expo-modules-core` 提供 Expo Modules 的 HarmonyOS 运行时，需要与 SDK 55 的 `expo-modules-core` 一起安装。
+- `hermes-compiler` 要作为应用的直接依赖精确安装为 `250829098.0.9`，与 RNOH `0.84.1` 的原生 HAR 内嵌 Hermes 配套。CLI 从 RNOH 包所在位置解析它，用于记录运行时版本和编译 Release 字节码。RNOH 的 npm 包未内置这份编译器，省略安装可能解析到 iOS/Android 的 `react-native` 引入的其他版本，导致无法正常运行。
 - 项目里每个要在 HarmonyOS 上用到的 Expo 模块，再装一个同名的 `@expo-harmony/expo-*` 包，例如 `expo-constants` 配 `@expo-harmony/expo-constants`。已移植的列表见 [仓库 README](../README.md#supported-libraries)。装完可以用 `npx expo-harmony modules list` 检查，它会列出每个模块是否支持 Harmony。
 
 ## 配置 app.json
