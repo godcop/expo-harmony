@@ -1,5 +1,6 @@
 import http from 'node:http';
 
+import { resolveDevelopmentHostAsync } from '../development/host';
 import { readDevelopmentSessionAsync } from '../development/session';
 import { HarmonyCliError } from '../errors';
 import { formatDiagnostics, startManagedProcess, type ProcessResult } from '../process';
@@ -102,11 +103,12 @@ async function startExpoMetroAsync(
   projectRoot: string,
   options: MetroOptions
 ): Promise<MetroSession> {
+  const host = await resolveDevelopmentHostAsync(projectRoot, options.host);
   const before = await probeMetroAsync(options.port);
 
   if (before === 'metro') {
     return {
-      development: await readDevelopmentSessionAsync(projectRoot, options.port, options.host),
+      development: await readDevelopmentSessionAsync(projectRoot, options.port, host),
       owner: 'existing',
       port: options.port,
       stop: async () => {},
@@ -137,7 +139,7 @@ async function startExpoMetroAsync(
     env: {
       ...process.env,
       EXPO_METRO_TARGET: 'harmony',
-      ...(options.host ? { REACT_NATIVE_PACKAGER_HOSTNAME: options.host } : {}),
+      REACT_NATIVE_PACKAGER_HOSTNAME: host,
     },
     operation: 'expo-metro',
     outputLimit: 1024 * 1024,
@@ -193,7 +195,7 @@ async function startExpoMetroAsync(
 
       if (await probeMetroAsync(options.port) === 'metro') {
         return {
-          development: await readDevelopmentSessionAsync(projectRoot, options.port, options.host),
+          development: await readDevelopmentSessionAsync(projectRoot, options.port, host),
           owner: 'started',
           port: options.port,
           process: managed,

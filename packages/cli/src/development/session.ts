@@ -1,26 +1,17 @@
 import http from 'node:http';
-import os from 'node:os';
 
 import type { HarmonyDevelopmentManifest } from '@expo-harmony/expo-modules-autolinking/runtime';
 
 import { HarmonyCliError } from '../errors';
 import { readProjectRuntimeAsync } from '../runtime/config';
+import { resolveDevelopmentHostAsync } from './host';
 import { createHarmonyLaunchLink, HarmonyManifestPath } from './protocol';
 
 export async function readDevelopmentSessionAsync(root: string, port: number, hostname?: string) {
   const project = await readProjectRuntimeAsync(root);
   const { config } = project;
 
-  const host = hostname || process.env.REACT_NATIVE_PACKAGER_HOSTNAME
-    || Object.values(os.networkInterfaces()).flat().find(item => item?.family === 'IPv4' && !item.internal)?.address
-    || '127.0.0.1';
-  if (!/^[A-Za-z0-9.-]+$/.test(host)) {
-    throw new HarmonyCliError(
-      'ERR_HARMONY_MANIFEST_HOST',
-      'Harmony development requires an HTTP LAN hostname or IPv4 address.',
-      { operation: 'development-manifest' }
-    );
-  }
+  const host = await resolveDevelopmentHostAsync(root, hostname);
 
   const manifest = await new Promise<HarmonyDevelopmentManifest>((resolve, reject) => {
     const request = http.get({

@@ -1,10 +1,12 @@
 import { HarmonyCliError } from '../errors';
 import { CommonOptions, parseArgs } from '../args';
+import { parseHostOption } from '../development/host';
 
 const RunOptions = {
   ...CommonOptions,
   'app-id': { type: 'string' },
   'device': { type: 'string' },
+  'host': { type: 'string' },
   'no-bundler': { type: 'boolean' },
   'no-install': { type: 'boolean' },
   'port': { type: 'string' },
@@ -59,6 +61,7 @@ function parseRunArgs(argv: string[]) {
     appId,
     device,
     help: Boolean(values.help),
+    host: parseHostOption(values.host),
     noBundler: Boolean(values['no-bundler']),
     noInstall: Boolean(values['no-install']),
     port,

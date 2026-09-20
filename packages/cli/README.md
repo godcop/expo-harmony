@@ -49,12 +49,15 @@ npx expo-harmony run ./my-app --device <hdc-target>
 ```sh
 npx expo-harmony start
 npx expo-harmony start --port 8082
+npx expo-harmony start --host 192.168.1.100
 npx expo-harmony start --clear
 ```
 
 `start` 启动 Metro，为 Debug 应用提供 JS Bundle。运行这个命令不需要 HarmonyOS SDK 或已连接的设备。日志显示在当前终端，按 Ctrl+C 退出。
 
 可以用 `--port <number>` 指定端口，默认是 `8081`。`--reset-cache` 清除 Metro 缓存，也可以写成 `--clear` 或 `-c`。
+
+多网卡环境下，可以用 `--host <IP 或主机名>` 指定设备连接的电脑地址，例如 `npx expo-harmony start --host 192.168.1.100 --port 8082`。地址应是设备能访问的网卡 IPv4 或主机名，不带协议和端口。
 
 端口上已有 Metro 时，命令会提示并退出，已有服务继续运行。要清除它的缓存，需要先停止服务，再带缓存选项启动。端口被其他进程占用时，命令会报错。
 
@@ -161,6 +164,7 @@ npx expo-harmony run \
 - `--variant debug|release`：构建模式，默认 `debug`。Release 将 JS Bundle 和资源打包进应用，不启动 Metro。
 - `--device <id-or-name>`：选择已连接的 HDC 设备，或按完整名称启动本地模拟器，例如 `--device "Pura 90 Pro"`。有多个候选目标时必须指定。
 - `--port <number>`：电脑上的 Metro 端口，默认 `8081`。Debug 模式下会配置设备端口映射，让应用连接到这个端口。
+- `--host <IP 或主机名>`：指定本次启动的 Metro 对外公布的地址，与 `start --host` 相同；使用 `--no-bundler` 时应在启动 Metro 的命令中指定。
 - `--no-bundler`：使用已运行的 Metro，找不到服务时报错。不加此选项时，会启动 Metro，或复用端口上已有的 Metro。
 - `--reset-cache`：Debug 模式下启动 Metro 时清除 Metro 缓存；Release 模式下清除生产导出缓存。
 - `--no-install`：仍会构建 HAP，但跳过安装，启动设备上已有的应用。
@@ -183,6 +187,7 @@ CLI 先读取环境变量指定的工具路径，再查找 DevEco Studio 的安�
 
 | 环境变量 | 用途 |
 | --- | --- |
+| `REACT_NATIVE_PACKAGER_HOSTNAME` | 指定 Metro 对外公布的 IP 或主机名，`--host` 优先 |
 | `HARMONY_HDC` | 指定 HDC 路径 |
 | `HARMONY_EMULATOR` | 指定模拟器命令行工具路径 |
 | `HARMONY_OHPM` | 指定 OHPM 路径 |

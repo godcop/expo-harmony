@@ -27,7 +27,7 @@ Options:
   --no-bundler          Use an already-running Expo Metro server
   --app-id <bundleName>
                         Launch another installed app (requires --no-install when different)
-  --host <hostname>     Advertised HTTP LAN hostname (start)
+  --host <hostname>     Advertised LAN hostname or IPv4 address (start, run)
   --private-key-path <path>
                         Sign development manifests using the configured Updates certificate
   --port <number>       Metro and device reverse port (default: 8081)

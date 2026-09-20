@@ -1,4 +1,5 @@
 import { CommonOptions, parseArgs } from '../args';
+import { parseHostOption } from '../development/host';
 import { HarmonyCliError } from '../errors';
 
 const StartOptions = {
@@ -27,17 +28,9 @@ function parseStartArgs(argv: string[]) {
     });
   }
 
-  if (values.host !== undefined && !/^[A-Za-z0-9.-]+$/.test(values.host)) {
-    throw new HarmonyCliError(
-      'ERR_HARMONY_CONFIG_INVALID',
-      '--host must be a hostname or IPv4 address without a port or scheme.',
-      { operation: 'parse-arguments' }
-    );
-  }
-
   return {
     help: Boolean(values.help),
-    host: values.host,
+    host: parseHostOption(values.host),
     port,
     privateKeyPath: values['private-key-path'],
     project: positionals[0],

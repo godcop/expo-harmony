@@ -24,6 +24,7 @@ import { timedAsync } from '../profile';
 export interface HarmonyRunOptions {
   appId?: string;
   device?: string;
+  host?: string;
   io?: Pick<Console, 'error' | 'log' | 'warn'>;
   noBundler?: boolean;
   noInstall?: boolean;
@@ -60,8 +61,8 @@ interface HarmonyRunSession {
   result: HarmonyRunResult;
 }
 
-type NormalizedRunOptions = Required<Omit<HarmonyRunSessionOptions, 'appId' | 'device' | 'privateKeyPath'>>
-  & Pick<HarmonyRunSessionOptions, 'appId' | 'device' | 'privateKeyPath'>;
+type NormalizedRunOptions = Required<Omit<HarmonyRunSessionOptions, 'appId' | 'device' | 'host' | 'privateKeyPath'>>
+  & Pick<HarmonyRunSessionOptions, 'appId' | 'device' | 'host' | 'privateKeyPath'>;
 
 const BundleName = /^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*){2,}$/u;
 
@@ -91,6 +92,7 @@ async function runHarmonyUnlockedAsync(
   const settings: NormalizedRunOptions = {
     appId: options.appId,
     device: options.device,
+    host: options.host,
     interactiveBundler: Boolean(options.interactiveBundler),
     io: options.io || console,
     noBundler: Boolean(options.noBundler),
@@ -140,6 +142,7 @@ async function runHarmonyUnlockedAsync(
       metro = await timedAsync(steps, 'metro', () => settings.noBundler
         ? requireExistingMetroAsync(settings.port)
         : startExpoMetroAsync(root, {
+            host: settings.host,
             interactive: settings.interactiveBundler,
             port: settings.port,
             privateKeyPath: settings.privateKeyPath,

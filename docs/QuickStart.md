@@ -123,6 +123,8 @@ npm run start:harmony -- --port 8081 --reset-cache
 
 支持 `--port <number>`（默认 8081）和 `--clear` / `--reset-cache` / `-c` 清除缓存。这个命令只启动开发服务，不构建或启动原生应用，需要在另一个终端构建并运行时使用 `expo-harmony run --no-bundler`，两边的端口要一致。不要给 Expo CLI 传 `--harmony` 参数，会起不来。
 
+`--host <IP 或主机名>` 用于指定二维码、manifest 和 bundle URL 中提供给设备的地址。未指定时会自动检测并降低常见虚拟网卡的优先级。Metro 仍监听所有网络接口。若服务已运行，需要停止后重新指定地址。
+
 ## 生成 HarmonyOS 原生工程
 
 ```sh
@@ -154,6 +156,7 @@ npm run run:harmony
 - `--variant release`：走生产导出，把 Hermes 字节码嵌进 HAP，不启动 Metro。
 - `--device <id-or-name>`：选已连接的设备，或按名称启动本地模拟器。存在多个候选目标时必须指定。
 - `--port <number>`：Metro 端口和设备反向映射端口，默认 8081。
+- `--host <IP 或主机名>`：指定本次启动的 Metro 对外公布的地址；已有服务的地址应在启动服务时指定。
 - `--no-bundler`：连接已经在跑的 Metro，不起新的。
 
 不指定 `--device` 时，优先用已连接设备；没有设备就等启动中的模拟器，否则自动拉起唯一的本地模拟器。自动拉起需要 DevEco Studio 6.1.0 或更新版本。
