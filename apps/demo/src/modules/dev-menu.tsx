@@ -1,4 +1,4 @@
-import { closeMenu, hideMenu, openMenu, registerDevMenuItems } from 'expo-dev-client';
+import { closeMenu, hideMenu, openMenu, registerDevMenuItems } from 'expo-dev-menu';
 import { requireNativeModule } from 'expo-modules-core';
 import { useEffect, useRef, useState } from 'react';
 import { json } from '../format';
@@ -100,7 +100,7 @@ export function DevMenuDemo() {
       </Panel>
       <Panel eyebrow="PREFERENCES" title="偏好、悬浮按钮与接口联动">
         <Note>
-          FAB 可点击、拖动、吸附；闲置会灰化，打开菜单后会移出屏幕。Home 和工具开关同时覆盖 dev-menu-interface 的宿主代理联动。
+          FAB 可点击、拖动、吸附；闲置会灰化，打开菜单后会移出屏幕。工具开关同时覆盖 dev-menu-interface 的宿主代理联动。
           摇动开关不能控制 RNOH 内部检测，当前在原生设置中禁用。
         </Note>
         <ActionRow>

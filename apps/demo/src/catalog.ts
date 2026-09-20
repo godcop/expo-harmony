@@ -11,8 +11,7 @@ export type ModuleCategory = typeof MODULE_CATEGORIES[number];
 export const MODULES = [
   { id: 'expo', title: 'Expo 宿主', packageName: '@expo-harmony/expo', category: '核心运行时', summary: '官方 Expo 入口、宿主重载与模块生命周期。' },
   { id: 'expo-modules-core', title: 'Expo Modules Core', packageName: '@expo-harmony/expo-modules-core', category: '核心运行时', summary: '原生模块注册表、事件发射器与 Expo 运行时桥接。' },
-  { id: 'devtools', title: '开发工具 DevTools', packageName: '@expo-harmony/expo-dev-client', category: '核心运行时', summary: 'Expo 网络检查、文件传输、请求取消与运行时重新加载。' },
-  { id: 'dev-launcher', title: '开发启动器', packageName: '@expo-harmony/expo-dev-launcher', category: '核心运行时', summary: '项目加载、URL 错误边界、启动器常量、Home 与历史记录。' },
+  { id: 'devtools', title: '开发工具 DevTools', packageName: '@expo-harmony/expo', category: '核心运行时', summary: 'Expo 网络检查、文件传输、请求取消与运行时重新加载。' },
   { id: 'dev-menu', title: '开发菜单', packageName: '@expo-harmony/expo-dev-menu', category: '核心运行时', summary: '菜单回调、偏好往返、FAB、源码浏览与宿主接口联动。' },
   { id: 'log-box', title: 'Expo LogBox', packageName: '@expo-harmony/expo__log-box', category: '核心运行时', summary: '多日志、堆栈、原生复制、未捕获异常与错误恢复。' },
   { id: 'eas-client', title: 'EAS 客户端', packageName: '@expo-harmony/expo-eas-client', category: '核心运行时', summary: '安装级客户端身份、确定性采样与持久化。' },

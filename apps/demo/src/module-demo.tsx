@@ -65,13 +65,11 @@ import { JSONUtilsDemo } from './modules/json-utils';
 import { StructuredHeadersDemo } from './modules/structured-headers';
 import { UpdatesInterfaceDemo } from './modules/updates-interface';
 import { DevToolsDemo } from './modules/devtools';
-import { DevLauncherDemo } from './modules/dev-launcher';
 import { DevMenuDemo } from './modules/dev-menu';
 import { LogBoxDemo } from './modules/log-box';
 
 const MODULE_DEMOS = {
   'devtools': DevToolsDemo,
-  'dev-launcher': DevLauncherDemo,
   'dev-menu': DevMenuDemo,
   'log-box': LogBoxDemo,
   'expo': ExpoDemo,

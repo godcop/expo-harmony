@@ -48,8 +48,8 @@ export function DevToolsDemo() {
         </ActionRow>
         <ResultPanel state={action.state} />
       </Panel>
-      <Panel eyebrow="DEV CLIENT" title="运行时重新加载">
-        <Note>开发模式：{String(__DEV__)}。重载会重新创建应用，页面状态随之重置；Home、偏好设置和错误查看分别在启动器、开发菜单和 LogBox 卡片中验证。</Note>
+      <Panel eyebrow="EXPO RUNTIME" title="运行时重新加载">
+        <Note>开发模式：{String(__DEV__)}。重载会重新创建应用，页面状态随之重置；偏好设置和错误查看分别在开发菜单和 LogBox 卡片中验证。</Note>
         <ActionButton
           label="重新加载应用"
           testID="devtools-reload"

@@ -102,13 +102,6 @@
       ],
       "./plugins/withAudioFixture",
       "./plugins/withIntentLauncherFixture",
-      [
-        "@expo-harmony/expo-dev-launcher",
-        {
-          "launchMode": "launcher",
-          "toolsButton": true
-        }
-      ],
       "@expo-harmony/expo__log-box",
       "@expo-harmony/prebuild-config",
       [

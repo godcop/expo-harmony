@@ -1467,7 +1467,7 @@ __metadata:
     "@expo-harmony/expo-constants": "workspace:*"
     "@expo-harmony/expo-contacts": "workspace:*"
     "@expo-harmony/expo-crypto": "workspace:*"
-    "@expo-harmony/expo-dev-client": "workspace:*"
+    "@expo-harmony/expo-dev-menu": "workspace:*"
     "@expo-harmony/expo-device": "workspace:*"
     "@expo-harmony/expo-document-picker": "workspace:*"
     "@expo-harmony/expo-eas-client": "workspace:*"
@@ -1536,7 +1536,7 @@ __metadata:
     expo-constants: "npm:55.0.17"
     expo-contacts: "npm:55.0.14"
     expo-crypto: "npm:55.0.15"
-    expo-dev-client: "npm:55.0.35"
+    expo-dev-menu: "npm:55.0.30"
     expo-device: "npm:55.0.17"
     expo-document-picker: "npm:55.0.13"
     expo-eas-client: "npm:55.0.5"
@@ -1960,7 +1960,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@expo-harmony/expo-dev-client@workspace:*, @expo-harmony/expo-dev-client@workspace:packages/expo-dev-client":
+"@expo-harmony/expo-dev-client@workspace:packages/expo-dev-client":
   version: 0.0.0-use.local
   resolution: "@expo-harmony/expo-dev-client@workspace:packages/expo-dev-client"
   dependencies:
@@ -8005,21 +8005,6 @@ __metadata:
   peerDependencies:
     expo: "*"
   checksum: 10c0/536472114113669bba66892265fb696c822ceb3eddda965ed08a2173292c1b7ba5bdcae255cc7fe98acd4da9b9437cb2f319661355420a9978c7753b2db66385
-  languageName: node
-  linkType: hard
-
-"expo-dev-client@npm:55.0.35":
-  version: 55.0.35
-  resolution: "expo-dev-client@npm:55.0.35"
-  dependencies:
-    expo-dev-launcher: "npm:55.0.36"
-    expo-dev-menu: "npm:55.0.30"
-    expo-dev-menu-interface: "npm:55.0.2"
-    expo-manifests: "npm:~55.0.17"
-    expo-updates-interface: "npm:~55.1.6"
-  peerDependencies:
-    expo: "*"
-  checksum: 10c0/0cdba1f77fed19d7b53ec070e6ea3e37913a1cd88175a0caffd1d67ccb2c8c1d51edaed2de118e4368835c02efbdef87dbee03ff45ed75589d7b78e919dd862c
   languageName: node
   linkType: hard
 
