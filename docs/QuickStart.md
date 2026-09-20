@@ -83,7 +83,7 @@ const { getDefaultConfig } = require('expo/metro-config');
 const { withHarmonyConfig } = require('@expo-harmony/metro-config');
 
 const projectRoot = __dirname;
-const isHarmony = process.env.EXPO_METRO_TARGET === 'harmony';
+const isHarmony = process.env.EXPO_HARMONY === '1';
 const config = getDefaultConfig(projectRoot);
 
 module.exports = withHarmonyConfig(config, {

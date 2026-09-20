@@ -112,7 +112,7 @@ module.exports = withHarmonyConfig(getDefaultConfig(__dirname), {
 
 Expo 的 [Metro 文档](https://docs.expo.dev/guides/customizing-metro/) 要求 Metro 配置继承自 `expo/metro-config`。在这份配置的基础上调用 `withHarmonyConfig`，即可接入 RNOH 的模块解析和 Expo Modules 的初始化流程；只给 `react-native` 设置别名，无法完成这些初始化。
 
-只构建 HarmonyOS 单平台时，直接使用上面的配置即可；多平台项目可以在 `withHarmonyConfig` 的选项中添加 `enabled: process.env.EXPO_METRO_TARGET === 'harmony'`，`expo-harmony` 命令会自动设置该环境变量。更多选项见 [`@expo-harmony/metro-config`](../packages/metro-config/README.md)。
+只构建 HarmonyOS 单平台时，直接使用上面的配置即可；多平台项目可以在 `withHarmonyConfig` 的选项中添加 `enabled: process.env.EXPO_HARMONY === '1'`，`expo-harmony` 命令会自动设置该环境变量。更多选项见 [`@expo-harmony/metro-config`](../packages/metro-config/README.md)。
 
 `babel.config.js` 使用 Expo 预设：
 
