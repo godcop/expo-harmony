@@ -20,7 +20,8 @@
   "main": "index.js",
   "react-native": {
     "./index.js": "./src/index.ts",
-    "./build/AssetSourceResolver.js": "./src/AssetSourceResolver.js"
+    "./build/AssetSourceResolver.js": "./src/resolveAssetSource.js",
+    "./build/resolveAssetSource.js": "./src/resolveAssetSource.js"
   },
   "types": "index.d.ts",
   "scripts": {
