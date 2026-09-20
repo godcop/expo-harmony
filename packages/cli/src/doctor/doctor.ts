@@ -5,7 +5,11 @@ import path from 'node:path';
 import { getConfig } from '@expo/config';
 import { normalizeHarmonyConfig } from '@expo-harmony/config-plugins';
 import { verifyModulesAsync } from '@expo-harmony/expo-modules-autolinking';
-import { isRnohAutolinkingDisabled, validateHarmonySigningConfigFile } from '@expo-harmony/prebuild-config/internal';
+import {
+  HarmonyPlatformDirectory,
+  isRnohAutolinkingDisabled,
+  validateHarmonySigningConfigFile,
+} from '@expo-harmony/prebuild-config/internal';
 
 import { spawnAsync } from '../process';
 import { resolveTimeoutMs } from '../timeout';
@@ -29,6 +33,7 @@ export interface DoctorResult {
 }
 
 interface DoctorOptions {
+  freshPrebuild?: boolean;
   requireBuildTools?: boolean;
   requireDeviceTools?: boolean;
   validateGeneratedProject?: boolean;
@@ -140,7 +145,15 @@ async function doctorUnlockedAsync(root: string, options: DoctorOptions = {}): P
         const signing = await validateHarmonySigningConfigFile(root, harmony.signingConfigFile);
         checks.push(check('signing', 'pass', `Harmony signing config ${signing.name} is valid.`));
       } catch (error) {
-        checks.push(check('signing', 'error', error.message, { code: error.code || 'ERR_HARMONY_SIGNING_INVALID' }));
+        const fresh = options.freshPrebuild || !fs.existsSync(path.join(root, HarmonyPlatformDirectory));
+        checks.push(check(
+          'signing',
+          fresh ? 'warn' : 'error',
+          fresh
+            ? `The fresh Harmony project will be generated unsigned because signing materials are unavailable: ${error.message}`
+            : error.message,
+          { code: error.code || 'ERR_HARMONY_SIGNING_INVALID' }
+        ));
       }
     } else {
       checks.push(check('signing', 'warn', 'No external signing config is set; unsigned generation remains available.'));

@@ -19,6 +19,10 @@ function withPreparationMod(config) {
     const root = mod.modRequest.projectRoot;
     const platform = mod.modRequest.platformProjectRoot;
     const manifest = mod.modRequest.ignoreExistingNativeFiles ? null : await readPreviousCngManifestAsync(root);
+    // Expo copies the template before mods run; use the state captured by the CLI.
+    const freshPrebuild = process.env.EXPO_HARMONY_PREBUILD_FRESH;
+    const isFreshGeneration = freshPrebuild === '1'
+      || (freshPrebuild === undefined && manifest === null);
     const plugins = getHarmonyConfigPlugins(mod);
     const stale = findStaleConfigPlugins(manifest, plugins);
 
@@ -40,8 +44,12 @@ function withPreparationMod(config) {
     );
 
     if (harmony.signingConfigFile) {
-      const signing = await readSigningConfigFile(root, harmony.signingConfigFile);
-      mod._internal.harmonySigningConfig = signing.config;
+      try {
+        const signing = await readSigningConfigFile(root, harmony.signingConfigFile);
+        mod._internal.harmonySigningConfig = signing.config;
+      } catch (cause) {
+        if (!isFreshGeneration) throw cause;
+      }
     }
 
     if (mod.modRequest.introspect) return mod;
