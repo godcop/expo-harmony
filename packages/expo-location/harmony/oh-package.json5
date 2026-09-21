@@ -1,7 +1,7 @@
 {
   "modelVersion": "5.0.0",
   "name": "@expo-harmony-internal/expo-location",
-  "version": "55.1.10-harmony.3",
+  "version": "55.1.10-harmony.4",
   "description": "HarmonyOS port of expo-location",
   "keywords": [
     "react-native",
@@ -21,7 +21,7 @@
     "@expo-harmony/expo-location": "./library"
   },
   "overrides": {
-    "@expo-harmony/expo-modules-core": "55.0.25-harmony.4",
+    "@expo-harmony/expo-modules-core": "55.0.25-harmony.5",
     "@rnoh/react-native-openharmony": "0.84.1"
   }
 }

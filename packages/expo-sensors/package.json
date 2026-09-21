@@ -1,6 +1,6 @@
 {
   "name": "@expo-harmony/expo-sensors",
-  "version": "55.0.15-harmony.2",
+  "version": "55.0.15-harmony.3",
   "description": "HarmonyOS port of expo-sensors",
   "keywords": [
     "react-native",

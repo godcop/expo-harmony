@@ -1,7 +1,7 @@
 {
   "modelVersion": "5.0.0",
   "name": "@expo-harmony-internal/expo-application",
-  "version": "55.0.15-harmony.4",
+  "version": "55.0.15-harmony.5",
   "description": "HarmonyOS port of expo-application",
   "keywords": [
     "react-native",
@@ -22,7 +22,7 @@
   },
   "overrides": {
     "@ppd/ffrt": "1.1.5",
-    "@expo-harmony/expo-modules-core": "55.0.25-harmony.4",
+    "@expo-harmony/expo-modules-core": "55.0.25-harmony.5",
     "@rnoh/react-native-openharmony": "0.84.1"
   }
 }

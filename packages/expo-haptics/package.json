@@ -1,6 +1,6 @@
 {
   "name": "@expo-harmony/expo-haptics",
-  "version": "55.0.14-harmony.4",
+  "version": "55.0.14-harmony.5",
   "description": "HarmonyOS port of expo-haptics",
   "keywords": [
     "react-native",

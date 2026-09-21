@@ -1,7 +1,7 @@
 {
   "modelVersion": "5.0.0",
   "name": "@expo-harmony-internal/expo-image",
-  "version": "55.0.11-harmony.2",
+  "version": "55.0.11-harmony.3",
   "description": "HarmonyOS port of expo-image",
   "keywords": [
     "react-native",

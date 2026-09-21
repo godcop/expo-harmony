@@ -1,6 +1,6 @@
 {
   "name": "@expo-harmony/expo-linear-gradient",
-  "version": "55.0.14-harmony.4",
+  "version": "55.0.14-harmony.5",
   "description": "HarmonyOS port of expo-linear-gradient",
   "keywords": [
     "react-native",
@@ -18,6 +18,6 @@
   "main": "Index.ets",
   "license": "MIT",
   "dependencies": {
-    "@expo-harmony/expo-modules-core": "55.0.25-harmony.4"
+    "@expo-harmony/expo-modules-core": "55.0.25-harmony.5"
   }
 }

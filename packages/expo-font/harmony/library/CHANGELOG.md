@@ -1,5 +1,5 @@
 # Changelog
 
-Version: 55.0.8-harmony.6
+Version: 55.0.8-harmony.7
 
 [Commit History](https://github.com/renbaoshuo/expo-harmony/commits/master/packages/expo-font)
