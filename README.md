@@ -98,6 +98,7 @@
 - [expo-sensors](./packages/expo-sensors/)：访问设备的加速度计、陀螺仪、磁力计、气压计、环境光、设备运动和计步器。
 - [expo-sharing](./packages/expo-sharing/)：与其他应用分享和接收数据。
 - [expo-sms](./packages/expo-sms/)：查询短信能力，打开系统短信编辑页并预填收件人与正文。
+- [expo-speech](./packages/expo-speech/)：使用系统语音合成能力离线朗读文本，支持音色查询与播放控制。
 - [expo-splash-screen](./packages/expo-splash-screen/)：控制原生启动画面的显示行为。
 - [expo-standard-web-crypto](./packages/expo-standard-web-crypto/)：W3C Crypto API 的部分实现。
 - [expo-status-bar](./packages/expo-status-bar/)：提供与 React Native StatusBar 一致的接口，但其默认值更适合 Expo 环境。

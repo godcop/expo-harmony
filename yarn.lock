@@ -2634,6 +2634,24 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@expo-harmony/expo-speech@workspace:*, @expo-harmony/expo-speech@workspace:packages/expo-speech":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-speech@workspace:packages/expo-speech"
+  dependencies:
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    expo: "npm:55.0.26"
+    expo-modules-core: "npm:55.0.25"
+    expo-speech: "npm:55.0.14"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    expo-speech: 55.0.14
+  languageName: unknown
+  linkType: soft
+
 "@expo-harmony/expo-splash-screen@workspace:*, @expo-harmony/expo-splash-screen@workspace:packages/expo-splash-screen":
   version: 0.0.0-use.local
   resolution: "@expo-harmony/expo-splash-screen@workspace:packages/expo-splash-screen"
@@ -8543,6 +8561,15 @@ __metadata:
   peerDependencies:
     expo: "*"
   checksum: 10c0/1e97ffb8a30eb4d16ebaefb27731a3308c9dce1a63fdb6265d0300db942fc5fc59f50a38bd9ddc2e983102f7430ac60a208a62dd775f20a80ce40751d46356e3
+  languageName: node
+  linkType: hard
+
+"expo-speech@npm:55.0.14":
+  version: 55.0.14
+  resolution: "expo-speech@npm:55.0.14"
+  peerDependencies:
+    expo: "*"
+  checksum: 10c0/444442ac2f4c1791fa62a1533c4f5996919b764ba721ec8b795e85287061d68d0d3b934a4a419d040d857fe6bf541a93ac7a8eb71f4e565981798f2be379a961
   languageName: node
   linkType: hard
 
