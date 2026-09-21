@@ -42,6 +42,7 @@ export const MODULES = [
   { id: 'localization', title: '语言与地区', packageName: '@expo-harmony/expo-localization', category: '应用', summary: '偏好语言、地区、货币、日历、时区与系统设置变化 Hooks。' },
 
   { id: 'audio', title: '音频', packageName: '@expo-harmony/expo-audio', category: '设备与媒体', summary: '播放、预加载、播放列表状态与后台音频。' },
+  { id: 'speech', title: '语音合成', packageName: '@expo-harmony/expo-speech', category: '设备与媒体', summary: '系统音色、文本播报、语速音调、队列停止、事件回调与参数边界。' },
   { id: 'battery', title: '电池', packageName: '@expo-harmony/expo-battery', category: '设备与媒体', summary: '电源状态快照、Hook 与原生状态事件。' },
   { id: 'blur', title: '模糊', packageName: '@expo-harmony/expo-blur', category: '设备与媒体', summary: '原生模糊视图、色调变体与强度更新。' },
   { id: 'brightness', title: '亮度', packageName: '@expo-harmony/expo-brightness', category: '设备与媒体', summary: '窗口亮度读写、权限、数值边界与平台兼容行为。' },
