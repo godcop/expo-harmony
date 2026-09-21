@@ -52,6 +52,7 @@ import { ScreenOrientationDemo } from './modules/screen-orientation';
 import { SecureStoreDemo } from './modules/secure-store';
 import { SensorsDemo } from './modules/sensors';
 import { SharingDemo } from './modules/sharing';
+import { SMSDemo } from './modules/sms';
 import { SplashScreenDemo } from './modules/splash-screen';
 import { SystemUIDemo } from './modules/system-ui';
 import { SymbolsDemo } from './modules/symbols';
@@ -130,6 +131,7 @@ const MODULE_DEMOS = {
   'secure-store': SecureStoreDemo,
   'sensors': SensorsDemo,
   'sharing': SharingDemo,
+  'sms': SMSDemo,
   'splash-screen': SplashScreenDemo,
   'system-ui': SystemUIDemo,
   'symbols': SymbolsDemo,
