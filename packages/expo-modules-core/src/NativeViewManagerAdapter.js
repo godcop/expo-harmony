@@ -2,7 +2,6 @@
 
 const React = require('react');
 const ReactNative = require('react-native');
-const NativeComponentRegistry = require('react-native/Libraries/NativeComponent/NativeComponentRegistry');
 
 const EXPO_VIEW_COMPONENT_NAME = 'ViewManagerAdapter_ExpoModulesCore';
 const nativeComponentsCache = new Map();
@@ -60,17 +59,43 @@ function requireExpoViewComponent(moduleName, viewName) {
   const cached = nativeComponentsCache.get(key);
   if (cached) return cached;
 
-  const component = NativeComponentRegistry.get(key, () => {
+  const component = ReactNative.registerViewConfig(key, () => {
     const config = getExpoGlobal()?.getViewConfig?.(moduleName, viewName);
     if (!config) {
       throw new Error(`Unable to get the view config for ${viewName ?? 'default view'} from module ${moduleName}.`);
     }
 
+    // registerViewConfig expects a complete config. Reuse RNOH's View props and
+    // events, including the processors in its exported style attribute table.
+    const baseConfig = ReactNative.UIManager.getViewManagerConfig('RCTView');
+    if (!baseConfig) {
+      throw new Error('Unable to get the RNOH RCTView config for Expo views.');
+    }
+    const constants = ReactNative.UIManager.getConstants();
+    // RNOH 0.84 exports the module namespace rather than its default value.
+    const viewAttributes = ReactNative.ReactNativeViewAttributes.default.RCTView;
+    const validAttributes = { ...viewAttributes.style, ...viewAttributes };
+    for (const prop of Object.keys(baseConfig.NativeProps)) {
+      validAttributes[prop] ??= true;
+    }
+
     return {
       ...config,
       uiViewClassName: EXPO_VIEW_COMPONENT_NAME,
+      Commands: {},
+      bubblingEventTypes: {
+        ...constants.genericBubblingEventTypes,
+        ...baseConfig.bubblingEventTypes,
+        ...config.bubblingEventTypes,
+      },
+      directEventTypes: {
+        ...constants.genericDirectEventTypes,
+        ...baseConfig.directEventTypes,
+        ...config.directEventTypes,
+      },
       validAttributes: {
-        ...config?.validAttributes,
+        ...validAttributes,
+        ...config.validAttributes,
         expoModuleName: true,
         expoViewRevision: true,
         expoViewName: true,
@@ -124,15 +149,11 @@ function requireNativeViewManager(moduleName, viewName) {
     }
   }
 
-  try {
-    const nativeModule = getExpoGlobal()?.modules?.[moduleName];
-    const prototypeName = viewName ? `${moduleName}_${viewName}` : moduleName;
-    const nativeViewPrototype = nativeModule?.ViewPrototypes?.[prototypeName];
-    if (nativeViewPrototype) {
-      Object.assign(NativeComponent.prototype, nativeViewPrototype);
-    }
-  } catch {
-    // Match Expo's behavior for tests and runtimes with incomplete module mocks.
+  const nativeModule = getExpoGlobal()?.modules?.[moduleName];
+  const prototypeName = viewName ? `${moduleName}_${viewName}` : moduleName;
+  const nativeViewPrototype = nativeModule?.ViewPrototypes?.[prototypeName];
+  if (nativeViewPrototype) {
+    Object.assign(NativeComponent.prototype, nativeViewPrototype);
   }
 
   return NativeComponent;
