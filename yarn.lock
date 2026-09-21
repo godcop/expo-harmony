@@ -2614,6 +2614,24 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@expo-harmony/expo-sms@workspace:*, @expo-harmony/expo-sms@workspace:packages/expo-sms":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-sms@workspace:packages/expo-sms"
+  dependencies:
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    expo: "npm:55.0.26"
+    expo-modules-core: "npm:55.0.25"
+    expo-sms: "npm:55.0.14"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    expo-sms: 55.0.14
+  languageName: unknown
+  linkType: soft
+
 "@expo-harmony/expo-splash-screen@workspace:*, @expo-harmony/expo-splash-screen@workspace:packages/expo-splash-screen":
   version: 0.0.0-use.local
   resolution: "@expo-harmony/expo-splash-screen@workspace:packages/expo-splash-screen"
@@ -8514,6 +8532,15 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: 10c0/6a0c92c72306f76e8e832c191df2ec8da243d09cb977bcbfe6754f1443182d76dcbd83bfd309d3ec7a23a3af00d4b89cfa064befc5c1b0bbe7883b004d8088d2
+  languageName: node
+  linkType: hard
+
+"expo-sms@npm:55.0.14":
+  version: 55.0.14
+  resolution: "expo-sms@npm:55.0.14"
+  peerDependencies:
+    expo: "*"
+  checksum: 10c0/1e97ffb8a30eb4d16ebaefb27731a3308c9dce1a63fdb6265d0300db942fc5fc59f50a38bd9ddc2e983102f7430ac60a208a62dd775f20a80ce40751d46356e3
   languageName: node
   linkType: hard
 
