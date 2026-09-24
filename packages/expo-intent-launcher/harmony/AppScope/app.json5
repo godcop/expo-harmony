@@ -2,7 +2,7 @@
   "app": {
     "bundleName": "dev.expo.intentlauncher.build",
     "vendor": "expo-harmony",
-    "versionCode": 550012,
-    "versionName": "55.0.12-harmony.0"
+    "versionCode": 550016,
+    "versionName": "55.0.16-harmony.0"
   }
 }

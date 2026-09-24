@@ -64,6 +64,7 @@ export class ExpoIntentLauncherModule extends ExpoModule {
     }
 
     const want = createWant(action, params, this.context.uiAbilityContext.abilityInfo.bundleName);
+
     const cancellation = new Promise<common.AbilityResult>((_resolve, reject): void => {
       this.cancel = (): void =>
         reject(new ExpoModuleError('ERR_INTENT_LAUNCHER_DESTROYED', 'The IntentLauncher host was destroyed while an activity was open.'));
@@ -72,6 +73,7 @@ export class ExpoIntentLauncherModule extends ExpoModule {
 
     try {
       const response = await Promise.race([this.context.uiAbilityContext.startAbilityForResult(want), cancellation]);
+
       this.assertActive();
 
       const result: IntentLauncherResult = { resultCode: response.resultCode };
@@ -85,6 +87,7 @@ export class ExpoIntentLauncherModule extends ExpoModule {
       }
 
       const cause = error as BusinessError;
+
       throw new ExpoModuleError(
         'ERR_INTENT_LAUNCHER_START_ACTIVITY',
         `Unable to start the requested ability. ${cause.code}: ${cause.message}`,
@@ -102,11 +105,13 @@ export class ExpoIntentLauncherModule extends ExpoModule {
     // Completion can arrive after Core invalidates this.context.
     const logger = this.context.logger;
     let want: Want;
+
     try {
       const info =
         bundle === this.context.uiAbilityContext.abilityInfo.bundleName
           ? bundleManager.getBundleInfoForSelfSync(LAUNCH_BUNDLE_FLAGS)
           : bundleManager.getBundleInfoSync(bundle, LAUNCH_BUNDLE_FLAGS);
+
       want = applicationWant(info);
     } catch (error) {
       if (error instanceof ExpoModuleError) {
@@ -117,6 +122,7 @@ export class ExpoIntentLauncherModule extends ExpoModule {
       if (cause.code === BUNDLE_NOT_FOUND) {
         throw new ExpoModuleError('ERR_PACKAGE_NOT_FOUND', `Package not found: ${bundle}`, error);
       }
+
       throw new ExpoModuleError('ERR_INTENT_LAUNCHER_BUNDLE_INFO', `Unable to query application '${bundle}'. ${cause.code}: ${cause.message}`, error);
     }
 
@@ -126,6 +132,7 @@ export class ExpoIntentLauncherModule extends ExpoModule {
       });
     } catch (error) {
       const cause = error as BusinessError;
+
       throw new ExpoModuleError(
         'ERR_INTENT_LAUNCHER_OPEN_APPLICATION',
         `Unable to open application '${bundle}'. ${cause.code}: ${cause.message}`,
@@ -139,6 +146,7 @@ export class ExpoIntentLauncherModule extends ExpoModule {
 
     const logger = this.context.logger;
     let info: bundleManager.BundleInfo;
+
     try {
       info =
         bundle === this.context.uiAbilityContext.abilityInfo.bundleName
@@ -153,12 +161,15 @@ export class ExpoIntentLauncherModule extends ExpoModule {
       if (cause.code === BUNDLE_NOT_FOUND) {
         throw new ExpoModuleError('ERR_PACKAGE_NOT_FOUND', `Package not found: ${bundle}`, error);
       }
+
       throw new ExpoModuleError('ERR_INTENT_LAUNCHER_BUNDLE_INFO', `Unable to query application '${bundle}'. ${cause.code}: ${cause.message}`, error);
     }
 
     this.assertActive();
+
     let pixels: image.PixelMap | undefined;
     let packer: image.ImagePacker | undefined;
+
     try {
       const descriptor = this.context.uiAbilityContext.resourceManager.getDrawableDescriptor(info.appInfo.iconResource);
       pixels = descriptor.getPixelMap();
@@ -168,6 +179,7 @@ export class ExpoIntentLauncherModule extends ExpoModule {
       const base64 = await new util.Base64Helper().encodeToString(new Uint8Array(bytes));
 
       this.assertActive();
+
       return `data:${PNG_MIME_TYPE};base64,${base64}`;
     } catch (error) {
       if (error instanceof ExpoModuleError) {
@@ -175,6 +187,7 @@ export class ExpoIntentLauncherModule extends ExpoModule {
       }
 
       logger.warn(`Unable to encode application '${bundle}' icon: ${String(error)}`);
+
       return '';
     } finally {
       try {
@@ -208,8 +221,10 @@ function applicationWant(info: bundleManager.BundleInfo): Want {
   let first: Want | undefined;
   for (const module of info.hapModulesInfo) {
     if (module.type !== bundleManager.ModuleType.ENTRY) continue;
+
     for (const ability of module.abilitiesInfo) {
       if (!ability.exported || !ability.enabled) continue;
+
       const skill = ability.skills.find(
         (candidate: bundleManager.Skill): boolean =>
           candidate.entities.includes(HOME_ENTITY) && candidate.actions.some((action: string): boolean => HOME_ACTIONS.includes(action)),
@@ -230,5 +245,6 @@ function applicationWant(info: bundleManager.BundleInfo): Want {
   }
 
   if (first !== undefined) return first;
+
   throw new ExpoModuleError('ERR_PACKAGE_NOT_FOUND', `Package has no exported, enabled launcher UIAbility: ${info.name}`);
 }

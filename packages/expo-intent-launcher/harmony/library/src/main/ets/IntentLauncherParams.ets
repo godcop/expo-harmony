@@ -3,15 +3,14 @@ import { ExpoModuleError, ExpoRecordShape, ExpoValueTypes } from '@expo-harmony/
 
 const MIN_INT32: number = -2147483648;
 const MAX_INT32: number = 2147483647;
-// Long.MAX_VALUE rounds to 2^63 when represented as a JavaScript number.
 const MIN_INT64: number = -(2 ** 63);
+// Long.MAX_VALUE rounds to 2^63 when represented as a JavaScript number.
 const MAX_INT64: number = 2 ** 63 - 1;
 
 const EXTRA_VALUE = ExpoValueTypes.custom<Object>(
   'Want parameter',
   (value: ESObject): Object => {
     if (typeof value === 'number') {
-      // Match Kotlin Double.toLong() for top-level extras only.
       return toInteger(value, MIN_INT64, MAX_INT64);
     }
     return value;

@@ -7,10 +7,10 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-intent-launcher expo-intent-launcher@55.0.12
+npm install @expo-harmony/expo-intent-launcher expo-intent-launcher@55.0.16
 ```
 
-鸿蒙适配会通过 Autolinking 自动接入，无需额外配置。最低支持 HarmonyOS 5.0.2（API 14），宿主的 `compatibleSdkVersion` 也需满足此要求。
+鸿蒙适配会通过 Autolinking 自动接入。最低支持 HarmonyOS 5.0.2（API 14），宿主的 `compatibleSdkVersion` 也需满足此要求。
 
 使用 `startActivityAsync()` 启动已知的 UIAbility 不需要查询应用信息的权限。使用 `openApplication()` 打开本应用、使用 `getApplicationIconAsync()` 读取本应用图标也不需要该权限。这两个方法用于其他应用时，需要 `ohos.permission.GET_BUNDLE_INFO_PRIVILEGED`，本包默认不声明该权限，使用前需按下文申请并配置。
 
@@ -28,6 +28,8 @@ const result = await IntentLauncher.startActivityAsync('com.example.action.EDIT'
 ```
 
 ## 应用信息查询权限
+
+上述跨应用权限要求针对第三方应用。[华为 bundleManager 文档](https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-bundlemanager) 按调用方区分权限，第三方应用使用 `getBundleInfo` / `getBundleInfoSync` 需要 `GET_BUNDLE_INFO_PRIVILEGED`，系统应用才可以使用 `GET_BUNDLE_INFO`，普通第三方应用不能用后者替代。
 
 `ohos.permission.GET_BUNDLE_INFO_PRIVILEGED` 属于华为的 [企业类应用可用权限](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/permissions-for-enterprise-apps#ohospermissionget_bundle_info_privileged)，API 14 起向企业普通应用开放，符合条件的应用需按该说明申请。面向应用市场发布的普通应用不能按一般受限权限（ACL）的流程申请该权限。
 
@@ -49,7 +51,9 @@ const result = await IntentLauncher.startActivityAsync('com.example.action.EDIT'
 
 返回 `Promise<IntentLauncherResult>`，启动目标 UIAbility 并等待结果。`activityAction` 必须是非空字符串，传入空值或非字符串时抛出 `TypeError`。
 
-`className` 对应 UIAbility 名称，`packageName` 对应 bundleName，只在指定 `className` 时使用 `packageName`，省略则使用当前应用。`data`、`category`、`extra` 分别对应 Want 的 `uri`、`entities` 和 `parameters`，`type` 和 `flags` 原样传给 Want。action、category、flags 和 URI 必须遵循目标 HarmonyOS 应用的协议。
+`className` 对应 UIAbility 名称，`packageName` 对应 bundleName，只在指定 `className` 时使用 `packageName`，省略则使用当前应用。`data`、`category`、`extra` 分别对应 Want 的 `uri`、`entities` 和 `parameters`，URI 和 MIME type 可以同时传入。action、category、flags 和 URI 必须遵循目标 HarmonyOS 应用的协议。
+
+与上游一致，仅对 `extra` 顶层的数值向零取整，结果限制在 64 位整数范围内，毫秒时间戳这类超出 32 位的值可以保留，嵌套对象和数组中的数值不取整。超出 `Number.MAX_SAFE_INTEGER` 的整数不能保证精确表示。`flags` 同样向零取整，限制在有符号 32 位范围内，Android 的标志位取值不会转换成 HarmonyOS 的标志位。
 
 目标 Ability 必须主动返回结果，仅返回调用方前台或把目标转入后台不会完成 Promise。需要支持返回键取消时，应由目标页面调用 `terminateSelfWithResult`。结果码、结果 Want 的 URI 和参数原样透传，分别放入 `resultCode`、`data` 和 `extra`；系统未显式设置时 `data` 和 `extra` 可能缺失，也可能为空字符串或空对象。
 
@@ -57,7 +61,7 @@ const result = await IntentLauncher.startActivityAsync('com.example.action.EDIT'
 
 #### `IntentLauncher.openApplication(packageName)`
 
-无返回值，打开目标应用已启用且已导出的桌面入口，`packageName` 对应 bundleName。此方法同步返回，不等待应用启动完成，返回后发生的启动失败不会抛给调用方。
+无返回值，打开目标应用 entry 模块中已启用且已导出的桌面入口，优先选择 `mainElementName` 指向的入口，`packageName` 对应 bundleName。此方法同步返回，不等待应用启动完成，返回后发生的启动失败不会抛给调用方。
 
 打开本应用无需查询应用信息的权限，打开其他应用需要上述权限。目标应用不存在或没有已启用且已导出的桌面入口时抛出 `ERR_PACKAGE_NOT_FOUND`，查询应用信息失败时抛出 `ERR_INTENT_LAUNCHER_BUNDLE_INFO`，发起启动时发生同步错误则抛出 `ERR_INTENT_LAUNCHER_OPEN_APPLICATION`。
 
