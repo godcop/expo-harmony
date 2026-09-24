@@ -2198,6 +2198,25 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@expo-harmony/expo-image-manipulator@workspace:*, @expo-harmony/expo-image-manipulator@workspace:packages/expo-image-manipulator":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-image-manipulator@workspace:packages/expo-image-manipulator"
+  dependencies:
+    "@expo-harmony/expo-image-loader": "workspace:*"
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    expo: "npm:55.0.31"
+    expo-image-manipulator: "npm:55.0.21"
+    expo-modules-core: "npm:55.0.26"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    expo-image-manipulator: 55.0.21
+  languageName: unknown
+  linkType: soft
+
 "@expo-harmony/expo-image-picker@workspace:*, @expo-harmony/expo-image-picker@workspace:packages/expo-image-picker":
   version: 0.0.0-use.local
   resolution: "@expo-harmony/expo-image-picker@workspace:packages/expo-image-picker"
@@ -8234,6 +8253,17 @@ __metadata:
     typescript-eslint: "npm:^8.66.0"
   languageName: unknown
   linkType: soft
+
+"expo-image-manipulator@npm:55.0.21":
+  version: 55.0.21
+  resolution: "expo-image-manipulator@npm:55.0.21"
+  dependencies:
+    expo-image-loader: "npm:~55.0.1"
+  peerDependencies:
+    expo: "*"
+  checksum: 10c0/1ce470ac203b3d89ab4a9929c512769f76ec06e6a1d07db37c345262b7f8e84e807166af8cb5d80140ccfad18f398fee8aea34ee1a2d773959049fa8d2a2b5d1
+  languageName: node
+  linkType: hard
 
 "expo-image-loader@npm:55.0.1, expo-image-loader@npm:~55.0.0":
   version: 55.0.1

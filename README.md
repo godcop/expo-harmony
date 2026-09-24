@@ -59,6 +59,7 @@
 - [expo-haptics](./packages/expo-haptics/)：访问系统的振动与触感反馈效果。
 - [expo-image](./packages/expo-image/)：显示与缓存图片，支持占位图、动画和原生图片引用。
 - [expo-image-loader](./packages/expo-image-loader/)：为 ArkTS 模块提供按地址加载图片的服务，没有 JavaScript 接口。
+- [expo-image-manipulator](./packages/expo-image-manipulator/)：提供在本地文件系统上处理图片的 API。
 - [expo-image-picker](./packages/expo-image-picker/)：调用系统界面从图库选择图片和视频，或使用相机拍照。
 - [expo-intent-launcher](./packages/expo-intent-launcher/)：启动系统 Intent。
 - [expo-json-utils](./packages/expo-json-utils/)：按字段类型读取 JSON 对象中的值。
