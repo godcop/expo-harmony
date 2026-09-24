@@ -2,13 +2,17 @@
 
 [**GitHub 仓库**](https://github.com/renbaoshuo/expo-harmony/tree/master/packages/expo-crypto) | [官方文档](https://docs.expo.dev/versions/v55.0.0/sdk/crypto/)
 
-为 HarmonyOS 上的 React Native 应用提供 Expo Crypto 的原生实现，与官方同版本的 `expo-crypto` 配套使用。
+为 HarmonyOS 上的 React Native 应用提供 Expo Crypto 的原生实现，与官方同版本的 `expo-crypto` 配套使用。支持摘要计算、安全随机数、UUID 生成和 AES-GCM 加解密。
 
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-crypto expo-crypto@55.0.15
+npm install @expo-harmony/expo-crypto expo-crypto@55.0.19
 ```
+
+本包适配 Expo SDK 55 的 `expo-crypto`，业务代码继续从官方包导入。原生模块由 Expo Harmony 自动链接。最低支持 HarmonyOS 5.0.1（API 13），宿主应用的 `compatibleSdkVersion` 不能低于这个版本。
+
+摘要算法由系统 CryptoFramework 提供，支持 SHA-1、SHA-256、SHA-384、SHA-512 和 MD5，MD2 和 MD4 系统不提供，传入时抛出 `ERR_CRYPTO_DIGEST`。AES 密钥支持 128、192、256 位。AES-GCM 加解密只接受 16 字节的认证标签，`AESSealedData` 可以保存 API 类型允许的其他标签长度，这些数据不能在 HarmonyOS 上解密。
 
 ## API 对照表
 

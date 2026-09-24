@@ -110,7 +110,7 @@ const BINARY_OUTPUT_TYPE: ExpoValueType<ESObject> = new ExpoValueType<ESObject>(
   'base64 string or Uint8Array',
   (value: ESObject, path: string): ESObject => {
     if (typeof value === 'string' || value instanceof Uint8Array) return value;
-    throw invalidArgument(path, 'a base64 string or Uint8Array');
+    throw new CryptoError('ERR_INVALID_ARGUMENT', `${path} must be a base64 string or Uint8Array.`);
   },
   (value: ESObject, path: string): ESObject => {
     if (typeof value === 'string') return value;
@@ -124,7 +124,7 @@ const KEY_INPUT_TYPE: ExpoValueType<KeyInput> = new ExpoValueType<KeyInput>(
   (value: ESObject, path: string): KeyInput => {
     if (typeof value === 'string') return new KeyInput(undefined, value);
     if (value instanceof Uint8Array) return new KeyInput(copyBytes(value));
-    throw invalidArgument(path, 'a string or Uint8Array');
+    throw new CryptoError('ERR_INVALID_ARGUMENT', `${path} must be a string or Uint8Array.`);
   },
   (value: KeyInput): ESObject => value.text ?? (value.bytes as ESObject),
 );
@@ -223,6 +223,7 @@ class EncryptionKeyObject extends ExpoSharedObject {
   constructor(context: ExpoModuleContext, bytes: Uint8Array) {
     super(context);
     requireKeyLength(bytes.byteLength);
+
     this.keyBytes = copyBytes(bytes);
   }
 
@@ -237,6 +238,7 @@ class EncryptionKeyObject extends ExpoSharedObject {
 
   encoded(encoding: string): string {
     this.assertAvailable();
+
     if (encoding === 'hex') return hexEncode(this.keyBytes);
     if (encoding === 'base64') return base64Encode(this.keyBytes);
     throw new CryptoError('ERR_CRYPTO_INVALID_KEY', "Key encoding must be 'hex' or 'base64'.");
@@ -244,6 +246,7 @@ class EncryptionKeyObject extends ExpoSharedObject {
 
   override sharedObjectWillRelease(): void {
     if (this.released) return;
+
     this.released = true;
     secureErase(this.keyBytes);
   }
@@ -268,6 +271,7 @@ class SealedDataObject extends ExpoSharedObject {
     super(context);
     requireNonce(iv);
     requireTagLength(tag.byteLength, 'ERR_CRYPTO_INVALID_SEALED_DATA');
+
     this.nonceBytes = copyBytes(iv);
     this.ciphertextBytes = copyBytes(ciphertext);
     this.tagBytes = copyBytes(tag);
@@ -328,17 +332,23 @@ export class ExpoCryptoAESModule extends ExpoModule {
           async (context: ExpoModuleContext, size?: number | null): Promise<EncryptionKeyObject> => {
             const resolved = size ?? 256;
             requireKeySize(resolved);
-            let nativeKey: cryptoFramework.SymKey | undefined = undefined;
-            let encodedKey: Uint8Array | undefined = undefined;
+
+            let native: cryptoFramework.SymKey | undefined = undefined;
+            let bytes: Uint8Array | undefined = undefined;
             try {
-              nativeKey = await cryptoFramework.createSymKeyGenerator(`AES${resolved}`).generateSymKey();
-              encodedKey = nativeKey.getEncoded().data;
-              return keyClass.instance(new EncryptionKeyObject(context, encodedKey));
+              native = await cryptoFramework.createSymKeyGenerator(`AES${resolved}`).generateSymKey();
+              bytes = native.getEncoded().data;
+
+              return keyClass.instance(new EncryptionKeyObject(context, bytes));
             } catch (error) {
-              throw cryptoFailure('ERR_CRYPTO_AES_KEY', 'Unable to generate the AES key.', error as Object);
+              throw new CryptoError(
+                'ERR_CRYPTO_AES_KEY',
+                `Unable to generate the AES key. ${errorMessage(error as Object)}`,
+                error as Object,
+              );
             } finally {
-              if (encodedKey !== undefined) secureErase(encodedKey);
-              nativeKey?.clearMem();
+              if (bytes !== undefined) secureErase(bytes);
+              native?.clearMem();
             }
           },
         ).returns(KEY_OBJECT_TYPE),
@@ -355,6 +365,7 @@ export class ExpoCryptoAESModule extends ExpoModule {
                 if (encoding === undefined) {
                   throw new CryptoError('ERR_CRYPTO_INVALID_KEY', 'Encoding must be provided for string key input.');
                 }
+
                 if (encoding === 'hex') {
                   requireHexKeyTextLength(input.text);
                   bytes = hexDecode(input.text);
@@ -367,7 +378,9 @@ export class ExpoCryptoAESModule extends ExpoModule {
               } else {
                 bytes = input.bytes as Uint8Array;
               }
+
               requireKeyLength(bytes.byteLength);
+
               return keyClass.instance(new EncryptionKeyObject(context, bytes));
             } finally {
               if (bytes !== undefined) secureErase(bytes);
@@ -410,8 +423,8 @@ export class ExpoCryptoAESModule extends ExpoModule {
           BINARY_INPUT_TYPE,
           BINARY_INPUT_TYPE,
           TAG_ARGUMENT_TYPE.nullable().optional(),
-          (context: ExpoModuleContext, iv: Uint8Array, ciphertext: Uint8Array, tagArgument?: TagArgument | null): SealedDataObject => {
-            const object = sealedFromParts(context, iv, ciphertext, tagArgument ?? undefined);
+          (context: ExpoModuleContext, iv: Uint8Array, ciphertext: Uint8Array, tag?: TagArgument | null): SealedDataObject => {
+            const object = sealedFromParts(context, iv, ciphertext, tag ?? undefined);
             return sealedClass.instance(object);
           },
         ).returns(SEALED_OBJECT_TYPE),
@@ -476,6 +489,7 @@ export class ExpoCryptoAESModule extends ExpoModule {
           async (sealed: SealedDataObject, key: EncryptionKeyObject, options?: DecryptOptions | null): Promise<ESObject> => {
             const resolved = options ?? new DecryptOptions();
             const bytes = await decryptAesGcm(sealed, key, resolved.additionalData);
+
             try {
               return formatBytes(bytes, resolved.output);
             } finally {
@@ -499,11 +513,13 @@ function requireIntegerTypedArray(value: ESObject, path: string): IntegerTypedAr
   ) {
     return value;
   }
-  throw invalidArgument(path, 'an integer TypedArray');
+
+  throw new CryptoError('ERR_INVALID_ARGUMENT', `${path} must be an integer TypedArray.`);
 }
 
 function requireBufferSource(value: ESObject, path: string): Uint8Array {
   if (value instanceof ArrayBuffer) return new Uint8Array(value);
+
   if (
     value instanceof Int8Array ||
     value instanceof Uint8Array ||
@@ -520,14 +536,15 @@ function requireBufferSource(value: ESObject, path: string): Uint8Array {
     const typed = value as ExpoNumericTypedArray;
     return new Uint8Array(typed.buffer, typed.byteOffset, typed.byteLength);
   }
-  throw invalidArgument(path, 'an ArrayBuffer or TypedArray');
+
+  throw new CryptoError('ERR_INVALID_ARGUMENT', `${path} must be an ArrayBuffer or TypedArray.`);
 }
 
 function binaryInput(value: ESObject, path: string): Uint8Array {
   if (typeof value === 'string') return base64Decode(value);
   if (value instanceof ArrayBuffer) return new Uint8Array(value.slice(0));
   if (value instanceof Uint8Array) return copyBytes(value);
-  throw invalidArgument(path, 'a base64 string, ArrayBuffer, or Uint8Array');
+  throw new CryptoError('ERR_INVALID_ARGUMENT', `${path} must be a base64 string, ArrayBuffer, or Uint8Array.`);
 }
 
 function requireRecord(value: ESObject, path: string): Record<string, ESObject> {
@@ -541,8 +558,9 @@ function requireRecord(value: ESObject, path: string): Record<string, ESObject> 
     value instanceof Date ||
     value instanceof url.URL
   ) {
-    throw invalidArgument(path, 'an object');
+    throw new CryptoError('ERR_INVALID_ARGUMENT', `${path} must be an object.`);
   }
+
   return value as Record<string, ESObject>;
 }
 
@@ -553,6 +571,7 @@ function decodeDigestOptions(value: ESObject, path: string): DigestOptions {
   if (result.encoding !== 'hex' && result.encoding !== 'base64') {
     throw new CryptoError('ERR_CRYPTO_DIGEST', `Unsupported digest encoding '${result.encoding}'.`);
   }
+
   return result;
 }
 
@@ -572,10 +591,11 @@ function decodeEncryptOptions(value: ESObject, path: string): EncryptOptions {
   if (result.nonce !== undefined) requireNonce(result.nonce);
   else requireNonceLength(result.nonceLength);
 
-  const additionalData: ESObject = input['additionalData'];
-  if (additionalData !== undefined && additionalData !== null) {
-    result.additionalData = binaryInput(additionalData, `${path}.additionalData`);
+  const aad: ESObject = input['additionalData'];
+  if (aad !== undefined && aad !== null) {
+    result.additionalData = binaryInput(aad, `${path}.additionalData`);
   }
+
   return result;
 }
 
@@ -584,10 +604,12 @@ function decodeDecryptOptions(value: ESObject, path: string): DecryptOptions {
   const result = new DecryptOptions();
   result.output = optionalString(input['output'], `${path}.output`) ?? 'bytes';
   requireBinaryEncoding(result.output);
-  const additionalData: ESObject = input['additionalData'];
-  if (additionalData !== undefined && additionalData !== null) {
-    result.additionalData = binaryInput(additionalData, `${path}.additionalData`);
+
+  const aad: ESObject = input['additionalData'];
+  if (aad !== undefined && aad !== null) {
+    result.additionalData = binaryInput(aad, `${path}.additionalData`);
   }
+
   return result;
 }
 
@@ -596,8 +618,10 @@ function decodeSealedConfig(value: ESObject, path: string): SealedDataConfig {
   const result = new SealedDataConfig();
   result.ivLength = optionalSize(input['ivLength'], `${path}.ivLength`) ?? DEFAULT_IV_LENGTH;
   result.tagLength = optionalSize(input['tagLength'], `${path}.tagLength`) ?? DEFAULT_TAG_LENGTH;
+
   requireNonceLength(result.ivLength);
   requireTagLength(result.tagLength, 'ERR_CRYPTO_INVALID_SEALED_DATA');
+
   return result;
 }
 
@@ -607,30 +631,31 @@ function decodeCiphertextOptions(value: ESObject, path: string): CiphertextOptio
   result.includeTag = optionalBoolean(input['includeTag'], `${path}.includeTag`) ?? false;
   result.encoding = optionalString(input['encoding'], `${path}.encoding`) ?? 'bytes';
   requireBinaryEncoding(result.encoding);
+
   return result;
 }
 
 function optionalString(value: ESObject, path: string): string | undefined {
   if (value === undefined || value === null) return undefined;
-  if (typeof value !== 'string') throw invalidArgument(path, 'a string');
+  if (typeof value !== 'string') throw new CryptoError('ERR_INVALID_ARGUMENT', `${path} must be a string.`);
   return value;
 }
 
 function optionalBoolean(value: ESObject, path: string): boolean | undefined {
   if (value === undefined || value === null) return undefined;
-  if (typeof value !== 'boolean') throw invalidArgument(path, 'a boolean');
+  if (typeof value !== 'boolean') throw new CryptoError('ERR_INVALID_ARGUMENT', `${path} must be a boolean.`);
   return value;
 }
 
 function optionalSize(value: ESObject, path: string): number | undefined {
   if (value === undefined || value === null) return undefined;
-  if (typeof value !== 'number') throw invalidArgument(path, 'a non-negative integer');
+  if (typeof value !== 'number') throw new CryptoError('ERR_INVALID_ARGUMENT', `${path} must be a non-negative integer.`);
   return requireSize(value, path);
 }
 
 function requireSize(value: number, path: string): number {
   if (!Number.isFinite(value) || !Number.isInteger(value) || value < 0) {
-    throw invalidArgument(path, 'a non-negative integer');
+    throw new CryptoError('ERR_INVALID_ARGUMENT', `${path} must be a non-negative integer.`);
   }
   return value;
 }
@@ -641,26 +666,38 @@ function fillRandom(target: IntegerTypedArray): void {
   if (bytes.byteLength > PLATFORM_INT_MAX) {
     throw new CryptoError('ERR_CRYPTO_RANDOM', 'The requested random buffer is too large.');
   }
+
   try {
     const generated = cryptoFramework.createRandom().generateRandomSync(bytes.byteLength).data;
     requireRandomLength(generated, bytes.byteLength);
+
     bytes.set(generated);
   } catch (error) {
-    throw cryptoFailure('ERR_CRYPTO_RANDOM', 'Unable to generate secure random bytes.', error as Object);
+    throw new CryptoError(
+      'ERR_CRYPTO_RANDOM',
+      `Unable to generate secure random bytes. ${errorMessage(error as Object)}`,
+      error as Object,
+    );
   }
 }
 
-function randomBytes(length: number): Uint8Array {
+async function randomBytesAsync(length: number): Promise<Uint8Array> {
   if (length === 0) return new Uint8Array(0);
   if (length > PLATFORM_INT_MAX) {
     throw new CryptoError('ERR_CRYPTO_RANDOM', 'The requested random buffer is too large.');
   }
+
   try {
-    const generated = cryptoFramework.createRandom().generateRandomSync(length).data;
+    const generated = (await cryptoFramework.createRandom().generateRandom(length)).data;
     requireRandomLength(generated, length);
+
     return copyBytes(generated);
   } catch (error) {
-    throw cryptoFailure('ERR_CRYPTO_RANDOM', 'Unable to generate secure random bytes.', error as Object);
+    throw new CryptoError(
+      'ERR_CRYPTO_RANDOM',
+      `Unable to generate secure random bytes. ${errorMessage(error as Object)}`,
+      error as Object,
+    );
   }
 }
 
@@ -668,29 +705,45 @@ function randomUuid(): string {
   try {
     return util.generateRandomUUID().toLowerCase();
   } catch (error) {
-    throw cryptoFailure('ERR_CRYPTO_RANDOM', 'Unable to generate a secure random UUID.', error as Object);
+    throw new CryptoError(
+      'ERR_CRYPTO_RANDOM',
+      `Unable to generate a secure random UUID. ${errorMessage(error as Object)}`,
+      error as Object,
+    );
   }
 }
 
 function digestBytes(algorithm: string, data: Uint8Array): Uint8Array {
-  const platformAlgorithm = digestAlgorithm(algorithm);
+  const name = digestAlgorithm(algorithm);
+
   try {
-    const digest = cryptoFramework.createMd(platformAlgorithm);
+    const digest = cryptoFramework.createMd(name);
     if (data.byteLength > 0) digest.updateSync({ data });
+
     return copyBytes(digest.digestSync().data);
   } catch (error) {
-    throw cryptoFailure('ERR_CRYPTO_DIGEST', `Unable to compute the ${algorithm} digest.`, error as Object);
+    throw new CryptoError(
+      'ERR_CRYPTO_DIGEST',
+      `Unable to compute the ${algorithm} digest. ${errorMessage(error as Object)}`,
+      error as Object,
+    );
   }
 }
 
 async function digestBytesAsync(algorithm: string, data: Uint8Array): Promise<Uint8Array> {
-  const platformAlgorithm = digestAlgorithm(algorithm);
+  const name = digestAlgorithm(algorithm);
+
   try {
-    const digest = cryptoFramework.createMd(platformAlgorithm);
+    const digest = cryptoFramework.createMd(name);
     if (data.byteLength > 0) await digest.update({ data });
+
     return copyBytes((await digest.digest()).data);
   } catch (error) {
-    throw cryptoFailure('ERR_CRYPTO_DIGEST', `Unable to compute the ${algorithm} digest.`, error as Object);
+    throw new CryptoError(
+      'ERR_CRYPTO_DIGEST',
+      `Unable to compute the ${algorithm} digest. ${errorMessage(error as Object)}`,
+      error as Object,
+    );
   }
 }
 
@@ -705,6 +758,7 @@ function digestAlgorithm(algorithm: string): string {
 
 function encodedDigest(algorithm: string, data: Uint8Array, encoding: string): string {
   const digest = digestBytes(algorithm, data);
+
   if (encoding === 'hex') return hexEncode(digest);
   if (encoding === 'base64') return base64Encode(digest);
   throw new CryptoError('ERR_CRYPTO_DIGEST', `Unsupported digest encoding '${encoding}'.`);
@@ -712,63 +766,78 @@ function encodedDigest(algorithm: string, data: Uint8Array, encoding: string): s
 
 async function encodedDigestAsync(algorithm: string, data: Uint8Array, encoding: string): Promise<string> {
   const digest = await digestBytesAsync(algorithm, data);
+
   if (encoding === 'hex') return hexEncode(digest);
   if (encoding === 'base64') return base64Encode(digest);
   throw new CryptoError('ERR_CRYPTO_DIGEST', `Unsupported digest encoding '${encoding}'.`);
 }
 
 async function encryptAesGcm(plaintext: Uint8Array, key: EncryptionKeyObject, options: EncryptOptions): Promise<SealedDataObject> {
-  const nonce = options.nonce === undefined ? randomBytes(options.nonceLength) : copyBytes(options.nonce);
-  const tagBuffer = new Uint8Array(DEFAULT_TAG_LENGTH);
-  let nativeKey: cryptoFramework.SymKey | undefined = undefined;
-  let rawKey: Uint8Array | undefined = undefined;
+  let native: cryptoFramework.SymKey | undefined = undefined;
+  let bytes: Uint8Array | undefined = undefined;
   try {
-    rawKey = key.bytes();
-    nativeKey = await cryptoFramework.createSymKeyGenerator(`AES${key.size}`).convertKey({ data: rawKey });
+    bytes = key.bytes();
+    const nonce = options.nonce === undefined ? await randomBytesAsync(options.nonceLength) : copyBytes(options.nonce);
+    const tag = new Uint8Array(DEFAULT_TAG_LENGTH);
+    native = await cryptoFramework.createSymKeyGenerator(`AES${key.size}`).convertKey({ data: bytes });
+
     const cipher = cryptoFramework.createCipher(`AES${key.size}|GCM|PKCS7`);
     const params: cryptoFramework.GcmParamsSpec = {
       algName: 'GcmParamsSpec',
       iv: { data: nonce },
       aad: { data: options.additionalData },
-      authTag: { data: tagBuffer },
+      authTag: { data: tag },
     };
-    await cipher.init(cryptoFramework.CryptoMode.ENCRYPT_MODE, nativeKey, params);
+    await cipher.init(cryptoFramework.CryptoMode.ENCRYPT_MODE, native, params);
+
     // CryptoFramework commits the AAD during update, including for an empty message.
     const updated: cryptoFramework.DataBlob | null = await cipher.update({ data: plaintext });
     const ciphertext = updated?.data ?? EMPTY_BYTES;
     if (ciphertext.byteLength !== plaintext.byteLength) {
       throw new CryptoError('ERR_CRYPTO_ENCRYPT', 'Harmony returned an invalid AES-GCM ciphertext length.');
     }
+
     const finalized: cryptoFramework.DataBlob | null = await cipher.doFinal(null);
     if (finalized === null || finalized.data.byteLength !== DEFAULT_TAG_LENGTH) {
       throw new CryptoError('ERR_CRYPTO_ENCRYPT', 'Harmony returned an invalid AES-GCM authentication tag.');
     }
+
     return new SealedDataObject(key.context, nonce, ciphertext, finalized.data);
   } catch (error) {
-    if (error instanceof CryptoError) throw error;
-    throw cryptoFailure('ERR_CRYPTO_ENCRYPT', 'AES-GCM encryption failed.', error as Object);
+    if (error instanceof CryptoError) {
+      throw new CryptoError(error.code, error.message, error.cause);
+    }
+
+    throw new CryptoError(
+      'ERR_CRYPTO_ENCRYPT',
+      `AES-GCM encryption failed. ${errorMessage(error as Object)}`,
+      error as Object,
+    );
   } finally {
-    if (rawKey !== undefined) secureErase(rawKey);
-    nativeKey?.clearMem();
+    if (bytes !== undefined) secureErase(bytes);
+    native?.clearMem();
   }
 }
 
-async function decryptAesGcm(sealed: SealedDataObject, key: EncryptionKeyObject, additionalData: Uint8Array): Promise<Uint8Array> {
+async function decryptAesGcm(sealed: SealedDataObject, key: EncryptionKeyObject, aad: Uint8Array): Promise<Uint8Array> {
   requireTagLength(sealed.tagSize, 'ERR_CRYPTO_UNSUPPORTED_TAG_LENGTH');
   requirePlatformTagLength(sealed.tagSize);
-  let nativeKey: cryptoFramework.SymKey | undefined = undefined;
-  let rawKey: Uint8Array | undefined = undefined;
+
+  let native: cryptoFramework.SymKey | undefined = undefined;
+  let bytes: Uint8Array | undefined = undefined;
   try {
-    rawKey = key.bytes();
-    nativeKey = await cryptoFramework.createSymKeyGenerator(`AES${key.size}`).convertKey({ data: rawKey });
+    bytes = key.bytes();
+    native = await cryptoFramework.createSymKeyGenerator(`AES${key.size}`).convertKey({ data: bytes });
+
     const cipher = cryptoFramework.createCipher(`AES${key.size}|GCM|PKCS7`);
     const params: cryptoFramework.GcmParamsSpec = {
       algName: 'GcmParamsSpec',
       iv: { data: sealed.iv() },
-      aad: { data: additionalData },
+      aad: { data: aad },
       authTag: { data: sealed.tag() },
     };
-    await cipher.init(cryptoFramework.CryptoMode.DECRYPT_MODE, nativeKey, params);
+    await cipher.init(cryptoFramework.CryptoMode.DECRYPT_MODE, native, params);
+
     const ciphertext = sealed.ciphertext();
     // doFinal(null) alone does not commit AAD. Authentication must still run for empty ciphertext.
     if (ciphertext.byteLength === 0) await cipher.update({ data: ciphertext });
@@ -781,13 +850,21 @@ async function decryptAesGcm(sealed: SealedDataObject, key: EncryptionKeyObject,
     if (finalized.data.byteLength !== ciphertext.byteLength) {
       throw new CryptoError('ERR_CRYPTO_DECRYPT', 'Harmony returned an invalid AES-GCM plaintext length.');
     }
+
     return finalized.data;
   } catch (error) {
-    if (error instanceof CryptoError) throw error;
-    throw cryptoFailure('ERR_CRYPTO_DECRYPT', 'AES-GCM authentication failed.', error as Object);
+    if (error instanceof CryptoError) {
+      throw new CryptoError(error.code, error.message, error.cause);
+    }
+
+    throw new CryptoError(
+      'ERR_CRYPTO_DECRYPT',
+      `AES-GCM authentication failed. ${errorMessage(error as Object)}`,
+      error as Object,
+    );
   } finally {
-    if (rawKey !== undefined) secureErase(rawKey);
-    nativeKey?.clearMem();
+    if (bytes !== undefined) secureErase(bytes);
+    native?.clearMem();
   }
 }
 
@@ -795,26 +872,29 @@ function sealedFromCombined(context: ExpoModuleContext, combined: Uint8Array, co
   if (combined.byteLength < config.ivLength || combined.byteLength - config.ivLength < config.tagLength) {
     throw new CryptoError('ERR_CRYPTO_INVALID_SEALED_DATA', 'Invalid SealedData configuration.');
   }
-  const tagOffset = combined.byteLength - config.tagLength;
+
+  const offset = combined.byteLength - config.tagLength;
   return new SealedDataObject(
     context,
     combined.subarray(0, config.ivLength),
-    combined.subarray(config.ivLength, tagOffset),
-    combined.subarray(tagOffset),
+    combined.subarray(config.ivLength, offset),
+    combined.subarray(offset),
   );
 }
 
-function sealedFromParts(context: ExpoModuleContext, iv: Uint8Array, ciphertext: Uint8Array, tagArgument?: TagArgument): SealedDataObject {
-  if (tagArgument?.bytes !== undefined) {
-    return new SealedDataObject(context, iv, ciphertext, tagArgument.bytes);
+function sealedFromParts(context: ExpoModuleContext, iv: Uint8Array, ciphertext: Uint8Array, tag?: TagArgument): SealedDataObject {
+  if (tag?.bytes !== undefined) {
+    return new SealedDataObject(context, iv, ciphertext, tag.bytes);
   }
-  const tagLength = tagArgument?.length ?? DEFAULT_TAG_LENGTH;
+
+  const tagLength = tag?.length ?? DEFAULT_TAG_LENGTH;
   requireTagLength(tagLength, 'ERR_CRYPTO_INVALID_SEALED_DATA');
   if (ciphertext.byteLength < tagLength) {
     throw new CryptoError('ERR_CRYPTO_INVALID_SEALED_DATA', 'Invalid SealedData tag length.');
   }
-  const tagOffset = ciphertext.byteLength - tagLength;
-  return new SealedDataObject(context, iv, ciphertext.subarray(0, tagOffset), ciphertext.subarray(tagOffset));
+
+  const offset = ciphertext.byteLength - tagLength;
+  return new SealedDataObject(context, iv, ciphertext.subarray(0, offset), ciphertext.subarray(offset));
 }
 
 function requireKeySize(size: number): void {
@@ -861,8 +941,8 @@ function requireRandomLength(bytes: Uint8Array, expected: number): void {
 }
 
 function requireHexKeyTextLength(value: string): void {
-  const prefixLength = value.startsWith('0x') || value.startsWith('0X') ? 2 : 0;
-  if (value.length - prefixLength > MAXIMUM_HEX_KEY_LENGTH) {
+  const prefix = value.startsWith('0x') || value.startsWith('0X') ? 2 : 0;
+  if (value.length - prefix > MAXIMUM_HEX_KEY_LENGTH) {
     throw new CryptoError('ERR_CRYPTO_INVALID_KEY', 'The hexadecimal AES key string is too long.');
   }
 }
@@ -890,6 +970,8 @@ function copyBytes(bytes: Uint8Array): Uint8Array {
 }
 
 function utf8Bytes(value: string): Uint8Array {
+  // TextEncoder.encodeInto may return undefined for an empty string.
+  if (value.length === 0) return new Uint8Array(0);
   return new util.TextEncoder('utf-8').encodeInto(value);
 }
 
@@ -909,6 +991,7 @@ function base64Encode(bytes: Uint8Array): string {
 
 function base64Decode(text: string): Uint8Array {
   if (text.length === 0) return new Uint8Array(0);
+
   try {
     return new util.Base64Helper().decodeSync(text);
   } catch (error) {
@@ -926,19 +1009,11 @@ function hexDecode(value: string): Uint8Array {
   if (text.length % 2 !== 0 || /[^0-9a-fA-F]/.test(text)) {
     throw new CryptoError('ERR_CRYPTO_INVALID_KEY', 'Invalid hexadecimal key string.');
   }
+
   const decoded = buffer.from(text, 'hex');
   return new Uint8Array(decoded.buffer, decoded.byteOffset, decoded.length);
 }
 
-function invalidArgument(path: string, expected: string): CryptoError {
-  return new CryptoError('ERR_INVALID_ARGUMENT', `${path} must be ${expected}.`);
-}
-
-function cryptoFailure(code: string, message: string, cause: Object): CryptoError {
-  return new CryptoError(code, `${message} ${cleanErrorMessage(cause)}`, cause);
-}
-
-function cleanErrorMessage(error: Object): string {
-  const message = String(error);
-  return message.startsWith('Error: ') ? message.slice(7) : message;
+function errorMessage(error: Object): string {
+  return String(error).replace(/^Error: /, '');
 }
