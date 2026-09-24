@@ -7,7 +7,7 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-background-task expo-background-task@55.0.18 expo-task-manager@~55.0.16
+npm install @expo-harmony/expo-background-task expo-background-task@55.0.22 expo-task-manager@~55.0.20
 ```
 
 使用前必须在 `app.json` 的 `plugins` 中传入 `@expo-harmony/expo-background-task`，并将其放在 `@expo-harmony/prebuild-config` 之前：
@@ -23,7 +23,11 @@ npm install @expo-harmony/expo-background-task expo-background-task@55.0.18 expo
 }
 ```
 
-HarmonyOS Work Scheduler 的周期任务最短间隔为 2 小时，实际执行时间还会受到系统电量、配额和应用活跃度影响。只有宿主注册了可在无界面场景启动 RNOH 的 TaskManager runtime loader 时，本模块才会报告为可用；普通前台 RNOH Host 不能替代冷启动能力。
+HarmonyOS Work Scheduler 的周期任务最短间隔为 2 小时，实际执行时间还会受到系统电量、配额和应用活跃度影响。进程被系统强制终止时，过期监听器可能没有机会运行；延迟任务也不能用来绕过系统对后台相机、音频等能力的限制。只有宿主注册了可在无界面场景启动 RNOH 的 TaskManager runtime loader 时，本模块才会报告为可用；普通前台 RNOH Host 不能替代冷启动能力。
+
+最低支持 HarmonyOS 5.0.1（API 13），宿主应用的 `compatibleSdkVersion` 不能低于这个版本。
+
+本模块不申请权限，配置插件只注册一个非导出的 `workScheduler` 扩展。任务执行需要网络等能力时，由宿主应用声明对应权限。
 
 ## API 对照表
 
@@ -35,13 +39,13 @@ HarmonyOS Work Scheduler 的周期任务最短间隔为 2 小时，实际执行�
 
 #### `BackgroundTask.registerTaskAsync(taskName, options)`
 
-注册名为 `taskName` 的周期任务，返回 `Promise<void>`。任务需先用 `TaskManager.defineTask` 定义，未定义或 `taskName` 不是非空字符串时抛出错误。注册信息持久化保存，应用退出后仍保留。任务已注册时直接返回，不更新选项，改动间隔要先注销再注册。
+注册名为 `taskName` 的周期任务，返回 `Promise<void>`。任务需先用 `TaskManager.defineTask` 定义，未定义或 `taskName` 不是非空字符串时抛出错误。注册信息持久化保存，应用退出后仍保留。应用重启后间隔不变时沿用已有的调度，周期的等待时间不会重新计算。任务已注册时直接返回，不更新选项，改动间隔要先注销再注册。
 
 `options` 默认 `{}`，只接受 `minimumInterval`，传入其他字段抛出错误。
 
-`minimumInterval` 单位为分钟，默认 12 小时。HarmonyOS Work Scheduler 的周期下限为 2 小时，小于 2 小时的值按 2 小时处理。多个任务共用一个调度周期，各自的 `minimumInterval` 不会分别生效。取值不是正数或超出 Work Scheduler 可表示的范围时抛出错误。
+`minimumInterval` 单位为分钟，默认 12 小时。HarmonyOS Work Scheduler 的周期下限为 2 小时，小于 2 小时的值按 2 小时处理。多个任务共用一个调度周期，以当前注册列表中最后一个任务的选项为准，各自的 `minimumInterval` 不会分别生效。取值不是正数或超出 Work Scheduler 可表示的范围时抛出错误。
 
-状态为 `Restricted` 时不做注册，只在控制台给出警告。实际执行时间由系统决定，会受电量、配额和应用活跃度影响而推迟。
+状态为 `Restricted` 时不做注册，只在控制台给出警告。实际执行时间由系统决定，会受电量、配额和应用活跃度影响而推迟。任务只在设备联网时执行，与 Android 和 iOS 平台的要求一致。系统对应用的延迟任务有数量和频率配额，本包的所有 BackgroundTask 共用一个系统任务，注册多个任务不会额外占用配额。
 
 #### `BackgroundTask.unregisterTaskAsync(taskName)`
 

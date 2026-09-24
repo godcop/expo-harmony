@@ -94,10 +94,3 @@ async function writeGeneratedSource(file) {
 }
 
 module.exports = createRunOncePlugin(withHarmonyBackgroundTask, pkg.name, pkg.version);
-module.exports.EXTENSION_NAME = EXTENSION_NAME;
-module.exports.EXTENSION_SOURCE = EXTENSION_SOURCE;
-module.exports.GENERATED_MARKER = GENERATED_MARKER;
-module.exports.GENERATED_SOURCE = GENERATED_SOURCE;
-module.exports.updateModuleJson = updateModuleJson;
-module.exports.withHarmonyBackgroundTask = withHarmonyBackgroundTask;
-module.exports.writeGeneratedSource = writeGeneratedSource;
