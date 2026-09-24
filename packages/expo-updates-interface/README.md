@@ -10,7 +10,7 @@
 npm install @expo-harmony/expo-updates-interface
 ```
 
-本包适配 Expo SDK 55 的 `expo-updates-interface`，只有原生接口，没有 JavaScript API，也不需要配置插件。安装 `@expo-harmony/expo-updates` 时会自动带上这个包；单独安装是为了在自己的 ArkTS 模块里读取更新状态。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。
+本包适配 Expo SDK 55 的 `expo-updates-interface`，只有原生接口，没有 JavaScript API。安装 `@expo-harmony/expo-updates` 时会自动带上这个包；单独安装是为了在自己的 ArkTS 模块里读取更新状态。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。
 
 模块在自己的 `oh-package.json5` 中声明依赖：
 
