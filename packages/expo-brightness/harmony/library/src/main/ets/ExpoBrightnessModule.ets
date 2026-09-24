@@ -2,9 +2,9 @@ import { window } from '@kit.ArkUI';
 import { settings } from '@kit.BasicServicesKit';
 import { ExpoFunction, ExpoModule, ExpoModuleDefinition, ExpoModuleError, ExpoValueTypes } from '@expo-harmony/expo-modules-core';
 
-const FOLLOW_SYSTEM_BRIGHTNESS: number = -1;
-const SYSTEM_BRIGHTNESS_MAX: number = 255;
-const BRIGHTNESS_CHANGE_EVENT: string = 'Expo.brightnessDidChange';
+const FOLLOW_SYSTEM: number = -1;
+const SYSTEM_MAX: number = 255;
+const CHANGE_EVENT: string = 'Expo.brightnessDidChange';
 
 class BrightnessPermissionResponse {
   status: string = 'granted';
@@ -20,7 +20,7 @@ export class ExpoBrightnessModule extends ExpoModule {
   definition(): ExpoModuleDefinition {
     return new ExpoModuleDefinition()
       .name('ExpoBrightness')
-      .events([BRIGHTNESS_CHANGE_EVENT])
+      .events([CHANGE_EVENT])
       .asyncFunction('getPermissionsAsync', async (): Promise<BrightnessPermissionResponse> => {
         this.assertActive();
         return new BrightnessPermissionResponse();
@@ -31,11 +31,12 @@ export class ExpoBrightnessModule extends ExpoModule {
       })
       .asyncFunction('getBrightnessAsync', async (): Promise<number> => {
         return this.serialize(async (): Promise<number> => {
-          const win: window.Window = await this.context.getReactNativeWindow();
+          const current: window.Window = await this.context.getReactNativeWindow();
+
           this.assertActive();
 
-          const value: number = win.getWindowProperties().brightness;
-          if (value === FOLLOW_SYSTEM_BRIGHTNESS) {
+          const value: number = current.getWindowProperties().brightness;
+          if (value === FOLLOW_SYSTEM) {
             return this.readSystemBrightness();
           }
 
@@ -48,10 +49,11 @@ export class ExpoBrightnessModule extends ExpoModule {
           requireBrightness(value);
 
           await this.serialize(async (): Promise<void> => {
-            const win: window.Window = await this.context.getReactNativeWindow();
+            const current: window.Window = await this.context.getReactNativeWindow();
+
             this.assertActive();
 
-            await win.setWindowBrightness(value);
+            await current.setWindowBrightness(value);
           });
         }),
       )
@@ -65,18 +67,18 @@ export class ExpoBrightnessModule extends ExpoModule {
 
   private async readSystemBrightness(): Promise<number> {
     const value: string = await settings.getValue(this.context.uiAbilityContext, settings.display.SCREEN_BRIGHTNESS_STATUS);
-    this.assertActive();
 
+    this.assertActive();
     if (typeof value !== 'string' || value.trim().length === 0) {
       throw new ExpoModuleError('ERR_BRIGHTNESS_SYSTEM', 'HarmonyOS did not return a system brightness value.');
     }
 
     const level: number = Number(value);
-    if (!Number.isFinite(level) || level < 0 || level > SYSTEM_BRIGHTNESS_MAX) {
+    if (!Number.isFinite(level) || level < 0 || level > SYSTEM_MAX) {
       throw new ExpoModuleError('ERR_BRIGHTNESS_SYSTEM', 'HarmonyOS returned an invalid system brightness value.');
     }
 
-    return level / SYSTEM_BRIGHTNESS_MAX;
+    return level / SYSTEM_MAX;
   }
 
   private serialize<T>(task: () => Promise<T>): Promise<T> {
@@ -84,6 +86,7 @@ export class ExpoBrightnessModule extends ExpoModule {
       this.assertActive();
       return task();
     });
+
     this.pending = next.then(
       (): void => {},
       (): void => {},

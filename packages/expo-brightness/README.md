@@ -7,7 +7,7 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-brightness expo-brightness@55.0.13
+npm install @expo-harmony/expo-brightness expo-brightness@55.0.17
 ```
 
 ## API 对照表
@@ -22,7 +22,7 @@ npm install @expo-harmony/expo-brightness expo-brightness@55.0.13
 
 #### `Brightness.getBrightnessAsync()`
 
-返回 `Promise<number>`，当前窗口亮度，取值 0 到 1。窗口没有单独设置过亮度时返回系统亮度。
+返回 `Promise<number>`，当前窗口亮度，取值 0 到 1。窗口没有单独设置过亮度时返回系统亮度。开启自动亮度时，系统亮度是设置中的数值，不一定等于屏幕当前的实际亮度。
 
 #### `Brightness.getPermissionsAsync()`
 
@@ -50,11 +50,13 @@ npm install @expo-harmony/expo-brightness expo-brightness@55.0.13
 
 #### `Brightness.restoreSystemBrightnessAsync()`
 
-返回 `Promise<void>`，空操作，窗口亮度不会恢复为跟随系统。
+返回 `Promise<void>`，空操作，窗口亮度不会恢复为跟随系统。调用 `setBrightnessAsync(-1)` 也无法恢复，`-1` 会被截断为 `0`。
 
 #### `Brightness.setBrightnessAsync(brightnessValue)`
 
 返回 `Promise<void>`，设置当前窗口亮度。`brightnessValue` 取值 0 到 1，超出范围会被截断，传入 `NaN` 抛出 `TypeError`。只修改当前窗口，不改动系统亮度设置；窗口处于前台且获焦时生效。
+
+在 PC、2in1 等设备上，窗口亮度与系统亮度由系统统一处理，调用后会直接改变系统亮度，无法只影响应用窗口。
 
 #### `Brightness.setSystemBrightnessAsync(brightnessValue)`
 
