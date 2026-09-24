@@ -1,0 +1,29 @@
+{
+  "modelVersion": "5.0.0",
+  "name": "@expo-harmony-internal/expo__dom-webview",
+  "version": "55.0.6-harmony.0",
+  "description": "HarmonyOS port of @expo/dom-webview",
+  "keywords": [
+    "react-native",
+    "expo",
+    "expo-harmony",
+    "harmonyos"
+  ],
+  "homepage": "https://github.com/renbaoshuo/expo-harmony/tree/master/packages/expo__dom-webview#readme",
+  "repository": "https://github.com/renbaoshuo/expo-harmony",
+  "author": {
+    "name": "Baoshuo",
+    "email": "i@baoshuo.ren",
+    "url": "https://github.com/renbaoshuo"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@expo-harmony/expo__dom-webview": "./library",
+    "@expo-harmony/expo-modules-core": "55.0.26-harmony.0",
+    "@rnoh/react-native-openharmony": "0.84.1"
+  },
+  "overrides": {
+    "@expo-harmony/expo-modules-core": "55.0.26-harmony.0",
+    "@rnoh/react-native-openharmony": "0.84.1"
+  }
+}

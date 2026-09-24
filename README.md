@@ -77,6 +77,7 @@
 - [@expo/config](./packages/expo__config/)：用于操作 app.json 的库。
 - [@expo/config-types](./packages/expo__config-types/)：Expo 配置对象 app.config.ts 的类型。
 - [@expo/devtools](./packages/expo__devtools/)：Expo 的 DevTools 插件辅助工具。
+- [@expo/dom-webview](./packages/expo__dom-webview/)：专为 Expo DOM 组件设计的 WebView。
 - [@expo/env](./packages/expo__env/)：把 .env 文件中的环境变量注入 process.env。
 - [@expo/fingerprint](./packages/expo__fingerprint/)：为 React Native 工程生成指纹。
 - [@expo/image-utils](./packages/expo__image-utils/)：供 Expo CLI 处理图片的包。

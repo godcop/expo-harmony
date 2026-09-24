@@ -1,0 +1,8 @@
+{
+  "app": {
+    "bundleName": "dev.expo.domwebview.build",
+    "vendor": "expo-harmony",
+    "versionCode": 550006,
+    "versionName": "55.0.6-harmony.0"
+  }
+}

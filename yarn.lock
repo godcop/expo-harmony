@@ -3093,6 +3093,28 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@expo-harmony/expo__dom-webview@workspace:*, @expo-harmony/expo__dom-webview@workspace:packages/expo__dom-webview":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo__dom-webview@workspace:packages/expo__dom-webview"
+  dependencies:
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@expo/dom-webview": "npm:55.0.6"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    expo: "npm:55.0.26"
+    expo-modules-core: "npm:55.0.25"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@expo/dom-webview": 55.0.6
+    expo: 55.0.26
+    expo-modules-core: 55.0.25
+    react: ^19.2.0
+    react-native: ^0.83.6 || ^0.84.1
+  languageName: unknown
+  linkType: soft
+
 "@expo-harmony/expo__env@workspace:packages/expo__env":
   version: 0.0.0-use.local
   resolution: "@expo-harmony/expo__env@workspace:packages/expo__env"
@@ -3493,6 +3515,17 @@ __metadata:
     react-native:
       optional: true
   checksum: 10c0/7fd1a2b0df645b278785b8fda04f13b47ab650f05e8031cc59f2909398daacb79185ad406f76bb40e2405c9b172bb71dc8154d6733cf5c13e4ad68e591c984e7
+  languageName: node
+  linkType: hard
+
+"@expo/dom-webview@npm:55.0.6, @expo/dom-webview@npm:^55.0.6":
+  version: 55.0.6
+  resolution: "@expo/dom-webview@npm:55.0.6"
+  peerDependencies:
+    expo: "*"
+    react: "*"
+    react-native: "*"
+  checksum: 10c0/fccfd8bae49caeffdd2e0085190f58d59db889d836f19e37151f5e222307b71ccc537e0e29e7740338562c219919066c04ee95ffba1da95ff333ecc9e160f36f
   languageName: node
   linkType: hard
 
