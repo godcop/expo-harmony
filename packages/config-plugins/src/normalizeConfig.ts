@@ -21,6 +21,7 @@ interface NormalizedHarmonyConfig {
   icon?: string;
   label: string;
   moduleName: string;
+  moduleBuilds?: NonNullable<HarmonyConfig['moduleBuilds']>;
   nativeOrientation: Exclude<NonNullable<HarmonyConfig['orientation']>, 'default'> | 'unspecified';
   permissions: NonNullable<HarmonyConfig['permissions']>;
   productName: string;
@@ -320,7 +321,23 @@ function normalizeHarmonyConfig(config: HarmonyExpoConfig): NormalizedHarmonyCon
         DeviceTypes
       );
 
+  const moduleBuilds = harmony.moduleBuilds;
+  if (moduleBuilds !== undefined) {
+    if (!moduleBuilds || typeof moduleBuilds !== 'object' || Array.isArray(moduleBuilds)) {
+      throw new HarmonyConfigError('harmony.moduleBuilds must be an object.');
+    }
+    for (const [name, options] of Object.entries(moduleBuilds)) {
+      if (!/^(@[a-z0-9._~-]+\/)?[a-z0-9._~-]+$/u.test(name)
+        || !options || typeof options !== 'object' || Array.isArray(options)
+        || Object.values(options).some(value => !['boolean', 'string', 'number'].includes(typeof value)
+          || (typeof value === 'number' && !Number.isFinite(value)))) {
+        throw new HarmonyConfigError(`Invalid native module build options for ${name}.`);
+      }
+    }
+  }
+
   return Object.freeze({
+    ...(moduleBuilds && Object.keys(moduleBuilds).length ? { moduleBuilds: structuredClone(moduleBuilds) } : {}),
     abiFilters: abis,
     abilityName: ability,
     backgroundColor: background,

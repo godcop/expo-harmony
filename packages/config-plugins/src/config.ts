@@ -50,6 +50,8 @@ export interface HarmonyConfig {
   jsEngine?: 'hermes';
   abiFilters?: string[];
   signingConfigFile?: string;
+  /** Native module build options supplied by config plugins. */
+  moduleBuilds?: Record<string, Record<string, string | number | boolean>>;
 }
 
 export type ExpoConfigWithHarmony = Omit<ExpoConfig, 'platforms'> & {
