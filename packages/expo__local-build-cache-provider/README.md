@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo__local-build-cache-provider @expo/local-build-cache-provider@55.0.13
+npm install @expo-harmony/expo__local-build-cache-provider @expo/local-build-cache-provider@55.0.16
 ```
 
 ## Author
