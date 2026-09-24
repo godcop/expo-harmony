@@ -1,6 +1,6 @@
 {
   "name": "@expo-harmony/expo__image-utils",
-  "version": "0.8.14-harmony.1",
+  "version": "0.8.17-harmony.0",
   "description": "HarmonyOS port of @expo/image-utils",
   "keywords": [
     "react-native",
@@ -21,7 +21,7 @@
   "react-native": "src/index.ts",
   "types": "index.d.ts",
   "peerDependencies": {
-    "@expo/image-utils": "0.8.14"
+    "@expo/image-utils": "0.8.17"
   },
   "engines": {
     "node": ">=20"

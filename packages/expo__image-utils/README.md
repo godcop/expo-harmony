@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo__image-utils @expo/image-utils@0.8.14
+npm install @expo-harmony/expo__image-utils @expo/image-utils@0.8.17
 ```
 
 ## Author
