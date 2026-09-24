@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-processing expo-processing@55.0.10
+npm install @expo-harmony/expo-processing expo-processing@55.0.14
 ```
 
 ## Author
