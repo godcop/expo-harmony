@@ -7,10 +7,10 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-document-picker expo-document-picker@55.0.13
+npm install @expo-harmony/expo-document-picker expo-document-picker@55.0.17
 ```
 
-本包适配 Expo SDK 55 的 `expo-document-picker`，原生模块通过 Expo Harmony 自动链接，不需要配置插件，也不需要申请权限。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。
+本包适配 Expo SDK 55 的 `expo-document-picker`，原生模块通过 Expo Harmony 自动链接。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。
 
 业务代码从官方包导入：
 
@@ -61,7 +61,7 @@ HarmonyOS 的系统选择器按文件后缀过滤，`type` 里的 MIME 类型会
 | `mimeType`     | `string` | 文件的 MIME 类型，读不到时省略      |
 | `lastModified` | `number` | 最后修改时间，Unix 纪元以来的毫秒数 |
 
-没有后缀的文件不带 `mimeType`。系统读不到修改时间时，`lastModified` 取当前时间。选中的对象不是普通文件，或者文件名不合法时，抛出 `ERR_FAILED_TO_READ_DOCUMENT`。
+没有后缀的文件不带 `mimeType`。系统读不到文件大小时省略 `size`，其余字段照常返回。读不到修改时间时，`lastModified` 取当前时间，早于 Unix 纪元的修改时间保留为负数。选中的对象不是普通文件，或者文件名不合法时，抛出 `ERR_FAILED_TO_READ_DOCUMENT`。
 
 #### `DocumentPickerResult`
 

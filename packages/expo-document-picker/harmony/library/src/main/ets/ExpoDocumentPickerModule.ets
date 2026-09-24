@@ -64,13 +64,13 @@ export class ExpoDocumentPickerModule extends ExpoModule {
         uris = await new picker.DocumentViewPicker(this.context.uiAbilityContext).select(selection);
       } catch (error) {
         this.assertActive();
+
         throw new ExpoModuleError('ERR_DOCUMENT_PICKER_FAILED', `HarmonyOS document selection failed: ${(error as BusinessError).message}`, error);
       }
 
       this.assertActive();
       if (uris.length === 0) return { canceled: true, assets: null };
 
-      const assets: DocumentPickerAsset[] = [];
       try {
         if (options.copyToCacheDirectory) {
           // mkdtemp requires six trailing Xs and reserves the directory atomically.
@@ -78,6 +78,7 @@ export class ExpoDocumentPickerModule extends ExpoModule {
           this.assertActive();
         }
 
+        const assets: DocumentPickerAsset[] = [];
         const selected = options.multiple ? uris : uris.slice(0, 1);
         for (const uri of selected) {
           assets.push(await this.readAsset(uri, directory));
@@ -87,6 +88,7 @@ export class ExpoDocumentPickerModule extends ExpoModule {
         return { canceled: false, assets };
       } catch (error) {
         if (error instanceof ExpoModuleError) throw new ExpoModuleError(error.code, error.message, error.cause);
+
         throw new ExpoModuleError('ERR_FAILED_TO_READ_DOCUMENT', 'Failed to read the selected document.', error);
       }
     } catch (error) {
@@ -99,6 +101,7 @@ export class ExpoDocumentPickerModule extends ExpoModule {
       }
 
       if (error instanceof ExpoModuleError) throw new ExpoModuleError(error.code, error.message, error.cause);
+
       throw new ExpoModuleError('ERR_DOCUMENT_PICKER_FAILED', 'Unable to prepare the HarmonyOS document picker.', error);
     } finally {
       this.picking = false;
@@ -112,6 +115,7 @@ export class ExpoDocumentPickerModule extends ExpoModule {
 
     try {
       this.assertActive();
+
       const stat = await fileIo.stat(file.fd);
       if (!stat.isFile()) throw new ExpoModuleError('ERR_FAILED_TO_READ_DOCUMENT', 'The selected document is not a regular file.');
 
@@ -122,17 +126,16 @@ export class ExpoDocumentPickerModule extends ExpoModule {
 
       let modified = Date.now();
       try {
-        const seconds = stat.mtime;
-        const milliseconds = Math.trunc(seconds * MILLISECONDS_PER_SECOND);
-        if (seconds >= 0 && Number.isSafeInteger(milliseconds)) modified = milliseconds;
-      } catch (_) {
-        // Some document providers do not expose a modification time; follow the Web File default.
-      }
+        const time = Math.trunc(stat.mtime * MILLISECONDS_PER_SECOND);
+        if (Number.isSafeInteger(time)) modified = time;
+      } catch (_) {}
+
+      this.assertActive();
 
       let target = uri;
-      this.assertActive();
       if (directory !== undefined) {
         const path = `${directory}/${util.generateRandomUUID()}${filenameExtension(name)}`;
+
         await fileIo.copyFile(file.fd, path);
         target = fileUriFromPath(path);
       } else {
@@ -140,7 +143,11 @@ export class ExpoDocumentPickerModule extends ExpoModule {
       }
 
       const asset: DocumentPickerAsset = { uri: target, name, lastModified: modified };
-      if (Number.isSafeInteger(stat.size) && stat.size >= 0) asset.size = stat.size;
+      try {
+        const size = stat.size;
+        if (Number.isSafeInteger(size) && size >= 0) asset.size = size;
+      } catch (_) {}
+
       const mime = mimeTypeForName(name);
       if (mime !== undefined) asset.mimeType = mime;
 
