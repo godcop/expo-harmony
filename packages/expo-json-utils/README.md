@@ -10,7 +10,7 @@
 npm install @expo-harmony/expo-json-utils
 ```
 
-本包适配 Expo SDK 55 的 `expo-json-utils`，最低支持 HarmonyOS 5.0.1（API 13）。包内没有 React Native JavaScript 接口，只在原生代码中使用，不需要配置插件。
+本包适配 Expo SDK 55 的 `expo-json-utils`，最低支持 HarmonyOS 5.0.1（API 13），宿主应用的 `compatibleSdkVersion` 不能低于这个版本。包内没有 React Native JavaScript 接口，JavaScript 侧导入得到 `null`，读取工具从原生 HAR 导入。
 
 原生模块在自己的 `oh-package.json5` 中声明依赖：
 
@@ -63,7 +63,7 @@ const extra = JSONObjectUtils.getNullableObject(data, 'extra');
 
 ##### `JSONObjectUtils.requireNumber(json, key)`
 
-返回 `number`。数值原样返回，字符串去掉首尾空白后要能解析为数字、`NaN` 或 `Infinity`（可带正负号），末尾的 `f`、`F`、`d`、`D` 允许，其余情况抛出 `JSONUtilsError`。
+返回 `number`。数值原样返回，包括 `NaN` 和正负无穷。字符串去掉首尾空白后要能解析为十进制数字（可含小数点和指数）、`NaN` 或 `Infinity`，均可带正负号，十进制数字末尾允许 `f`、`F`、`d`、`D`，其余情况抛出 `JSONUtilsError`。
 
 数值都用 `number` 表示，没有整数类型的截断和溢出行为，也不支持十六进制浮点格式的字符串。超出 JavaScript 安全整数范围的值可能丢失精度，需要保留原文时改用字符串。
 
@@ -109,7 +109,7 @@ const extra = JSONObjectUtils.getNullableObject(data, 'extra');
 
 `Record<string, JSONValue>`。
 
-容器里存放的值应当是 JSON 数据。访问器、自定义 `toJSON`、类实例、稀疏数组和循环引用都不支持，用作字符串序列化时会抛出 `JSONUtilsError`。
+容器里存放的值应当是 JSON 数据。访问器、自定义 `toJSON`、类实例、稀疏数组和循环引用都不支持，用作字符串序列化时会抛出 `JSONUtilsError`。序列化遵循 ECMAScript 的数字格式、键顺序和字符转义，输出文本可能与 Android 不同，不要依赖它跨平台逐字一致或用于签名。字段显式取 `undefined` 时仍视为存在，`require()` 和 `getNullable()` 原样返回 `undefined`，带类型的读取抛出错误。
 
 ## Author
 

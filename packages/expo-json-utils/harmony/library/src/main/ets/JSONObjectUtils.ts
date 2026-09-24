@@ -29,8 +29,6 @@ export class JSONObjectUtils {
     const value = JSONObjectUtils.require(json, key);
 
     if (typeof value === 'string') return value;
-
-    // Parsed JSON null corresponds to Android's JSONObject.NULL sentinel.
     if (value === null) return 'null';
 
     if (typeof value === 'boolean' || (typeof value === 'number' && Number.isFinite(value))) {
@@ -42,7 +40,7 @@ export class JSONObjectUtils {
         validateJSON(value, key);
 
         return JSON.stringify(value);
-      } catch (_) {
+      } catch {
         throw new JSONUtilsError(`Value for ${key} cannot be converted to JSON string`);
       }
     }
@@ -135,22 +133,32 @@ function validateJSON(root: unknown, key: string): void {
     if (value === null || typeof value === 'string' || typeof value === 'boolean'
       || (typeof value === 'number' && Number.isFinite(value))) continue;
 
-    if (!Array.isArray(value) && !isJSONObject(value)) throw new JSONUtilsError(`Value for ${key} cannot be converted to JSON value`);
-    if (seen.has(value)) continue;
+    if (!Array.isArray(value) && !isJSONObject(value)) {
+      throw new JSONUtilsError(`Value for ${key} cannot be converted to JSON value`);
+    }
 
+    if (seen.has(value)) continue;
     seen.add(value);
 
     const fields = Object.getOwnPropertyDescriptors(value);
+
     if (Array.isArray(value)) {
-      if (Object.getPrototypeOf(value) !== Array.prototype) throw new JSONUtilsError(`Value for ${key} cannot be converted to JSON array`);
+      if (Object.getPrototypeOf(value) !== Array.prototype) {
+        throw new JSONUtilsError(`Value for ${key} cannot be converted to JSON array`);
+      }
+
       for (let index = 0; index < value.length; index++) {
-        if (!Object.prototype.hasOwnProperty.call(fields, index)) throw new JSONUtilsError(`Value for ${key} cannot be converted to JSON array`);
+        if (!Object.prototype.hasOwnProperty.call(fields, index)) {
+          throw new JSONUtilsError(`Value for ${key} cannot be converted to JSON array`);
+        }
       }
     }
 
     // Descriptors reject getters and toJSON before the platform serializer can execute them.
     for (const field of Object.values(fields)) {
-      if (!Object.prototype.hasOwnProperty.call(field, 'value')) throw new JSONUtilsError(`Value for ${key} cannot be converted to JSON value`);
+      if (!Object.prototype.hasOwnProperty.call(field, 'value')) {
+        throw new JSONUtilsError(`Value for ${key} cannot be converted to JSON value`);
+      }
 
       pending.push(field.value);
     }
