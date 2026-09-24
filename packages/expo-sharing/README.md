@@ -7,7 +7,7 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-sharing expo-modules-core@55.0.25 expo-sharing@55.0.20
+npm install @expo-harmony/expo-sharing expo-modules-core@55.0.26 expo-sharing@55.0.24
 ```
 
 本包适配 Expo SDK 55 的 `expo-sharing`，原生模块通过 Expo Harmony 自动链接。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。
@@ -22,9 +22,9 @@ npm install @expo-harmony/expo-sharing expo-modules-core@55.0.25 expo-sharing@55
 }
 ```
 
-插件在目标 Ability 上注册接收分享的入口，默认接收文本、文件和 HTTP(S) 链接，单次最多 50 个文件。可以通过 `utds`、`maxFileSupported`、`allowMultiple` 和 `abilityName` 调整接收的统一数据类型（UTD）、文件数量上限、是否允许一次接收多个文件和目标 Ability，其中 `maxFileSupported` 取值范围是 1 到 50。目标 Ability 必须已存在，并设置 `exported: true`。只调用 `Sharing.shareAsync()` 分享文件时，不需要配置插件。
+插件在目标 Ability 上注册接收分享的入口，默认接收文本、文件和 HTTP(S) 链接，单次最多 50 个文件。可以通过 `utds`、`maxFileSupported`、`allowMultiple` 和 `abilityName` 调整接收的统一数据类型（UTD）、文件数量上限、是否允许一次接收多个文件和目标 Ability，其中 `maxFileSupported` 取值范围是 1 到 50。目标 Ability 必须已存在，并设置 `exported: true`。插件只在接收分享数据时用到。
 
-本包的原生实现依赖宿主 Ability 的生命周期事件，对应的订阅器已随包声明，业务代码无需额外处理。CNG 工程由 prebuild 自动生成所需入口；Bare 工程需按 [接入说明](https://github.com/renbaoshuo/expo-harmony/blob/master/docs/BareInstallation.md) 手动接入 AbilityStage 和 ExpoRNAbility，否则模块无法加载。
+本包的原生实现依赖宿主 Ability 的生命周期事件，对应的订阅器已随包声明。CNG 工程由 prebuild 自动生成所需入口；Bare 工程需按 [接入说明](https://github.com/renbaoshuo/expo-harmony/blob/master/docs/BareInstallation.md) 手动接入 AbilityStage 和 ExpoRNAbility，否则模块无法加载。
 
 ## API 对照表
 
@@ -33,6 +33,8 @@ npm install @expo-harmony/expo-sharing expo-modules-core@55.0.25 expo-sharing@55
 #### `useIncomingShare()`
 
 返回 `UseIncomingShareResult`。组件挂载期间读取接收到的分享数据并解析，收到新分享或应用回到前台时刷新，卸载后停止。
+
+接收的分享数据已经就绪时，首次渲染即可同步获得 `sharedPayloads`。数据仍在加载时先返回空数组，就绪后自动刷新。
 
 ### Methods
 
@@ -48,7 +50,7 @@ npm install @expo-harmony/expo-sharing expo-modules-core@55.0.25 expo-sharing@55
 
 #### `Sharing.isAvailableAsync()`
 
-返回 `Promise<boolean>`。设备具备系统分享能力且当前运行时可以打开窗口时为 `true`，否则为 `false`。
+返回 `Promise<boolean>`。设备具备系统分享能力，且当前运行时有效、UIAbility 位于前台时为 `true`，否则为 `false`。
 
 #### `Sharing.getSharedPayloads()`
 

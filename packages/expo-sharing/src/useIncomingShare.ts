@@ -20,7 +20,14 @@ type SharingModule = {
 const native = requireNativeModule<SharingModule>('ExpoSharing');
 
 export function useIncomingShare(): UseIncomingShareResult {
-  const [payloads, setPayloads] = useState<SharePayload[]>([]);
+  const [payloads, setPayloads] = useState<SharePayload[]>(() => {
+    try {
+      return getSharedPayloads();
+    } catch {
+      // Refresh reports native read errors after mounting without breaking render.
+      return [];
+    }
+  });
   const [resolved, setResolved] = useState<ResolvedSharePayload[]>([]);
   const [resolving, setResolving] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -31,9 +38,11 @@ export function useIncomingShare(): UseIncomingShareResult {
 
     setError(null);
     setResolving(true);
+    setPayloads([]);
+    setResolved([]);
+
     try {
       setPayloads(getSharedPayloads());
-      setResolved([]);
 
       const next = await getResolvedSharedPayloadsAsync();
       if (current !== revision.current) return;
@@ -69,6 +78,7 @@ export function useIncomingShare(): UseIncomingShareResult {
 
     return () => {
       revision.current += 1;
+
       subscription.remove();
       activity.remove();
     };

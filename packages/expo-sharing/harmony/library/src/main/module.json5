@@ -2,6 +2,9 @@
   "module": {
     "name": "expo_sharing",
     "type": "har",
-    "deviceTypes": ["default", "tablet", "2in1"]
+    "deviceTypes": ["default", "tablet", "2in1"],
+    "requestPermissions": [
+      { "name": "ohos.permission.INTERNET" }
+    ]
   }
 }

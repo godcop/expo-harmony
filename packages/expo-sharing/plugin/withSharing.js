@@ -21,10 +21,18 @@ const DEFAULT_MAX_FILES = 50;
 
 function createSharingSkill(options) {
   const values = options.utds ?? DEFAULT_SHARED_TYPES;
-  if (!Array.isArray(values) || values.some(value => typeof value !== 'string' || !value)) {
+  if (!Array.isArray(values) || values.some(value => typeof value !== 'string' || !value.trim())) {
     throw new HarmonyConfigPluginError(
       'ERR_HARMONY_SHARING_CONFIG_INVALID',
       '@expo-harmony/expo-sharing utds must be an array of non-empty UTD strings.',
+      { operation: 'configure-incoming-sharing' }
+    );
+  }
+
+  if (options.allowMultiple !== undefined && typeof options.allowMultiple !== 'boolean') {
+    throw new HarmonyConfigPluginError(
+      'ERR_HARMONY_SHARING_CONFIG_INVALID',
+      '@expo-harmony/expo-sharing allowMultiple must be a boolean.',
       { operation: 'configure-incoming-sharing' }
     );
   }
@@ -39,7 +47,7 @@ function createSharingSkill(options) {
   }
 
   const actions = options.allowMultiple === false ? [SEND_ACTIONS[0]] : SEND_ACTIONS;
-  const utds = [...new Set(values)].sort();
+  const utds = [...new Set(values.map(value => value.trim()))].sort();
 
   return {
     actions,
@@ -101,11 +109,15 @@ function updateEntryAbility(json, options = {}) {
     if (ability.name !== name) return ability;
 
     const skills = Array.isArray(ability.skills) ? ability.skills : [];
+    const retained = skills.flatMap((value) => {
+      if (!isSharingSkill(value)) return [value];
 
-    return {
-      ...ability,
-      skills: [...skills.filter(value => !isSharingSkill(value)), skill],
-    };
+      const actions = value.actions.filter(action => !SEND_ACTIONS.includes(action));
+
+      return actions.length > 0 ? [{ ...value, actions }] : [];
+    });
+
+    return { ...ability, skills: [...retained, skill] };
   });
 
   return { ...json, module: { ...module, abilities } };
