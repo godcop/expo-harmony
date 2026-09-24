@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo__package-manager @expo/package-manager@1.10.5
+npm install @expo-harmony/expo__package-manager @expo/package-manager@1.10.6
 ```
 
 ## Author
