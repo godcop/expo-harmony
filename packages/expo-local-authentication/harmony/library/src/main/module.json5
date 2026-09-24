@@ -1,0 +1,8 @@
+{
+  "module": {
+    "name": "expo_local_authentication",
+    "type": "har",
+    "deviceTypes": ["default", "tablet", "2in1"],
+    "requestPermissions": [{ "name": "ohos.permission.ACCESS_BIOMETRIC" }]
+  }
+}

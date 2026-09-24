@@ -67,6 +67,7 @@
 - [expo-linear-gradient](./packages/expo-linear-gradient/)：渲染渐变视图的 React 组件。
 - [expo-linking](./packages/expo-linking/)：创建并打开通用深度链接。
 - [expo-live-photo](./packages/expo-live-photo/)：显示实况照片（Live Photo）。
+- [expo-local-authentication](./packages/expo-local-authentication/)：通过面部或指纹扫描认证用户。
 - [expo-localization](./packages/expo-localization/)：读取语言、地区、时区、日历和货币等本地化信息。
 - [expo-location](./packages/expo-location/)：读取地理位置、轮询当前位置或订阅位置更新事件。
 - [expo-manifests](./packages/expo-manifests/)：提供 Expo 更新清单的原生模型，可在原生代码中读取和校验。

@@ -2358,6 +2358,24 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@expo-harmony/expo-local-authentication@workspace:*, @expo-harmony/expo-local-authentication@workspace:packages/expo-local-authentication":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-local-authentication@workspace:packages/expo-local-authentication"
+  dependencies:
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    expo: "npm:55.0.26"
+    expo-local-authentication: "npm:55.0.18"
+    expo-modules-core: "npm:55.0.25"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    expo-local-authentication: 55.0.18
+  languageName: unknown
+  linkType: soft
+
 "@expo-harmony/expo-localization@workspace:*, @expo-harmony/expo-localization@workspace:packages/expo-localization":
   version: 0.0.0-use.local
   resolution: "@expo-harmony/expo-localization@workspace:packages/expo-localization"
@@ -8360,6 +8378,17 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: 10c0/1d03e8165879a94fb227a431d1ba4b1f2f00a9e309c26cec201bc71d096296a3a19620b0d74718960ee2c8bad2dec97cba15740d28b4b9b6891c9696c0e7cabd
+  languageName: node
+  linkType: hard
+
+"expo-local-authentication@npm:55.0.18":
+  version: 55.0.18
+  resolution: "expo-local-authentication@npm:55.0.18"
+  dependencies:
+    invariant: "npm:^2.2.4"
+  peerDependencies:
+    expo: "*"
+  checksum: 10c0/9c59d11aa8d900db0c947f9ae567d138270c7884c02897a1fb206c741cd2062db8d76d56536be88f47d9066186c8cff0da0ee9d81721485c743c2ca95899d76d
   languageName: node
   linkType: hard
 
