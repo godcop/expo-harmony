@@ -649,25 +649,62 @@ export class ExpoCameraModule extends ExpoModule {
       throw new ExpoCameraError('ERR_CAMERA_SCANNER_UNAVAILABLE', 'Barcode scanning is not supported on this device.');
     }
 
-    const requested = scanTypes(types, false);
+    const requested = scanTypes(types ?? ['qr'], false);
+    if (requested.length === 0) return [];
     let uri = url;
     let path: string | undefined;
 
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      const request = http.createHttp();
+    try {
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        const request = http.createHttp();
 
-      try {
-        const response = await request.request(url, {
-          method: http.RequestMethod.GET,
-          expectDataType: http.HttpDataType.ARRAY_BUFFER,
-          connectTimeout: 15000,
-          readTimeout: 30000,
-          maxLimit: BARCODE_IMAGE_LIMIT,
-        });
-        if (response.responseCode < 200 || response.responseCode >= 300 || !(response.result instanceof ArrayBuffer)) {
+        try {
+          const response = await request.request(url, {
+            method: http.RequestMethod.GET,
+            expectDataType: http.HttpDataType.ARRAY_BUFFER,
+            connectTimeout: 15000,
+            readTimeout: 30000,
+            maxLimit: BARCODE_IMAGE_LIMIT,
+          });
+          if (response.responseCode < 200 || response.responseCode >= 300 || !(response.result instanceof ArrayBuffer)) {
+            throw new ExpoCameraError('ERR_CAMERA_IMAGE_DOWNLOAD', 'Could not download the barcode image.');
+          }
+          if (response.result.byteLength > BARCODE_IMAGE_LIMIT) {
+            throw new ExpoCameraError('ERR_CAMERA_IMAGE_TOO_LARGE', 'The barcode image exceeds the 10 MB limit.');
+          }
+
+          const dir = `${this.context.cachePath}/expo-camera`;
+          await ensureDirectory(dir);
+          path = uniquePath(dir, 'barcode', 'img');
+
+          await writeBuffer(path, response.result);
+
+          uri = fileUriFromPath(path);
+        } catch (error) {
+          console.error(`Expo Camera barcode image download failed: ${String(error)}`);
+          if (error instanceof ExpoCameraError && error.code === 'ERR_CAMERA_IMAGE_TOO_LARGE') {
+            throw new ExpoCameraError('ERR_CAMERA_IMAGE_TOO_LARGE', 'The barcode image exceeds the 10 MB limit.');
+          }
+
           throw new ExpoCameraError('ERR_CAMERA_IMAGE_DOWNLOAD', 'Could not download the barcode image.');
+        } finally {
+          request.destroy();
         }
-        if (response.result.byteLength > BARCODE_IMAGE_LIMIT) {
+      } else if (url.startsWith('data:')) {
+        const separator = url.indexOf(',');
+        if (separator < 0 || !url.slice(0, separator).includes(';base64')) {
+          throw new ExpoCameraError('ERR_CAMERA_INVALID_URL', 'The barcode data URL must contain a base64-encoded image.');
+        }
+
+        let data: Uint8Array;
+        try {
+          data = await new util.Base64Helper().decode(url.slice(separator + 1));
+        } catch (error) {
+          console.error(`Expo Camera could not decode a barcode data URL: ${String(error)}`);
+
+          throw new ExpoCameraError('ERR_CAMERA_INVALID_URL', 'The barcode data URL is not valid base64.');
+        }
+        if (data.byteLength > BARCODE_IMAGE_LIMIT) {
           throw new ExpoCameraError('ERR_CAMERA_IMAGE_TOO_LARGE', 'The barcode image exceeds the 10 MB limit.');
         }
 
@@ -675,59 +712,28 @@ export class ExpoCameraModule extends ExpoModule {
         await ensureDirectory(dir);
         path = uniquePath(dir, 'barcode', 'img');
 
-        await writeBuffer(path, response.result);
+        await writeBuffer(path, data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength));
 
         uri = fileUriFromPath(path);
-      } catch (error) {
-        console.error(`Expo Camera barcode image download failed: ${String(error)}`);
-        if (error instanceof ExpoCameraError && error.code === 'ERR_CAMERA_IMAGE_TOO_LARGE') {
-          throw new ExpoCameraError('ERR_CAMERA_IMAGE_TOO_LARGE', 'The barcode image exceeds the 10 MB limit.');
-        }
-
-        throw new ExpoCameraError('ERR_CAMERA_IMAGE_DOWNLOAD', 'Could not download the barcode image.');
-      } finally {
-        request.destroy();
-      }
-    } else if (url.startsWith('data:')) {
-      const separator = url.indexOf(',');
-      if (separator < 0 || !url.slice(0, separator).includes(';base64')) {
-        throw new ExpoCameraError('ERR_CAMERA_INVALID_URL', 'The barcode data URL must contain a base64-encoded image.');
       }
 
-      let data: Uint8Array;
       try {
-        data = await new util.Base64Helper().decode(url.slice(separator + 1));
+        if (this.context.services.get(ExpoFileAccessKey) !== undefined || uri.startsWith('file://') || uri.startsWith('/')) {
+          const localPath = this.context.filePathForRead(uri);
+          if ((await fs.stat(localPath)).size > BARCODE_IMAGE_LIMIT) {
+            throw new ExpoCameraError('ERR_CAMERA_IMAGE_TOO_LARGE', 'The barcode image exceeds the 10 MB limit.');
+          }
+          uri = fileUriFromPath(localPath);
+        }
+        const results = await detectBarcode.decode({ uri }, { scanTypes: requested });
+
+        return results.map((result: scanBarcode.ScanResult): BarcodeResult => barcodeResult(result));
       } catch (error) {
-        console.error(`Expo Camera could not decode a barcode data URL: ${String(error)}`);
+        if (error instanceof ExpoCameraError) throw new ExpoCameraError(error.code, error.message, error.cause);
+        console.error(`Expo Camera barcode scan failed: ${String(error)}`);
 
-        throw new ExpoCameraError('ERR_CAMERA_INVALID_URL', 'The barcode data URL is not valid base64.');
+        throw new ExpoCameraError('ERR_CAMERA_BARCODE_SCAN', 'The barcode image could not be scanned.');
       }
-      if (data.byteLength > BARCODE_IMAGE_LIMIT) {
-        throw new ExpoCameraError('ERR_CAMERA_IMAGE_TOO_LARGE', 'The barcode image exceeds the 10 MB limit.');
-      }
-
-      const dir = `${this.context.cachePath}/expo-camera`;
-      await ensureDirectory(dir);
-      path = uniquePath(dir, 'barcode', 'img');
-
-      await writeBuffer(path, data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength));
-
-      uri = fileUriFromPath(path);
-    }
-
-    try {
-      if (requested.length === 0) return [];
-
-      if (this.context.services.get(ExpoFileAccessKey) !== undefined || uri.startsWith('file://') || uri.startsWith('/')) {
-        uri = fileUriFromPath(this.context.filePathForRead(uri));
-      }
-      const results = await detectBarcode.decode({ uri }, { scanTypes: requested });
-
-      return results.map((result: scanBarcode.ScanResult): BarcodeResult => barcodeResult(result));
-    } catch (error) {
-      console.error(`Expo Camera barcode scan failed: ${String(error)}`);
-
-      throw new ExpoCameraError('ERR_CAMERA_BARCODE_SCAN', 'The barcode image could not be scanned.');
     } finally {
       if (path !== undefined) {
         try {

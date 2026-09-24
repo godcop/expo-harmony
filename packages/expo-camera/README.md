@@ -7,8 +7,12 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-camera expo-camera@55.0.19
+npm install @expo-harmony/expo-camera expo-camera@55.0.23
 ```
+
+最低支持 HarmonyOS 5.0.1（API 13），宿主应用的 `compatibleSdkVersion` 不能低于这个版本。模块只声明 `INTERNET`、`CAMERA`、`MICROPHONE` 权限，不涉及受限权限。照片和视频写入应用缓存目录，不需要媒体库权限。
+
+拍照和录像的画面方向由设备方向决定，开启 `responsiveOrientationWhenOrientationLocked` 时使用重力方向，未开启时使用屏幕方向。录像的方向在录制开始时确定，录制中转动设备不改变输出画面。
 
 ## API 对照表
 
@@ -205,12 +209,14 @@ npm install @expo-harmony/expo-camera expo-camera@55.0.19
 | `imageType`       | `'jpg'` 或 `'png'`，仅在未跳过处理时生效                |
 | `mirror`          | 前摄镜像，已弃用，建议改用 `mirror` 属性                |
 | `pictureRef`      | 返回 `PictureRef` 而不是普通结果对象                    |
-| `maxDownsampling` | 解码时的最大降采样倍数                                  |
+| `maxDownsampling` | 解码失败时允许的最大降采样倍数，需为正整数 |
 | `fastMode`        | 立即返回 `null`，结果通过 `onPictureSaved` 投递         |
 | `onPictureSaved`  | 拍照完成后的回调，传入后方法立即返回                    |
 | `shutterSound`    | 设为 `false` 不会关闭系统快门声，只给出警告             |
 
 录像模式、正在录像或预览已暂停时调用会拒绝。相机 5 秒内未就绪、拍照请求 15 秒内没有返回照片时也会拒绝。
+
+EXIF 结果包含系统提供的全部拍摄信息，写回只保留系统可写字段，`MakerNote` 仅在 API 20 及以上可写。`additionalExif` 和 `PictureRef.savePictureAsync` 的 `metadata` 中不可写或未识别的字段会被忽略。
 
 #### `recordAsync(options)`
 

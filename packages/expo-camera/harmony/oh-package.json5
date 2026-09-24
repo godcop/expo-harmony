@@ -1,7 +1,7 @@
 {
   "modelVersion": "5.0.0",
   "name": "@expo-harmony-internal/expo-camera",
-  "version": "55.0.19-harmony.5",
+  "version": "55.0.23-harmony.0",
   "description": "HarmonyOS port of expo-camera",
   "keywords": [
     "react-native",

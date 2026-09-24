@@ -11,11 +11,13 @@ import { camera } from '@kit.CameraKit';
 import { media } from '@kit.MediaKit';
 import { sensor } from '@kit.SensorServiceKit';
 import { BusinessError } from '@kit.BasicServicesKit';
+import deviceInfo from '@ohos.deviceInfo';
+import display from '@ohos.display';
 import fs from '@ohos.file.fs';
 import image from '@ohos.multimedia.image';
 import util from '@ohos.util';
 import { ExpoCameraError } from './ExpoCameraError';
-import { decodeExifProperties, encodeExifMetadata, EXIF_KEYS } from './ExpoCameraExif';
+import { decodeExifProperties, encodeExifMetadata, writableExifProperties, EXIF_KEYS } from './ExpoCameraExif';
 
 interface CameraProps {
   facing?: string;
@@ -347,12 +349,19 @@ function uniquePath(dir: string, prefix: string, extension: string, tag: number)
 }
 
 async function decodePixelMap(source: image.ImageSource, maxDownsampling?: number): Promise<image.PixelMap> {
-  const max = Math.max(1, Math.floor(maxDownsampling ?? 1));
+  const info = await source.getImageInfo();
+  const max = Math.min(maxDownsampling ?? 1, Math.max(info.size.width, info.size.height));
   let sample = 1;
 
   while (sample <= max) {
     try {
-      return await source.createPixelMap({ sampleSize: sample });
+      // ImageSource.sampleSize only supports 1. desiredSize lets the system decoder downsample.
+      return await source.createPixelMap({
+        desiredSize: {
+          width: Math.max(1, Math.floor(info.size.width / sample)),
+          height: Math.max(1, Math.floor(info.size.height / sample)),
+        },
+      });
     } catch (_) {
       sample *= 2;
     }
@@ -375,6 +384,7 @@ export class ExpoCameraViewState extends ExpoView {
   private input?: camera.CameraInput;
   private previewOutput?: camera.PreviewOutput;
   private photoOutput?: camera.PhotoOutput;
+  private photoListener?: (error: BusinessError, photo: camera.Photo) => void;
   private videoOutput?: camera.VideoOutput;
   private session?: ControllableSession;
   private photoProfile?: camera.Profile;
@@ -399,6 +409,7 @@ export class ExpoCameraViewState extends ExpoView {
   private backgrounded: boolean = false;
   private orientationListening: boolean = false;
   private orientation?: string;
+  private deviceDegree?: number;
   private destroyed: boolean = false;
   private recording: boolean = false;
   private recordingStarting: boolean = false;
@@ -413,6 +424,7 @@ export class ExpoCameraViewState extends ExpoView {
   private readonly onPhoto = (error: BusinessError, photo: camera.Photo): void => {
     if (error !== undefined && error !== null) {
       console.error(`Expo Camera photo capture failed: ${String(error)}`);
+      this.reconfigurePending = true;
       this.rejectCapture(new ExpoCameraError('ERR_CAMERA_CAPTURE_FAILED', 'Photo capture failed.'));
       return;
     }
@@ -455,9 +467,11 @@ export class ExpoCameraViewState extends ExpoView {
 
     let orientation: string | undefined;
     if (Math.abs(value.x) > Math.abs(value.y) && Math.abs(value.x) >= GRAVITY_THRESHOLD) {
-      orientation = value.x > 0 ? 'landscapeRight' : 'landscapeLeft';
+      this.deviceDegree = value.x > 0 ? 90 : 270;
+      orientation = value.x > 0 ? 'landscapeLeft' : 'landscapeRight';
     } else if (Math.abs(value.y) >= GRAVITY_THRESHOLD) {
-      orientation = value.y > 0 ? 'portraitUpsideDown' : 'portrait';
+      this.deviceDegree = value.y > 0 ? 0 : 180;
+      orientation = value.y > 0 ? 'portrait' : 'portraitUpsideDown';
     }
 
     if (orientation === undefined || orientation === this.orientation) return;
@@ -677,6 +691,7 @@ export class ExpoCameraViewState extends ExpoView {
 
     this.cancelRecordingStart();
     this.backgrounded = true;
+    this.updateOrientationListener();
     this.ready = false;
     this.setTorch(false);
 
@@ -691,6 +706,7 @@ export class ExpoCameraViewState extends ExpoView {
     if (this.destroyed || !this.backgrounded) return;
 
     this.backgrounded = false;
+    this.updateOrientationListener();
     this.scheduleReconfigure();
   }
 
@@ -793,7 +809,16 @@ export class ExpoCameraViewState extends ExpoView {
       const photoOut = photo === undefined ? undefined : this.manager.createPhotoOutput(photo);
       this.previewOutput = previewOut;
       this.photoOutput = photoOut;
-      photoOut?.on('photoAvailable', this.onPhoto);
+      if (photoOut !== undefined) {
+        this.photoListener = (error: BusinessError, photo: camera.Photo): void => {
+          if (generation !== this.pipelineGeneration) {
+            if (photo !== undefined && photo !== null) void photo.release().catch((): void => {});
+            return;
+          }
+          this.onPhoto(error, photo);
+        };
+        photoOut.on('photoAvailable', this.photoListener);
+      }
       const session: ControllableSession = videoMode
         ? this.manager.createSession<camera.VideoSession>(camera.SceneMode.NORMAL_VIDEO)
         : this.manager.createSession<camera.PhotoSession>(camera.SceneMode.NORMAL_PHOTO);
@@ -859,7 +884,7 @@ export class ExpoCameraViewState extends ExpoView {
       if (range.length >= 2) {
         const zoom = clamp(this.props.zoom ?? 0, 0, 1);
         const max = range[range.length - 1];
-        session.setZoomRatio(Math.max(range[0], Math.min(max, zoom * max)));
+        session.setZoomRatio(clamp(Math.max(1, zoom * max), range[0], max));
       }
     } catch (_) {}
 
@@ -877,7 +902,8 @@ export class ExpoCameraViewState extends ExpoView {
   }
 
   private updateOrientationListener(): void {
-    const enabled = this.props.responsiveOrientationWhenOrientationLocked === true;
+    const enabled =
+      this.props.responsiveOrientationWhenOrientationLocked === true && !this.destroyed && !this.backgrounded && this.props.active !== false;
     if (enabled === this.orientationListening) return;
 
     if (enabled) {
@@ -899,6 +925,15 @@ export class ExpoCameraViewState extends ExpoView {
 
     this.orientationListening = false;
     this.orientation = undefined;
+    this.deviceDegree = undefined;
+  }
+
+  private captureDeviceDegree(): number {
+    if (this.props.responsiveOrientationWhenOrientationLocked === true && this.deviceDegree !== undefined) {
+      return this.deviceDegree;
+    }
+    // Display.rotation uses quarter turns. CameraKit expects degrees on API 12–22.
+    return display.getDefaultDisplaySync().rotation * 90;
   }
 
   private awaitReady(): Promise<void> {
@@ -939,6 +974,9 @@ export class ExpoCameraViewState extends ExpoView {
     if (options.quality !== undefined && (!Number.isFinite(options.quality) || options.quality < 0 || options.quality > 1)) {
       throw new ExpoCameraError('ERR_CAMERA_INVALID_OPTION', 'Photo quality must be a number between 0 and 1.');
     }
+    if (options.maxDownsampling !== undefined && (!Number.isSafeInteger(options.maxDownsampling) || options.maxDownsampling < 1)) {
+      throw new ExpoCameraError('ERR_CAMERA_INVALID_OPTION', 'Maximum downsampling must be a positive integer.');
+    }
     if (this.props.mode === 'video') throw new ExpoCameraError('ERR_CAMERA_WRONG_MODE', 'Cannot take a picture while the camera is in video mode.');
     if (this.recording) throw new ExpoCameraError('ERR_CAMERA_CAPTURE_DURING_RECORDING', 'Cannot take a picture while recording.');
     if (this.paused) throw new ExpoCameraError('ERR_CAMERA_PREVIEW_PAUSED', 'Cannot take a picture while preview is paused.');
@@ -960,14 +998,14 @@ export class ExpoCameraViewState extends ExpoView {
         throw new ExpoCameraError('ERR_CAMERA_CAPTURE_INTERRUPTED', 'Photo capture was interrupted.');
       }
     } catch (error) {
-      this.captureStarting = false;
+      if (captureGeneration === this.captureGeneration) this.captureStarting = false;
       if (error instanceof ExpoCameraError) throw new ExpoCameraError(error.code, error.message, error.cause);
       throw new ExpoCameraError('ERR_CAMERA_NOT_READY', `The Harmony camera did not become ready for capture: ${String(error)}`);
     }
 
     const output = this.photoOutput;
     if (output === undefined) {
-      this.captureStarting = false;
+      if (captureGeneration === this.captureGeneration) this.captureStarting = false;
       throw new ExpoCameraError('ERR_CAMERA_NOT_READY', 'Photo output is not ready.');
     }
 
@@ -981,6 +1019,12 @@ export class ExpoCameraViewState extends ExpoView {
     const setting: camera.PhotoCaptureSetting = {
       quality: camera.QualityLevel.QUALITY_LEVEL_HIGH,
     };
+    try {
+      setting.rotation = output.getPhotoRotation(this.captureDeviceDegree());
+    } catch (error) {
+      if (captureGeneration === this.captureGeneration) this.captureStarting = false;
+      throw new ExpoCameraError('ERR_CAMERA_CAPTURE_ROTATION', `Could not determine photo rotation: ${String(error)}`);
+    }
     const mirror = this.props.facing === 'front' && (options.mirror === true || this.props.mirror === true);
     let softwareMirror = mirror;
 
@@ -992,19 +1036,22 @@ export class ExpoCameraViewState extends ExpoView {
     } catch (_) {}
 
     if (captureGeneration !== this.captureGeneration) {
-      this.captureStarting = false;
       throw new ExpoCameraError('ERR_CAMERA_CAPTURE_INTERRUPTED', 'Photo capture was interrupted.');
     }
 
     if (options.fastMode === true) {
-      this.setPendingCapture({ options, softwareMirror });
+      const pending: PendingCapture = { options, softwareMirror };
+      this.setPendingCapture(pending);
 
       try {
         await output.capture(setting);
       } catch (error) {
         console.error(`Expo Camera photo capture failed: ${String(error)}`);
 
-        this.rejectCapture(new ExpoCameraError('ERR_CAMERA_CAPTURE_FAILED', 'Photo capture failed.'));
+        if (this.pendingCapture === pending) {
+          this.reconfigurePending = true;
+          this.rejectCapture(new ExpoCameraError('ERR_CAMERA_CAPTURE_FAILED', 'Photo capture failed.'));
+        }
 
         throw new ExpoCameraError('ERR_CAMERA_CAPTURE_FAILED', 'Photo capture failed.');
       }
@@ -1013,12 +1060,21 @@ export class ExpoCameraViewState extends ExpoView {
     }
 
     return await new Promise<ESObject>((resolve: (value: ESObject) => void, reject: (error: ExpoCameraError) => void): void => {
-      this.setPendingCapture({ options, softwareMirror, resolve, reject });
+      const pending: PendingCapture = { options, softwareMirror, resolve, reject };
+      this.setPendingCapture(pending);
 
-      output.capture(setting).catch((error: Object): void => {
+      const onFailure = (error: Object): void => {
         console.error(`Expo Camera photo capture failed: ${String(error)}`);
-        this.rejectCapture(new ExpoCameraError('ERR_CAMERA_CAPTURE_FAILED', 'Photo capture failed.'));
-      });
+        if (this.pendingCapture === pending) {
+          this.reconfigurePending = true;
+          this.rejectCapture(new ExpoCameraError('ERR_CAMERA_CAPTURE_FAILED', 'Photo capture failed.'));
+        }
+      };
+      try {
+        output.capture(setting).catch(onFailure);
+      } catch (error) {
+        onFailure(error as Object);
+      }
     });
   }
 
@@ -1030,6 +1086,8 @@ export class ExpoCameraViewState extends ExpoView {
     pending.timer = setTimeout((): void => {
       if (this.pendingCapture !== pending) return;
 
+      // A timed-out native capture can still deliver a photo. Retire its output before accepting another request.
+      this.reconfigurePending = true;
       this.rejectCapture(new ExpoCameraError('ERR_CAMERA_CAPTURE_TIMEOUT', 'The camera did not deliver a captured photo in time.'));
     }, CAPTURE_TIMEOUT_MS);
 
@@ -1040,7 +1098,7 @@ export class ExpoCameraViewState extends ExpoView {
   private async consumePhoto(photo: camera.Photo): Promise<void> {
     const pending = this.pendingCapture;
     if (pending === undefined) {
-      await photo.release();
+      await photo.release().catch((): void => {});
       return;
     }
     if (pending.timer !== undefined) {
@@ -1048,9 +1106,13 @@ export class ExpoCameraViewState extends ExpoView {
       pending.timer = undefined;
     }
 
+    let result: PictureResult | undefined;
+    let pixel: image.PixelMap | undefined;
+    let delivered = false;
+    const returnsReference = pending.options.pictureRef === true && pending.options.fastMode !== true;
     try {
       const jpeg = await photo.main.getComponent(image.ComponentType.JPEG);
-      const result = await this.processPhoto(jpeg.byteBuffer, pending);
+      result = await this.processPhoto(jpeg.byteBuffer, pending);
 
       if (this.pendingCapture !== pending) return;
 
@@ -1058,20 +1120,20 @@ export class ExpoCameraViewState extends ExpoView {
         this.emit('onPictureSaved', { id: pending.options.id ?? 0, data: result });
       } else {
         let output: ESObject = result;
-        if (pending.options.pictureRef === true) {
+        if (returnsReference) {
           const source: image.ImageSource = image.createImageSource(filePathFromUri(result.uri));
-          let pixel: image.PixelMap | undefined = undefined;
           try {
             pixel = await source.createPixelMap();
-            output = this.pictureRefFactory(pixel, result.width, result.height);
-            pixel = undefined;
           } finally {
-            if (pixel !== undefined) await pixel.release().catch((): void => {});
             await source.release().catch((): void => {});
           }
+          if (this.pendingCapture !== pending) return;
+          output = this.pictureRefFactory(pixel, result.width, result.height);
+          pixel = undefined;
         }
         pending.resolve?.(output);
       }
+      delivered = true;
     } catch (error) {
       console.error(`Expo Camera photo processing failed: ${String(error)}`);
 
@@ -1081,6 +1143,13 @@ export class ExpoCameraViewState extends ExpoView {
         pending.reject?.(new ExpoCameraError('ERR_CAMERA_CAPTURE_PROCESSING', 'The captured photo could not be saved.'));
       }
     } finally {
+      if (pixel !== undefined) await pixel.release().catch((): void => {});
+      // Only URI results transfer the cache file to the caller. PictureRef owns its PixelMap instead.
+      if (result !== undefined && (!delivered || returnsReference)) {
+        try {
+          fs.unlinkSync(filePathFromUri(result.uri));
+        } catch (_) {}
+      }
       if (pending.timer !== undefined) clearTimeout(pending.timer);
       if (this.pendingCapture === pending) this.pendingCapture = undefined;
 
@@ -1097,10 +1166,12 @@ export class ExpoCameraViewState extends ExpoView {
     const source = image.createImageSource(jpeg);
     let pixel: image.PixelMap | undefined;
     let packer: image.ImagePacker | undefined;
+    let path: string | undefined;
+    let saved = false;
 
     try {
       const info = await source.getImageInfo();
-      let properties: Record<image.PropertyKey, string | null> | undefined;
+      let properties = {} as Record<image.PropertyKey, string | null>;
 
       try {
         const keys = options.exif === true ? EXIF_KEYS : [image.PropertyKey.ORIENTATION];
@@ -1133,12 +1204,12 @@ export class ExpoCameraViewState extends ExpoView {
 
       const dir = `${this.context.moduleContext.cachePath}/expo-camera`;
       await ensureDirectory(dir);
-      const path = uniquePath(dir, 'photo', format, this.tag);
+      path = uniquePath(dir, 'photo', format, this.tag);
 
       await writeBuffer(path, buffer);
 
-      if (!skip && options.exif === true && properties !== undefined) {
-        const records = properties;
+      if (!skip && options.exif === true) {
+        const records = writableExifProperties(properties);
         records[image.PropertyKey.ORIENTATION] = '1';
         records[image.PropertyKey.IMAGE_WIDTH] = String(width);
         records[image.PropertyKey.IMAGE_LENGTH] = String(height);
@@ -1157,9 +1228,6 @@ export class ExpoCameraViewState extends ExpoView {
         try {
           await output.modifyImageProperties(records);
         } catch (error) {
-          try {
-            fs.unlinkSync(path);
-          } catch (_) {}
           throw new ExpoCameraError('ERR_CAMERA_EXIF_WRITE', `The captured photo metadata could not be saved: ${String(error)}`);
         } finally {
           try {
@@ -1175,7 +1243,7 @@ export class ExpoCameraViewState extends ExpoView {
       }
 
       if (options.exif === true) {
-        const exif = decodeExifProperties(properties ?? ({} as Record<image.PropertyKey, string | null>));
+        const exif = decodeExifProperties(properties);
         if (!skip) {
           exif[image.PropertyKey.ORIENTATION] = 1;
           exif[image.PropertyKey.IMAGE_WIDTH] = width;
@@ -1196,8 +1264,14 @@ export class ExpoCameraViewState extends ExpoView {
 
       if (options.pictureRef === true) result.pictureRef = true;
 
+      saved = true;
       return result;
     } finally {
+      if (!saved && path !== undefined) {
+        try {
+          fs.unlinkSync(path);
+        } catch (_) {}
+      }
       if (packer !== undefined) {
         try {
           await packer.release();
@@ -1216,6 +1290,7 @@ export class ExpoCameraViewState extends ExpoView {
   }
 
   private rejectCapture(error: ExpoCameraError): void {
+    this.captureGeneration += 1;
     const pending = this.pendingCapture;
     this.pendingCapture = undefined;
     this.captureStarting = false;
@@ -1411,7 +1486,7 @@ export class ExpoCameraViewState extends ExpoView {
 
     const mirror = this.props.facing === 'front' && (options.mirror === true || this.props.mirror === true);
     try {
-      if (videoOut.isMirrorSupported()) {
+      if (deviceInfo.sdkApiVersion >= 15 && videoOut.isMirrorSupported()) {
         videoOut.enableMirror(mirror);
       } else if (mirror) {
         console.warn('Mirror recording is not supported by the selected HarmonyOS camera.');
@@ -1420,7 +1495,7 @@ export class ExpoCameraViewState extends ExpoView {
       console.warn(`Expo Camera could not configure mirror recording: ${String(error)}`);
     }
     try {
-      await recorder.updateRotation(videoOut.getVideoRotation());
+      await recorder.updateRotation(videoOut.getVideoRotation(this.captureDeviceDegree()));
     } catch (error) {
       console.warn(`Expo Camera could not configure video rotation: ${String(error)}`);
     }
@@ -1457,7 +1532,7 @@ export class ExpoCameraViewState extends ExpoView {
         void fs
           .stat(path)
           .then((stat: fs.Stat): void => {
-            if (stat.size >= limit) void this.finishRecording(true);
+            if (this.recorder === recorder && stat.size >= limit) void this.finishRecording(true);
           })
           .catch((error: Object): void => {
             if (!statWarningShown) {
@@ -1661,7 +1736,7 @@ export class ExpoCameraViewState extends ExpoView {
 
     if (this.photoOutput !== undefined) {
       try {
-        this.photoOutput.off('photoAvailable', this.onPhoto);
+        if (this.photoListener !== undefined) this.photoOutput.off('photoAvailable', this.photoListener);
       } catch (_) {}
     }
 
@@ -1713,6 +1788,7 @@ export class ExpoCameraViewState extends ExpoView {
     this.input = undefined;
     this.previewOutput = undefined;
     this.photoOutput = undefined;
+    this.photoListener = undefined;
     this.videoOutput = undefined;
     this.session = undefined;
     this.photoProfile = undefined;

@@ -1,4 +1,5 @@
 import image from '@ohos.multimedia.image';
+import deviceInfo from '@ohos.deviceInfo';
 
 export const EXIF_KEYS: image.PropertyKey[] = [
   image.PropertyKey.BITS_PER_SAMPLE,
@@ -183,6 +184,54 @@ export const EXIF_KEYS: image.PropertyKey[] = [
   image.PropertyKey.GIF_LOOP_COUNT,
 ];
 
+// Read-only PropertyKey entries in Image Kit must never be passed to modifyImageProperties.
+const READ_ONLY_EXIF_KEYS: image.PropertyKey[] = [
+  image.PropertyKey.PHYSICAL_APERTURE,
+  image.PropertyKey.ROLL_ANGLE,
+  image.PropertyKey.PITCH_ANGLE,
+  image.PropertyKey.SCENE_FOOD_CONF,
+  image.PropertyKey.SCENE_STAGE_CONF,
+  image.PropertyKey.SCENE_BLUE_SKY_CONF,
+  image.PropertyKey.SCENE_GREEN_PLANT_CONF,
+  image.PropertyKey.SCENE_BEACH_CONF,
+  image.PropertyKey.SCENE_SNOW_CONF,
+  image.PropertyKey.SCENE_SUNSET_CONF,
+  image.PropertyKey.SCENE_FLOWERS_CONF,
+  image.PropertyKey.SCENE_NIGHT_CONF,
+  image.PropertyKey.SCENE_TEXT_CONF,
+  image.PropertyKey.FACE_COUNT,
+  image.PropertyKey.FOCUS_MODE,
+  image.PropertyKey.JPEG_INTERCHANGE_FORMAT,
+  image.PropertyKey.JPEG_INTERCHANGE_FORMAT_LENGTH,
+  image.PropertyKey.BURST_NUMBER,
+  image.PropertyKey.FACE_CONF,
+  image.PropertyKey.FACE_LEYE_CENTER,
+  image.PropertyKey.FACE_MOUTH_CENTER,
+  image.PropertyKey.FACE_POINTER,
+  image.PropertyKey.FACE_RECT,
+  image.PropertyKey.FACE_REYE_CENTER,
+  image.PropertyKey.FACE_SMILE_SCORE,
+  image.PropertyKey.FACE_VERSION,
+  image.PropertyKey.FRONT_CAMERA,
+  image.PropertyKey.SCENE_POINTER,
+  image.PropertyKey.SCENE_VERSION,
+  image.PropertyKey.WIND_SNAPSHOT_MODE,
+  image.PropertyKey.GIF_LOOP_COUNT,
+];
+
+function isWritableExifKey(key: image.PropertyKey): boolean {
+  return !READ_ONLY_EXIF_KEYS.includes(key) && (key !== image.PropertyKey.MAKER_NOTE || deviceInfo.sdkApiVersion >= 20);
+}
+
+export function writableExifProperties(properties: Record<image.PropertyKey, string | null>): Record<image.PropertyKey, string | null> {
+  const records = {} as Record<image.PropertyKey, string | null>;
+  EXIF_KEYS.forEach((key: image.PropertyKey): void => {
+    const value = properties[key];
+    if (value !== undefined && value !== null && isWritableExifKey(key)) records[key] = value;
+  });
+  return records;
+}
+
 const EXIF_INTEGER_KEYS: image.PropertyKey[] = [
   image.PropertyKey.BITS_PER_SAMPLE,
   image.PropertyKey.COMPRESSION,
@@ -334,7 +383,7 @@ export function encodeExifMetadata(metadata?: Record<string, ESObject>): Record<
   Object.keys(metadata).forEach((name: string): void => {
     const key = name as image.PropertyKey;
     const value: ESObject = metadata[name];
-    if (!EXIF_KEYS.includes(key) || value === undefined || value === null) return;
+    if (!EXIF_KEYS.includes(key) || !isWritableExifKey(key) || value === undefined || value === null) return;
 
     if (typeof value !== 'number' || !Number.isFinite(value)) {
       records[key] = String(value);
