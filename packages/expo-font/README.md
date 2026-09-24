@@ -10,7 +10,7 @@
 npm install @expo-harmony/expo-font expo-font@55.0.8
 ```
 
-鸿蒙适配会通过 Autolinking 自动接入，无需额外配置。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也需满足此要求。
+鸿蒙适配会通过 Autolinking 自动接入。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也需满足此要求。
 
 字体可以在运行时用 `Font.loadAsync` 加载，也可以在预构建时打包进应用。运行时加载不用改 `app.json`。
 
@@ -34,7 +34,7 @@ npm install @expo-harmony/expo-font expo-font@55.0.8
 
 打包的字体在 JavaScript 运行前完成注册，`Font.getLoadedFonts()` 会列出它们。
 
-`fonts` 参数接受字体文件路径、目录，或 `{ fontFamily, fontDefinitions: [{ path }] }`。传入目录时，目录下的 `.ttf`、`.otf` 文件按文件名推导系列名，`_bold`、`_italic`、`_bold_italic` 后缀会去掉。同一系列只能对应一个字体文件，不支持 `weight`、`style`，权重和斜体变体要用不同的系列名区分，否则预构建报错。
+`fonts` 参数接受字体文件路径、目录，或 `{ fontFamily, fontDefinitions: [{ path }] }`。传入目录时，目录下的 `.ttf`、`.otf` 文件（扩展名不区分大小写）按文件名推导系列名，`_bold`、`_italic`、`_bold_italic` 后缀会去掉。同一系列只能对应一个字体文件，不支持 `weight`、`style`，权重和斜体变体要用不同的系列名区分，否则预构建报错。
 
 字体路径也可以写在官方 `expo-font` 插件的 `fonts` 参数里。注册 `@expo-harmony/expo-font` 后，插件会读取这些路径并打包到 HarmonyOS，无需重复配置：
 
@@ -64,9 +64,9 @@ npm install @expo-harmony/expo-font expo-font@55.0.8
 
 返回 `Promise<void>`，注册字体系列。第一个参数是名称到字体资源的映射，也可以是单个名称，此时由第二个参数给出资源。
 
-字体源可以是 `require('...')` 返回的资源模块 ID、远程 `http`、`https` 地址，或应用沙箱内的本地 `file://` 地址。打包资源以 `asset://` 地址传入时按应用内资源处理。远程地址会先下载到缓存目录再注册。本地 `file://` 地址须指向应用沙箱内的文件，沙箱之外的路径会被拒绝。字体文件须在 1 字节到 32 MB 之间。
+字体源可以是 `require('...')` 返回的资源模块 ID、远程 `http`、`https` 地址，或应用沙箱内的本地 `file://` 地址。打包资源以 `asset://` 地址传入时按应用内资源处理，文件名按字面读取，`%`、`#`、`?` 不会被解码或截断。远程地址在 JavaScript 层通过 `expo-asset` 下载到缓存目录，再交给本模块注册，需要应用具备 `ohos.permission.INTERNET` 权限。本地 `file://` 地址默认限于应用沙箱，沙箱外的文件要有文件访问授权才能读取。字体文件须在 1 字节到 32 MB 之间。
 
-系列已注册时再次调用直接返回，不比较资源。配置插件打包的系列在启动时已经注册，运行时用同名加载会被跳过。
+系列已注册时再次调用直接返回，不比较资源。配置插件打包的系列在启动时已经注册，运行时用同名加载会被跳过。系统对动态注册字体的承诺范围是 `Text` 组件，`TextInput` 等其他组件上不保证生效。
 
 加载方式随 HarmonyOS SDK 版本变化：
 
@@ -76,7 +76,7 @@ npm install @expo-harmony/expo-font expo-font@55.0.8
 
 #### `Font.getLoadedFonts()`
 
-返回 `string[]`，已注册的字体系列名称，按字母顺序排列。包含配置插件在启动时打包的字体和运行时加载的字体。
+返回 `string[]`，已注册的字体系列名称，按字母顺序排列。包含配置插件在启动时打包的字体和运行时加载的字体，不包含系统字体。
 
 #### `Font.isLoaded(fontFamily)`
 
@@ -90,7 +90,7 @@ npm install @expo-harmony/expo-font expo-font@55.0.8
 
 返回 `Promise<RenderToImageResult>`，把文本渲染成 PNG 图片并写入应用缓存目录，`uri` 指向该文件。官方标记为 Android 和 iOS 专属接口，在 HarmonyOS 上可用。
 
-文本不超过 10 万个 UTF-16 码元，图片单边不超过 8192 像素。`size` 或 `lineHeight` 不是正数、文本渲染结果为空时拒绝。
+文本不超过 10 万个 UTF-16 码元，图片单边不超过 8192 像素，RGBA 像素缓冲区不超过 64 MiB。`size` 或 `lineHeight` 不是有限正数、缩放到物理像素后超过 8192、行高比例溢出或文本渲染结果为空时拒绝。设置 `lineHeight` 后将额外行距均分到文字上下。多行文本沿用系统段落的换行处理，跨平台输出不保证一致。
 
 > **未实现的内容**
 >

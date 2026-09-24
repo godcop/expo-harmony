@@ -27,9 +27,8 @@ class ExpoFontPluginError extends HarmonyConfigPluginError {
 }
 
 function fontFamilyFromFilename(file) {
-  const name = path.basename(file);
-  const match = /^(.+?)(?:_bold|_italic|_bold_italic)?\.(?:ttf|otf)$/.exec(name);
-  return match?.[1] || path.basename(name, path.extname(name));
+  const name = path.basename(file, path.extname(file));
+  return name.replace(/(?:_bold_italic|_bold|_italic)$/, '') || name;
 }
 
 function appendFontEntries(fonts, value, field) {
@@ -140,7 +139,7 @@ async function expandFontEntriesAsync(root, entries) {
       }
 
       const children = (await fs.promises.readdir(source, { withFileTypes: true }))
-        .filter(child => child.isFile() && ['.ttf', '.otf'].includes(path.extname(child.name)))
+        .filter(child => child.isFile() && ['.ttf', '.otf'].includes(path.extname(child.name).toLowerCase()))
         .sort((left, right) => left.name.localeCompare(right.name, 'en'));
 
       for (const child of children) {
@@ -172,6 +171,7 @@ async function expandFontEntriesAsync(root, entries) {
     const key = `${font.family}\0${font.source}`;
     if (!unique.has(key)) unique.set(key, font);
   }
+
   return [...unique.values()].sort((left, right) => {
     return left.family.localeCompare(right.family, 'en')
       || left.source.localeCompare(right.source, 'en');
@@ -182,6 +182,7 @@ async function writeFontResourcesAsync(project, config, props) {
   const root = path.join(project, 'harmony/entry/src/main/resources/rawfile');
   const directory = path.join(root, 'fonts');
   const manifest = path.join(root, 'expo-fonts.json');
+
   const entries = await expandFontEntriesAsync(project, fontEntries(config, props));
   const sources = new Map();
 

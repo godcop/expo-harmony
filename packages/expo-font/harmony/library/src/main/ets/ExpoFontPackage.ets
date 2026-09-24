@@ -117,7 +117,7 @@ const FONT_RENDER_RESULT_TYPE: ExpoValueType<FontRenderResult> = new ExpoValueTy
 
 export class ExpoFontLoaderModule extends ExpoModule {
   private readonly fonts: Map<string, string[]> = new Map<string, string[]>();
-  private readonly materializedFonts: Map<string, string> = new Map<string, string>();
+  private readonly cache: Map<string, string> = new Map<string, string>();
   private destroyed: boolean = false;
 
   constructor(context: ExpoModuleContext) {
@@ -150,6 +150,7 @@ export class ExpoFontLoaderModule extends ExpoModule {
 
   private async load(family: string, uri: string): Promise<void> {
     this.assertFamily(family, false);
+
     const source = this.validateSource(uri);
     const existing = this.fonts.get(family);
     if (existing !== undefined && existing.length === 1 && existing[0] === source) return;
@@ -168,9 +169,9 @@ export class ExpoFontLoaderModule extends ExpoModule {
   }
 
   private readBundledFontEntries(): BundledFontManifestEntry[] {
-    let rootFiles: string[];
+    let files: string[];
     try {
-      rootFiles = this.context.uiAbilityContext.resourceManager.getRawFileListSync('');
+      files = this.context.uiAbilityContext.resourceManager.getRawFileListSync('');
     } catch (error) {
       throw new ExpoFontError(
         'ERR_FONT_BUNDLED_MANIFEST',
@@ -179,14 +180,16 @@ export class ExpoFontLoaderModule extends ExpoModule {
       );
     }
 
-    if (rootFiles.includes('expo-fonts.json')) {
+    if (files.includes('expo-fonts.json')) {
       try {
         const bytes = this.context.uiAbilityContext.resourceManager.getRawFileContentSync('expo-fonts.json');
-        const manifestValue: ESObject = JSON.parse(util.TextDecoder.create('utf-8').decodeToString(bytes));
-        if (manifestValue === null || typeof manifestValue !== 'object' || !Array.isArray((manifestValue as BundledFontManifest).fonts)) {
+
+        const manifest: ESObject = JSON.parse(util.TextDecoder.create('utf-8').decodeToString(bytes));
+        if (manifest === null || typeof manifest !== 'object' || !Array.isArray((manifest as BundledFontManifest).fonts)) {
           throw new ExpoFontError('ERR_FONT_BUNDLED_MANIFEST', 'expo-fonts.json must contain a fonts array.');
         }
-        return (manifestValue as BundledFontManifest).fonts.slice();
+
+        return (manifest as BundledFontManifest).fonts.slice();
       } catch (error) {
         if (error instanceof ExpoFontError) throw new ExpoFontError(error.code, error.message, error.cause);
         throw new ExpoFontError('ERR_FONT_BUNDLED_MANIFEST', `Unable to read expo-fonts.json: ${errorMessage(error as Object)}`, error as Object);
@@ -207,10 +210,11 @@ export class ExpoFontLoaderModule extends ExpoModule {
           }
         });
     } catch (error) {
-      if (rootFiles.includes('fonts')) {
+      if (files.includes('fonts')) {
         throw new ExpoFontError('ERR_FONT_BUNDLED_MANIFEST', `Unable to enumerate bundled fonts: ${errorMessage(error as Object)}`, error as Object);
       }
     }
+
     return entries;
   }
 
@@ -241,13 +245,14 @@ export class ExpoFontLoaderModule extends ExpoModule {
     else existing.push(source);
   }
 
-  private validateSource(uri: string, expectedDigest?: string, expectedSize?: number): string {
+  private validateSource(uri: string, digest?: string, size?: number): string {
     this.assertActive();
+
     let path: string;
     if (uri.startsWith('asset://') || uri.startsWith('rawfile://')) {
       const directory = `${this.context.cachePath}/expo-fonts`;
       ensureDirectory(directory);
-      path = materializeRawFont(this.context, uri, directory, this.materializedFonts, expectedDigest, expectedSize);
+      path = materializeRawFont(this.context, uri, directory, this.cache, digest, size);
     } else {
       path =
         this.context.services.get(ExpoFileAccessKey) === undefined
@@ -286,6 +291,7 @@ export class ExpoFontLoaderModule extends ExpoModule {
       if (error instanceof ExpoFontError) throw new ExpoFontError(error.code, error.message, error.cause);
       throw new ExpoFontError('ERR_FONT_SOURCE', `Font file '${uri}' does not exist.`, error as Object);
     }
+
     return path;
   }
 
@@ -305,7 +311,7 @@ export class ExpoFontLoaderModule extends ExpoModule {
     if (this.destroyed) return;
     this.destroyed = true;
     this.fonts.clear();
-    this.materializedFonts.clear();
+    this.cache.clear();
   }
 }
 
@@ -348,33 +354,53 @@ export class ExpoFontUtilsModule extends ExpoModule {
     }
 
     const scale = display.getDefaultDisplaySync().densityPixels;
+    if (!Number.isFinite(scale) || scale <= 0) {
+      throw new ExpoFontError('ERR_FONT_RENDER', 'Display density must be a positive finite number.');
+    }
+
+    const size = options.size * scale;
+    const lineHeight = options.lineHeight === undefined ? undefined : options.lineHeight * scale;
+    const ratio = options.lineHeight === undefined ? 1 : options.lineHeight / options.size;
+    if (
+      !Number.isFinite(size) || size <= 0 || size > MAX_RENDER_SIDE_PIXELS ||
+      !Number.isFinite(ratio) || ratio <= 0 ||
+      (lineHeight !== undefined && (!Number.isFinite(lineHeight) || lineHeight <= 0 || lineHeight > MAX_RENDER_SIDE_PIXELS))
+    ) {
+      throw new ExpoFontError('ERR_FONT_RENDER_TOO_LARGE', `Scaled font size and lineHeight must be positive and cannot exceed ${MAX_RENDER_SIDE_PIXELS}px.`);
+    }
+
     const color = normalizedArgb(options.color);
-    const textStyle: text.TextStyle = {
+    const style: text.TextStyle = {
       color,
       fontFamilies: options.fontFamily.length === 0 ? [] : [options.fontFamily],
-      fontSize: options.size * scale,
+      fontSize: size,
       heightOnly: options.lineHeight !== undefined,
-      heightScale: options.lineHeight === undefined ? 1 : options.lineHeight / options.size,
+      heightScale: ratio,
+      halfLeading: options.lineHeight !== undefined,
     };
-    const builder = new text.ParagraphBuilder({ textStyle }, text.FontCollection.getGlobalInstance());
-    builder.pushStyle(textStyle);
+
+    const builder = new text.ParagraphBuilder({ textStyle: style }, text.FontCollection.getGlobalInstance());
+    builder.pushStyle(style);
     builder.addText(glyphs);
     builder.popStyle();
+
     const paragraph = builder.build();
-    paragraph.layoutSync(1_000_000_000);
-    const width = Math.ceil(paragraph.getLongestLine());
+    // The extra pixel prevents boundary rounding from wrapping; intrinsic width still rejects oversized lines.
+    paragraph.layoutSync(MAX_RENDER_SIDE_PIXELS + 1);
+    const width = Math.ceil(paragraph.getMaxIntrinsicWidth());
     const height = Math.ceil(paragraph.getHeight());
     if (width <= 0 || height <= 0) {
       throw new ExpoFontError('ERR_FONT_RENDER_EMPTY', 'Text produced an empty image.');
     }
-    const pixelCount = width * height;
-    const byteCount = pixelCount * 4;
+
+    const pixels = width * height;
+    const bytes = pixels * 4;
     if (
-      !Number.isSafeInteger(pixelCount) ||
-      !Number.isSafeInteger(byteCount) ||
+      !Number.isSafeInteger(pixels) ||
+      !Number.isSafeInteger(bytes) ||
       width > MAX_RENDER_SIDE_PIXELS ||
       height > MAX_RENDER_SIDE_PIXELS ||
-      byteCount > MAX_RENDER_BUFFER_BYTES
+      bytes > MAX_RENDER_BUFFER_BYTES
     ) {
       throw new ExpoFontError(
         'ERR_FONT_RENDER_TOO_LARGE',
@@ -382,18 +408,20 @@ export class ExpoFontUtilsModule extends ExpoModule {
       );
     }
 
-    const pixels = new ArrayBuffer(byteCount);
-    const map = image.createPixelMapSync(pixels, {
+    const buffer = new ArrayBuffer(bytes);
+    const map = image.createPixelMapSync(buffer, {
       size: { width, height },
       srcPixelFormat: image.PixelMapFormat.RGBA_8888,
       pixelFormat: image.PixelMapFormat.RGBA_8888,
       editable: true,
       alphaType: image.AlphaType.PREMUL,
     });
+
     const id = util.generateRandomUUID();
     const temp = `${this.context.cachePath}/.expo-font-${id}.tmp`;
     const output = `${this.context.cachePath}/expo-font-${id}.png`;
     let committed = false;
+
     try {
       const packer = image.createImagePacker();
       try {
@@ -401,9 +429,11 @@ export class ExpoFontUtilsModule extends ExpoModule {
         paragraph.paint(canvas, 0, 0);
         const png = await packer.packToData(map, { format: 'image/png', quality: 100 });
         this.assertActive();
+
         await writeFileFully(temp, png);
         await fs.moveFile(temp, output, 0);
         this.assertActive();
+
         committed = true;
         return new FontRenderResult(fileUriFromPath(output), width / scale, height / scale, scale);
       } finally {
@@ -422,6 +452,7 @@ export class ExpoFontUtilsModule extends ExpoModule {
       } catch (error) {
         this.context.logger.warn(`Unable to release the font PixelMap: ${errorMessage(error as Object)}`);
       }
+
       await unlinkIfExists(temp);
       if (!committed) await unlinkIfExists(output);
     }
@@ -445,6 +476,7 @@ function decodeRenderOptions(value: ESObject, path: string): FontRenderOptions {
     result.lineHeight = requireNumber(record.lineHeight, `${path}.lineHeight`);
   }
   if (record.color !== undefined) result.color = requireNumber(record.color, `${path}.color`);
+
   return result;
 }
 
@@ -468,32 +500,33 @@ function encodeRenderResult(value: FontRenderResult): ESObject {
 
 function requireRecord(value: ESObject, path: string): Record<string, ESObject> {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
-    throwInvalidType(path, 'object', value);
+    const actual = value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value;
+    throw new ExpoFontError('ERR_INVALID_ARGUMENT_TYPE', `${path} expected object, received ${actual}.`);
   }
   return value as Record<string, ESObject>;
 }
 
 function requireString(value: ESObject, path: string): string {
-  if (typeof value !== 'string') throwInvalidType(path, 'string', value);
+  if (typeof value !== 'string') {
+    const actual = value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value;
+    throw new ExpoFontError('ERR_INVALID_ARGUMENT_TYPE', `${path} expected string, received ${actual}.`);
+  }
   return value;
 }
 
 function requireNumber(value: ESObject, path: string): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
-    throwInvalidType(path, 'finite number', value);
+    const actual = value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value;
+    throw new ExpoFontError('ERR_INVALID_ARGUMENT_TYPE', `${path} expected finite number, received ${actual}.`);
   }
   return value;
-}
-
-function throwInvalidType(path: string, expected: string, value: ESObject): never {
-  const actual = value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value;
-  throw new ExpoFontError('ERR_INVALID_ARGUMENT_TYPE', `${path} expected ${expected}, received ${actual}.`);
 }
 
 function normalizedArgb(value: number): ArgbColor {
   if (!Number.isInteger(value) || value < -0x80000000 || value > 0xffffffff) {
     throw new ExpoFontError('ERR_FONT_RENDER_OPTIONS', 'color must be a signed or unsigned 32-bit integer.');
   }
+
   const unsigned = value < 0 ? value + 0x100000000 : value;
   return new ArgbColor(
     Math.floor(unsigned / 0x1000000) % 0x100,
@@ -503,43 +536,46 @@ function normalizedArgb(value: number): ArgbColor {
   );
 }
 
-function localPathFromFileUri(uri: string, bundleName: string): string {
+function localPathFromFileUri(uri: string, bundle: string): string {
   try {
     const parsed = url.URL.parseURL(uri);
     if (parsed.protocol.toLowerCase() !== 'file:') throw new Error('Not a file URL');
+
     const host = parsed.hostname.toLowerCase();
-    const localBundle = bundleName.toLowerCase();
-    if (host.length > 0 && host !== 'localhost' && host !== localBundle) {
+    if (host.length > 0 && host !== 'localhost' && host !== bundle.toLowerCase()) {
       throw new Error('Remote file authority');
     }
-    const decoded = decodeURIComponent(parsed.pathname);
-    if (!decoded.startsWith('/') || decoded.includes('\0') || decoded.includes('\\')) {
+
+    const path = decodeURIComponent(parsed.pathname);
+    if (!path.startsWith('/') || path.includes('\0') || path.includes('\\')) {
       throw new Error('Invalid local path');
     }
-    const segments = decoded.split('/');
+    const segments = path.split('/');
     if (segments.some((segment: string): boolean => segment === '.' || segment === '..')) {
       throw new Error('Invalid path segment');
     }
-    return decoded;
+
+    return path;
   } catch (_) {
     throw new ExpoFontError('ERR_FONT_SOURCE', 'Harmony fonts must use an absolute local file URI owned by the current application.');
   }
 }
 
 function isInside(root: string, path: string): boolean {
-  const normalizedRoot = root.endsWith('/') ? root.substring(0, root.length - 1) : root;
-  return path === normalizedRoot || path.startsWith(`${normalizedRoot}/`);
+  const base = root.endsWith('/') ? root.substring(0, root.length - 1) : root;
+  return path === base || path.startsWith(`${base}/`);
 }
 
 function assertNoSymlinkSegments(root: string, path: string): void {
-  const normalizedRoot = root.endsWith('/') ? root.substring(0, root.length - 1) : root;
-  const suffix = path.slice(normalizedRoot.length).replace(/^\/+/, '');
-  let current = normalizedRoot;
+  const base = root.endsWith('/') ? root.substring(0, root.length - 1) : root;
+  const suffix = path.slice(base.length).replace(/^\/+/, '');
+  let current = base;
   const segments = suffix.length === 0 ? [] : suffix.split('/');
 
   try {
-    const rootStat = fs.lstatSync(current);
-    if (rootStat.isSymbolicLink() || !rootStat.isDirectory()) throw new Error('Invalid root');
+    const stat = fs.lstatSync(current);
+    if (stat.isSymbolicLink() || !stat.isDirectory()) throw new Error('Invalid root');
+
     segments.forEach((segment: string, index: number): void => {
       current = `${current}/${segment}`;
       const stat = fs.lstatSync(current);
@@ -553,26 +589,36 @@ function assertNoSymlinkSegments(root: string, path: string): void {
 
 function rawFontPath(uri: string): string {
   const asset = uri.startsWith('asset://');
-  const raw = uri
+  let path = uri
     .replace(/^(?:asset|rawfile):\/\//, '')
-    .replace(/^\/+/, '')
-    .split(/[?#]/, 1)[0];
-  let decoded: string;
-  try {
-    decoded = decodeURIComponent(raw).replace(/\\/g, '/');
-  } catch (_) {
-    throw new ExpoFontError('ERR_FONT_SOURCE', 'Font asset URI has invalid escaping.');
+    .replace(/^\/+/, '');
+
+  // RNOH asset:// names are literal; only rawfile:// uses URL encoding, queries and fragments.
+  if (!asset) {
+    const encoded = path.split(/[?#]/, 1)[0];
+    if (/%(?:00|2f|5c)/i.test(encoded)) {
+      throw new ExpoFontError('ERR_FONT_SOURCE', 'Font asset URI contains an escaped separator or null byte.');
+    }
+
+    try {
+      path = decodeURIComponent(encoded);
+    } catch (_) {
+      throw new ExpoFontError('ERR_FONT_SOURCE', 'Font asset URI has invalid escaping.');
+    }
   }
-  const segments = decoded.split('/');
+
+  const segments = path.split('/');
   if (
+    path.includes('\\') || path.includes('\0') ||
     segments.length === 0 ||
     segments.some((segment: string): boolean => {
       return segment.length === 0 || segment === '.' || segment === '..';
     }) ||
-    !/\.(?:ttf|otf)$/i.test(decoded)
+    !/\.(?:ttf|otf)$/i.test(path)
   ) {
     throw new ExpoFontError('ERR_FONT_SOURCE', 'Font asset URI is invalid.');
   }
+
   return asset ? `assets/${segments.join('/')}` : segments.join('/');
 }
 
@@ -584,6 +630,7 @@ function ensureDirectory(path: string): void {
     }
     return;
   }
+
   try {
     fs.mkdirSync(path, true);
   } catch (_) {
@@ -591,6 +638,7 @@ function ensureDirectory(path: string): void {
       throw new ExpoFontError('ERR_FONT_CACHE_DIRECTORY', `Could not create '${path}'.`);
     }
   }
+
   const stat = fs.lstatSync(path);
   if (stat.isSymbolicLink() || !stat.isDirectory()) {
     throw new ExpoFontError('ERR_FONT_CACHE_DIRECTORY', `'${path}' is not a directory.`);
@@ -602,24 +650,26 @@ function materializeRawFont(
   uri: string,
   directory: string,
   cache: Map<string, string>,
-  expectedDigest?: string,
-  expectedSize?: number,
+  digest?: string,
+  size?: number,
 ): string {
   const source = rawFontPath(uri);
-  const identity = `${source}:${expectedDigest?.toLowerCase() ?? ''}:${expectedSize ?? ''}`;
+  const identity = `${source}:${digest?.toLowerCase() ?? ''}:${size ?? ''}`;
   const cached = cache.get(identity);
   if (cached !== undefined) {
-    if (verifyCachedFont(cached, expectedDigest, expectedSize)) return cached;
+    if (verifyCachedFont(cached, digest, size)) return cached;
+
     cache.delete(identity);
     unlinkIfExistsSync(cached);
   }
 
-  if (expectedDigest !== undefined) {
-    const destination = bundledFontCachePath(directory, source, expectedDigest);
-    if (verifyCachedFont(destination, expectedDigest, expectedSize)) {
+  if (digest !== undefined) {
+    const destination = bundledFontCachePath(directory, source, digest);
+    if (verifyCachedFont(destination, digest, size)) {
       cache.set(identity, destination);
       return destination;
     }
+
     unlinkIfExistsSync(destination);
   }
 
@@ -628,7 +678,7 @@ function materializeRawFont(
     context.uiAbilityContext.resourceManager.closeRawFdSync(source);
     throw new ExpoFontError('ERR_FONT_SOURCE_TOO_LARGE', `Bundled font size must be between 1 and ${MAX_FONT_BYTES} bytes.`);
   }
-  if (expectedSize !== undefined && descriptor.length !== expectedSize) {
+  if (size !== undefined && descriptor.length !== size) {
     context.uiAbilityContext.resourceManager.closeRawFdSync(source);
     throw new ExpoFontError('ERR_FONT_BUNDLED_MANIFEST', 'Bundled font size does not match its manifest.');
   }
@@ -637,11 +687,12 @@ function materializeRawFont(
   let cleanup = true;
   try {
     const output = fs.openSync(temp, fs.OpenMode.CREATE | fs.OpenMode.READ_WRITE | fs.OpenMode.TRUNC | fs.OpenMode.NOFOLLOW);
-    let actualDigest = '';
+    let checksum = '';
     try {
-      const digest = fileHash.createHash('sha256');
+      const hash = fileHash.createHash('sha256');
       const buffer = new ArrayBuffer(FONT_COPY_CHUNK_BYTES);
       let copied = 0;
+
       while (copied < descriptor.length) {
         const length = Math.min(buffer.byteLength, descriptor.length - copied);
         const count = fs.readSync(descriptor.fd, buffer, {
@@ -651,40 +702,46 @@ function materializeRawFont(
         if (count <= 0) {
           throw new ExpoFontError('ERR_FONT_BUNDLED_READ', source);
         }
+
         const chunk = buffer.slice(0, count);
-        digest.update(chunk);
+        hash.update(chunk);
         writeAll(output.fd, chunk, copied);
         copied += count;
       }
-      actualDigest = digest.digest().toLowerCase();
+
+      checksum = hash.digest().toLowerCase();
     } finally {
       fs.closeSync(output.fd);
     }
 
-    if (expectedDigest !== undefined && actualDigest !== expectedDigest.toLowerCase()) {
+    if (digest !== undefined && checksum !== digest.toLowerCase()) {
       throw new ExpoFontError('ERR_FONT_BUNDLED_MANIFEST', 'Bundled font digest does not match its manifest.');
     }
-    const destination = bundledFontCachePath(directory, source, actualDigest);
-    if (verifyCachedFont(destination, actualDigest, descriptor.length)) {
+
+    const destination = bundledFontCachePath(directory, source, checksum);
+    if (verifyCachedFont(destination, checksum, descriptor.length)) {
       unlinkIfExistsSync(temp);
       cleanup = false;
       cache.set(identity, destination);
       return destination;
     }
+
     unlinkIfExistsSync(destination);
     try {
       fs.moveFileSync(temp, destination, 0);
     } catch (error) {
-      if (!verifyCachedFont(destination, actualDigest, descriptor.length)) {
+      if (!verifyCachedFont(destination, checksum, descriptor.length)) {
         throw new ExpoFontError('ERR_FONT_BUNDLED_WRITE', `Unable to commit bundled font '${source}'.`, error as Object);
       }
       unlinkIfExistsSync(temp);
     }
+
     cleanup = false;
     cache.set(identity, destination);
     return destination;
   } finally {
     if (cleanup) unlinkIfExistsSync(temp);
+
     try {
       context.uiAbilityContext.resourceManager.closeRawFdSync(source);
     } catch (error) {
@@ -718,6 +775,7 @@ function fileDigestSync(path: string): string {
       if (count < 0) throw new ExpoFontError('ERR_FONT_BUNDLED_READ', path);
       digest.update(count === buffer.byteLength ? buffer : buffer.slice(0, count));
     }
+
     return digest.digest().toLowerCase();
   } finally {
     fs.closeSync(file.fd);
