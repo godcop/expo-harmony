@@ -7,10 +7,10 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-navigation-bar expo-modules-core@55.0.25 expo-navigation-bar@55.0.13
+npm install @expo-harmony/expo-navigation-bar expo-modules-core@55.0.26 expo-navigation-bar@55.0.17
 ```
 
-本包适配 Expo SDK 55 的 `expo-navigation-bar`，原生模块通过 Expo Harmony 自动链接，不需要申请权限。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。
+本包适配 Expo SDK 55 的 `expo-navigation-bar`，原生模块通过 Expo Harmony 自动链接。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。
 
 业务代码从官方包导入：
 
@@ -41,11 +41,13 @@ NavigationBar.setStyle('auto');
 }
 ```
 
-配置插件接受 `backgroundColor`（背景色）、`barStyle`（按钮样式，`light` 或 `dark`）、`position`（布局位置，`relative` 或 `absolute`）和 `visibility`（显示状态，`visible` 或 `hidden`），取值与对应的运行时接口一致，在窗口创建时应用。只在运行时调用导航栏接口时不需要配置插件。
+配置插件接受 `backgroundColor`（背景色）、`barStyle`（按钮样式，`light` 或 `dark`）、`position`（布局位置，`relative` 或 `absolute`）和 `visibility`（显示状态，`visible` 或 `hidden`），取值与对应的运行时接口一致，在窗口创建时应用。运行时接口可以独立使用。
 
 HarmonyOS 没有导航栏分隔线颜色、Android 导航栏唤出行为和强制对比度，配置插件不接受 `borderColor`、`behavior` 和 `enforceContrast`，传入会报错。
 
-本包的原生实现依赖宿主 Ability 的生命周期事件，订阅器已在包内声明，业务代码不需要额外处理。CNG 工程由 prebuild 自动生成所需入口；Bare 工程需按[接入说明](https://github.com/renbaoshuo/expo-harmony/blob/master/docs/BareInstallation.md)手动接入 AbilityStage 和 ExpoRNAbility。
+2in1 设备不支持设置系统栏外观。分屏、悬浮等非全屏且非最大化的窗口中，外观和显示状态的设置可能延后生效或不生效，Promise 完成不代表系统栏已经更新。
+
+本包的原生实现依赖宿主 Ability 的生命周期事件，订阅器已在包内声明。CNG 工程由 prebuild 自动生成所需入口；Bare 工程需按[接入说明](https://github.com/renbaoshuo/expo-harmony/blob/master/docs/BareInstallation.md)手动接入 AbilityStage 和 ExpoRNAbility。
 
 ## API 对照表
 
@@ -59,7 +61,7 @@ HarmonyOS 没有导航栏分隔线颜色、Android 导航栏唤出行为和强�
 
 #### `NavigationBar.setBackgroundColorAsync(color)`
 
-返回 `Promise<void>`，设置导航栏背景色。`color` 接受 React Native 支持的颜色格式，无法解析时抛出 `TypeError`。该接口在 Android 上已被官方废弃且不生效，HarmonyOS 上设置有效。
+返回 `Promise<void>`，设置三键导航栏背景色。`color` 接受 React Native 支持的颜色格式，无法解析时抛出 `TypeError`。该接口在 Android 上已被官方废弃且不生效，HarmonyOS 上设置有效。
 
 #### `NavigationBar.getBackgroundColorAsync()`
 
@@ -67,7 +69,7 @@ HarmonyOS 没有导航栏分隔线颜色、Android 导航栏唤出行为和强�
 
 #### `NavigationBar.setButtonStyleAsync(style)`
 
-返回 `Promise<void>`，设置导航栏按钮颜色，`light` 为浅色按钮，`dark` 为深色按钮。官方已废弃该接口并建议改用 `setStyle`，HarmonyOS 上仍然可用。
+返回 `Promise<void>`，设置三键导航栏按钮颜色，`light` 为浅色按钮，`dark` 为深色按钮。官方已废弃该接口并建议改用 `setStyle`，HarmonyOS 上仍然可用，不控制手势指示条颜色。
 
 #### `NavigationBar.getButtonStyleAsync()`
 
@@ -75,7 +77,9 @@ HarmonyOS 没有导航栏分隔线颜色、Android 导航栏唤出行为和强�
 
 #### `NavigationBar.setPositionAsync(position)`
 
-返回 `Promise<void>`，设置导航栏布局位置。`absolute` 表示应用内容延伸到导航栏下方，`relative` 表示内容避开导航栏。该接口在 Android 上已被官方废弃且不生效，HarmonyOS 上设置有效。
+返回 `Promise<void>`，设置系统栏布局位置，同时影响状态栏和导航栏。`absolute` 表示应用内容延伸到系统栏下方，属于沉浸式布局，应用需要自行处理安全区。`relative` 表示内容避开系统栏。该接口在 Android 上已被官方废弃且不生效，HarmonyOS 上设置有效。
+
+RNOH 页面默认运行在沉浸式布局下，关闭沉浸式会影响 `SafeAreaView` 的避让。使用 `relative` 时需检查应用的安全区布局，避免重复避让。
 
 #### `NavigationBar.unstable_getPositionAsync()`
 
@@ -91,7 +95,7 @@ HarmonyOS 没有导航栏分隔线颜色、Android 导航栏唤出行为和强�
 
 #### `NavigationBar.setStyle(style)`
 
-返回值为空，按应用当前颜色方案把样式映射成按钮颜色：`light` 配深色按钮，`dark` 配浅色按钮，`auto` 跟随当前颜色方案，`inverted` 与当前颜色方案相反。只调整按钮颜色，不改变背景色，设置失败时输出警告。Android 上该接口受强制对比度和三键导航限制，HarmonyOS 上没有这些限制。
+返回值为空，按调用时应用的颜色方案把样式映射成按钮颜色：`light` 配深色按钮，`dark` 配浅色按钮，`auto` 使用当前颜色方案，`inverted` 与当前颜色方案相反。只调整三键导航栏按钮颜色，不改变背景色或手势指示条颜色，设置失败时输出警告。样式在调用时确定，不跟随之后的主题变化，主题切换后需要再次调用。
 
 > **未实现的内容**
 >

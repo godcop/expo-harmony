@@ -98,14 +98,19 @@ export function useVisibility(): NavigationBarVisibility | null {
 
   useEffect(() => {
     let mounted = true;
-
-    getVisibilityAsync().then((next) => {
-      if (mounted) setVisibility(next);
-    }).catch(() => {});
+    let updated = false;
 
     const subscription = addVisibilityListener((event) => {
-      if (mounted) setVisibility(event.visibility);
+      if (mounted) {
+        updated = true;
+        setVisibility(event.visibility);
+      }
     });
+
+    getVisibilityAsync().then((next) => {
+      // A late initial snapshot must not overwrite a newer event.
+      if (mounted && !updated) setVisibility(next);
+    }).catch(() => {});
 
     return () => {
       mounted = false;

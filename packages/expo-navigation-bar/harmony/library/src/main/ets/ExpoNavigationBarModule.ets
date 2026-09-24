@@ -17,8 +17,6 @@ const BACKGROUND_METADATA: string = 'expo.harmony.navigationBar.backgroundColor'
 const BUTTON_STYLE_METADATA: string = 'expo.harmony.navigationBar.barStyle';
 const POSITION_METADATA: string = 'expo.harmony.navigationBar.position';
 const VISIBILITY_METADATA: string = 'expo.harmony.navigationBar.visibility';
-// Harmony has no Android-style system UI bitmask. Preserve the Android hide-navigation bit
-// so consumers that only inspect that flag keep working across platforms.
 const ANDROID_HIDE_NAVIGATION_FLAG: number = 2;
 const CONFIG_BACKGROUND: string = 'backgroundColor';
 const CONFIG_BUTTON_STYLE: string = 'buttonStyle';
@@ -114,6 +112,7 @@ class AbilityNavigationBarState {
 
   refresh(): void {
     if (this.destroyed || this.stage === undefined) return;
+
     this.prepare().catch((error: Object): void => {
       if (!this.destroyed && this.stage !== undefined) console.warn(`Unable to initialize Expo NavigationBar: ${String(error)}`);
     });
@@ -132,9 +131,11 @@ class AbilityNavigationBarState {
   async useWindow<T>(operation: (target: window.Window) => Promise<T>, active: () => boolean = (): boolean => true, key?: string): Promise<T> {
     const stage = this.stage;
     const generation = this.generation;
-    const assertCurrent = (): void => {
-      if (this.destroyed || !active())
+
+    const check = (): void => {
+      if (this.destroyed || !active()) {
         throw new ExpoNavigationBarError('ERR_NAVIGATION_BAR_DESTROYED', 'The Expo NavigationBar owner has been destroyed.');
+      }
       if (stage === undefined || this.stage !== stage || this.generation !== generation) {
         throw new ExpoNavigationBarError('ERR_NAVIGATION_BAR_WINDOW', 'The Expo NavigationBar window is no longer available.');
       }
@@ -143,16 +144,16 @@ class AbilityNavigationBarState {
     const next = this.queue
       .catch((): void => {})
       .then(async (): Promise<T> => {
-        assertCurrent();
+        check();
 
         const target = await (stage as window.WindowStage).getMainWindow();
-        assertCurrent();
+        check();
 
-        await this.prepareWindow(target, assertCurrent);
-        assertCurrent();
+        await this.prepareWindow(target, check);
+        check();
 
         const result = await operation(target);
-        assertCurrent();
+        check();
         if (key !== undefined) this.applied.add(key);
 
         return result;
@@ -166,7 +167,7 @@ class AbilityNavigationBarState {
     return await next;
   }
 
-  private async prepareWindow(target: window.Window, assertCurrent: () => void): Promise<void> {
+  private async prepareWindow(target: window.Window, check: () => void): Promise<void> {
     const id = target.getWindowProperties().id;
     if (this.configuredId !== id) {
       this.configuredId = id;
@@ -180,17 +181,18 @@ class AbilityNavigationBarState {
     const visibility = config.visibility;
 
     if (position !== null)
-      await this.applyOption(CONFIG_POSITION, (): Promise<void> => target.setWindowLayoutFullScreen(position === 'absolute'), assertCurrent);
+      await this.applyOption(CONFIG_POSITION, (): Promise<void> => target.setWindowLayoutFullScreen(position === 'absolute'), check);
     if (color !== null)
       await this.applyOption(
         CONFIG_BACKGROUND,
         (): Promise<void> => target.setWindowSystemBarProperties({ navigationBarColor: color }),
-        assertCurrent,
+        check,
       );
-    if (style !== null) await this.applyOption(CONFIG_BUTTON_STYLE, (): Promise<void> => applyButtonStyle(target, style), assertCurrent);
+    if (style !== null) await this.applyOption(CONFIG_BUTTON_STYLE, (): Promise<void> => applyButtonStyle(target, style), check);
     if (visibility !== null)
-      await this.applyOption(CONFIG_VISIBILITY, (): Promise<void> => setNavigationBarVisibility(target, visibility === 'visible'), assertCurrent);
-    assertCurrent();
+      await this.applyOption(CONFIG_VISIBILITY, (): Promise<void> => setNavigationBarVisibility(target, visibility === 'visible'), check);
+
+    check();
 
     if (this.listeners.size > 0 && this.observed !== target) {
       this.detachWindow();
@@ -200,20 +202,21 @@ class AbilityNavigationBarState {
     }
   }
 
-  private async applyOption(key: string, operation: () => Promise<void>, assertCurrent: () => void): Promise<void> {
-    assertCurrent();
+  private async applyOption(key: string, operation: () => Promise<void>, check: () => void): Promise<void> {
+    check();
     if (this.applied.has(key)) return;
 
     try {
       await operation();
     } catch (error) {
-      assertCurrent();
+      check();
+
       console.warn(`Unable to apply Expo NavigationBar startup ${key}: ${String(error)}`);
 
       return;
     }
 
-    assertCurrent();
+    check();
     this.applied.add(key);
   }
 
@@ -225,18 +228,19 @@ class AbilityNavigationBarState {
         console.warn(`Unable to detach Expo NavigationBar observer: ${String(error)}`);
       }
     }
+
     this.observed = undefined;
     this.last = null;
   }
 
   private publishVisibility(force: boolean): void {
     if (this.destroyed || this.observed === undefined) return;
+
     try {
       const visibility = inspectVisibility(this.observed);
       if (!force && this.last === visibility) return;
 
       this.last = visibility;
-
       const event = new NavigationBarVisibilityEvent(visibility);
 
       this.listeners.forEach((listener: NavigationBarListener): void => {
@@ -252,7 +256,7 @@ class AbilityNavigationBarState {
   }
 }
 
-const abilityStates: WeakMap<common.UIAbilityContext, AbilityNavigationBarState> = new WeakMap();
+const states: WeakMap<common.UIAbilityContext, AbilityNavigationBarState> = new WeakMap();
 
 export class ExpoNavigationBarLifecycleSubscriber extends ExpoAbilityLifecycleSubscriber {
   private readonly state: AbilityNavigationBarState;
@@ -261,32 +265,38 @@ export class ExpoNavigationBarLifecycleSubscriber extends ExpoAbilityLifecycleSu
   constructor(context: common.UIAbilityContext) {
     super(context);
     this.state = new AbilityNavigationBarState(context);
-    abilityStates.set(context, this.state);
+    states.set(context, this.state);
   }
 
   override onWindowStageCreate(stage: window.WindowStage): void {
     this.ready = false;
     this.state.setStage(stage);
   }
+
   override onWindowStageRestore(stage: window.WindowStage): void {
     this.onWindowStageCreate(stage);
   }
+
   override async onWindowStageSetup(): Promise<void> {
     this.ready = true;
     await this.state.prepare();
   }
+
   override onForeground(): void {
     if (this.ready) this.state.refresh();
   }
+
   override onWindowStageWillDestroy(): void {
     this.state.clearWindow();
   }
+
   override onWindowStageDestroy(): void {
     this.state.clearWindow();
   }
+
   override onDestroy(): void {
     this.state.destroy();
-    abilityStates.delete(this.context);
+    states.delete(this.context);
   }
 }
 
@@ -301,12 +311,14 @@ export class ExpoNavigationBarModule extends ExpoModule {
   constructor(context: ExpoModuleContext) {
     super(context);
 
-    const state = abilityStates.get(context.uiAbilityContext);
-    if (state === undefined && !context.isHeadless)
+    const state = states.get(context.uiAbilityContext);
+
+    if (state === undefined && !context.isHeadless) {
       throw new ExpoNavigationBarError(
         'ERR_NAVIGATION_BAR_ABILITY_NOT_INITIALIZED',
         'Expo NavigationBar requires its autolinked Ability lifecycle subscriber.',
       );
+    }
 
     this.state = state;
   }
@@ -319,6 +331,7 @@ export class ExpoNavigationBarModule extends ExpoModule {
         'setBackgroundColorAsync',
         ExpoFunction.typed1(ExpoValueTypes.number(), async (color: number): Promise<void> => {
           const value = requireProcessedColor(color);
+
           await this.useWindow(async (target: window.Window): Promise<void> => {
             await target.setWindowSystemBarProperties({ navigationBarColor: value });
           }, CONFIG_BACKGROUND);
@@ -399,10 +412,12 @@ export class ExpoNavigationBarModule extends ExpoModule {
   private isActive(): boolean {
     return !this.destroyed && this.context.isValid;
   }
+
   private stopObserving(): void {
     this.observing = false;
     this.state?.removeListener(this.onVisibility);
   }
+
   private destroy(): void {
     this.destroyed = true;
     this.stopObserving();
@@ -424,7 +439,6 @@ async function setNavigationBarVisibility(target: window.Window, visible: boolea
     if (!isCapabilityUnsupported(error)) {
       throw new ExpoNavigationBarError('ERR_NAVIGATION_BAR_VISIBILITY', `Unable to update the Harmony navigation indicator: ${String(error)}`);
     }
-    // Three-button-only devices may not expose a separate gesture indicator.
   }
 }
 
@@ -504,11 +518,12 @@ function exposeWindowColor(value: string | undefined): string {
   }
 
   const argb: RegExpMatchArray | null = value.match(/^#([0-9a-f]{8})$/i);
+
   if (argb !== null) {
     return `#${argb[1].slice(2)}${argb[1].slice(0, 2)}`.toLowerCase();
   }
 
-  if (/^#[0-9a-f]{6}$/i.test(value)) return value.toLowerCase();
+  if (/^#[0-9a-f]{6}$/i.test(value)) return `${value.toLowerCase()}ff`;
 
   throw new ExpoNavigationBarError('ERR_NAVIGATION_BAR_COLOR_UNAVAILABLE', `HarmonyOS returned an unsupported navigation bar color '${value}'.`);
 }

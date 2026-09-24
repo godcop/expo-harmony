@@ -10,10 +10,7 @@ export type NavigationBarPosition = 'relative' | 'absolute';
 
 export type NavigationBarVisibilityEvent = {
   visibility: NavigationBarVisibility;
-  /**
-   * Android emits the native system UI bitmask. Harmony emits a compatibility projection in
-   * which bit 2 represents a hidden navigation bar and 0 represents a visible navigation bar.
-   */
+  /** Harmony uses 2 for hidden and 0 for visible, not Android's full system UI bitmask. */
   rawVisibility: number;
 };
 
