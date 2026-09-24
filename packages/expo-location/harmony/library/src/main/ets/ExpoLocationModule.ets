@@ -184,6 +184,7 @@ export class ExpoLocationModule extends ExpoModule {
     this.ensureActive();
 
     const permission = request ? await this.permissions.requestForeground() : await this.permissions.getForeground();
+
     this.ensureActive();
     this.availabilityChanged();
 
@@ -231,6 +232,7 @@ export class ExpoLocationModule extends ExpoModule {
 
     try {
       const location = await geoLocationManager.getCurrentLocation(request);
+
       this.ensureActive();
       this.permissions.ensureForeground();
 
@@ -246,6 +248,7 @@ export class ExpoLocationModule extends ExpoModule {
 
     try {
       const location = geoLocationManager.getLastLocation();
+
       const record = new LocationRecord(location);
 
       if (options.maxAge !== undefined && Date.now() - record.timestamp > options.maxAge) return null;
@@ -333,6 +336,7 @@ export class ExpoLocationModule extends ExpoModule {
 
     this.headings.delete(id);
     if (this.headings.size === 0) this.cleanup((): void => this.stopHeading());
+
     this.cleanup((): void => this.stopErrorObserverIfIdle());
     this.cleanup((): void => this.stopAvailabilityObserversIfIdle());
   }
@@ -349,6 +353,7 @@ export class ExpoLocationModule extends ExpoModule {
     } catch (error) {
       this.headings.delete(id);
       if (this.headings.size === 0) this.cleanup((): void => this.stopHeading());
+
       this.cleanup((): void => this.stopErrorObserverIfIdle());
       this.cleanup((): void => this.stopAvailabilityObserversIfIdle());
 
@@ -375,9 +380,10 @@ export class ExpoLocationModule extends ExpoModule {
 
       try {
         this.permissions.ensureForeground();
+
         const magnetic = normalizeHeading(response.alpha);
-        const trueHeading = this.declination !== undefined && this.permissions.hasForeground() ? normalizeHeading(magnetic + this.declination) : -1;
-        const heading = new HeadingRecord(magnetic, trueHeading, headingAccuracy(response.accuracy));
+        const north = this.declination !== undefined && this.permissions.hasForeground() ? normalizeHeading(magnetic + this.declination) : -1;
+        const heading = new HeadingRecord(magnetic, north, headingAccuracy(response.accuracy));
 
         this.headings.forEach((id: number): void => this.sendEvent(HEADING_EVENT, new HeadingEvent(id, heading)));
       } catch (error) {
@@ -396,6 +402,7 @@ export class ExpoLocationModule extends ExpoModule {
       if (this.locationActive || !this.permissions.hasForeground() || !this.servicesEnabled()) return;
 
       if (this.locationCallback !== undefined) this.stopHeadingLocation();
+
       const callback = (location: geoLocationManager.Location): void => {
         if (this.destroyed || !this.foreground || !this.locationActive || this.locationCallback !== callback) return;
         this.updateDeclination(location, callback);
@@ -405,6 +412,7 @@ export class ExpoLocationModule extends ExpoModule {
       this.locationCallback = callback;
       const options = new LocationOptions();
       options.distanceInterval = 0;
+
       geoLocationManager.on('locationChange', locationRequest(options), callback);
       this.locationActive = true;
 
@@ -417,8 +425,12 @@ export class ExpoLocationModule extends ExpoModule {
       }
     } catch (error) {
       this.warn(`Unable to obtain true north: ${message(error)}`);
+
       this.cleanup((): void => this.stopHeadingLocation());
       this.cleanup((): void => this.stopErrorObserverIfIdle());
+
+      this.failed = true;
+      this.scheduleRetry();
     }
   }
 
@@ -432,9 +444,11 @@ export class ExpoLocationModule extends ExpoModule {
       const info = await sensor.getGeomagneticInfo(coordinate, Date.now());
 
       if (this.destroyed || !this.foreground || !this.locationActive || this.locationCallback !== callback || generation !== this.generation) return;
+
       this.declination = finiteOrNull(info.deflectionAngle) ?? undefined;
     } catch (error) {
       if (generation !== this.generation) return;
+
       this.declination = undefined;
       if (!this.destroyed) this.warn(`Unable to calculate true north: ${message(error)}`);
     }
@@ -473,6 +487,7 @@ export class ExpoLocationModule extends ExpoModule {
 
       try {
         const reason = locationErrorReason(error);
+
         this.watches.forEach((watch: LocationWatch): void => {
           if (!watch.removed && watch.active) this.emitError(watch.id, reason);
         });
@@ -482,6 +497,7 @@ export class ExpoLocationModule extends ExpoModule {
       } finally {
         this.declination = undefined;
         this.generation += 1;
+
         if (
           error === geoLocationManager.LocationError.LOCATING_FAILED_LOCATION_PERMISSION_DENIED ||
           error === geoLocationManager.LocationError.LOCATING_FAILED_LOCATION_SWITCH_OFF
@@ -497,6 +513,7 @@ export class ExpoLocationModule extends ExpoModule {
       this.errorActive = true;
     } catch (error) {
       this.cleanup((): void => this.stopErrorObserver());
+
       throw new ExpoLocationError(error);
     }
   }
@@ -543,6 +560,7 @@ export class ExpoLocationModule extends ExpoModule {
       this.ensureGeocoder();
 
       const results = await geoLocationManager.getAddressesFromLocationName({ description: address, maxItems: 1 });
+
       this.ensureActive();
 
       return (results ?? []).map((result: geoLocationManager.GeoAddress): Coordinate => {
@@ -566,6 +584,7 @@ export class ExpoLocationModule extends ExpoModule {
         longitude: coordinate.longitude,
         maxItems: 1,
       });
+
       this.ensureActive();
 
       return (results ?? []).map((result: geoLocationManager.GeoAddress): GeocodedAddress => new GeocodedAddress(result));
@@ -581,13 +600,13 @@ export class ExpoLocationModule extends ExpoModule {
   private startAvailabilityObservers(): void {
     if (this.destroyed || !this.hasSubscriptions()) return;
 
-    // Keep these observers while requests are suspended, so a service/permission
-    // recovery can restart them without polling or requiring a new JS subscription.
+    // Suspended subscriptions still need observers to detect permission/service recovery.
     try {
       if (this.enabledCallback === undefined && canIUse('SystemCapability.Location.Location.Core')) {
         const callback = (_enabled: boolean): void => {
           if (this.enabledCallback === callback) this.availabilityChanged();
         };
+
         geoLocationManager.on('locationEnabledChange', callback);
         this.enabledCallback = callback;
       }
@@ -638,6 +657,7 @@ export class ExpoLocationModule extends ExpoModule {
       this.cleanup((): void => this.stopWatch(watch));
       if (active && !watch.removed && reason !== undefined) this.emitError(watch.id, reason);
     });
+
     const active = this.headingActive;
     this.cleanup((): void => this.stopHeading());
     if (active && reason !== undefined) this.headings.forEach((id: number): void => this.emitError(id, reason));
@@ -676,8 +696,10 @@ export class ExpoLocationModule extends ExpoModule {
       this.cleanup((): void => this.stopHeading());
       this.cleanup((): void => this.stopErrorObserver());
     }
+
     this.cleanup((): void => this.stopErrorObserverIfIdle());
     this.cleanup((): void => this.stopAvailabilityObserversIfIdle());
+
     if (!this.failed && this.timer < 0) this.attempts = 0;
   }
 
@@ -721,10 +743,15 @@ export class ExpoLocationModule extends ExpoModule {
           if (this.foreground && !this.destroyed) this.startHeading();
         });
       } else if (!this.locationActive) {
-        this.cleanup((): void => this.stopHeadingLocation());
+        this.cleanup((): void => {
+          this.stopHeadingLocation();
+          this.startHeadingLocation();
+        });
       }
+
       this.cleanup((): void => this.stopErrorObserverIfIdle());
       this.cleanup((): void => this.stopAvailabilityObserversIfIdle());
+
       if (this.foreground) this.startAvailabilityObservers();
 
       if (!this.failed) this.attempts = 0;

@@ -7,8 +7,10 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-location expo-location@55.1.10
+npm install @expo-harmony/expo-location expo-location@55.1.14
 ```
+
+本包适配 Expo SDK 55 的 `expo-location`，业务代码继续从官方包导入。原生模块由 Expo Harmony 自动链接，前台定位所需的模糊与精确定位权限已在模块内声明。最低支持 HarmonyOS 5.0.1（API 13），宿主应用的 `compatibleSdkVersion` 不能低于这个版本。后台定位与地理围栏未支持，详细行为见下方 API 对照表。
 
 ## API 对照表
 
@@ -73,6 +75,8 @@ API 18 及以上会监听本应用的前台定位权限变化，权限恢复后�
 返回 `Promise<LocationSubscription>`，订阅方向变化，约每 200 毫秒回调一次。`accuracy` 取 0–3，对应系统传感器的无、低、中、高准确度。
 
 订阅需要前台定位权限和已开启的位置服务。`magHeading` 为磁北角度，范围 [0, 360)；`trueHeading` 依赖可用位置计算，尚无位置或磁偏角时返回 `-1`。权限被收回或位置开关关闭时会通知 `errorHandler` 并暂停位置与方向更新，恢复后继续订阅。
+
+为计算真北启动的定位订阅失败时，磁北更新不受影响，模块会自动重试，期间 `trueHeading` 保持 `-1`。
 
 #### `Location.geocodeAsync(address)`
 

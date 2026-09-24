@@ -97,6 +97,7 @@ export const LOCATION_OPTIONS = new ExpoValueType<LocationOptions>(
   'location options',
   (value: ESObject): LocationOptions => {
     const input = objectArgument(value, 'options');
+
     const result = new LocationOptions();
 
     if (input.accuracy !== undefined && input.accuracy !== null) {
@@ -104,15 +105,18 @@ export const LOCATION_OPTIONS = new ExpoValueType<LocationOptions>(
       if (typeof accuracy !== 'number' || !Number.isInteger(accuracy) || accuracy < Accuracy.Lowest || accuracy > Accuracy.BestForNavigation) {
         throw new ExpoModuleError('ERR_LOCATION_INVALID_ARGUMENT', 'accuracy must be a Location.Accuracy value (1–6).');
       }
+
       result.accuracy = accuracy as Accuracy;
     }
 
     result.timeInterval = nonnegative(input.timeInterval, 'timeInterval');
     result.distanceInterval = nonnegative(input.distanceInterval, 'distanceInterval');
+
     if (input.mayShowUserSettingsDialog !== undefined && input.mayShowUserSettingsDialog !== null) {
       if (typeof input.mayShowUserSettingsDialog !== 'boolean') {
         throw new ExpoModuleError('ERR_LOCATION_INVALID_ARGUMENT', 'mayShowUserSettingsDialog must be a boolean.');
       }
+
       result.mayShowUserSettingsDialog = input.mayShowUserSettingsDialog as boolean;
     }
 
@@ -199,8 +203,8 @@ export class LocationEvent {
   watchId: number;
   location: LocationRecord;
 
-  constructor(watchId: number, location: LocationRecord) {
-    this.watchId = watchId;
+  constructor(id: number, location: LocationRecord) {
+    this.watchId = id;
     this.location = location;
   }
 }
@@ -210,9 +214,9 @@ export class HeadingRecord {
   trueHeading: number;
   accuracy: number;
 
-  constructor(magHeading: number, trueHeading: number, accuracy: number) {
-    this.magHeading = magHeading;
-    this.trueHeading = trueHeading;
+  constructor(magnetic: number, north: number, accuracy: number) {
+    this.magHeading = magnetic;
+    this.trueHeading = north;
     this.accuracy = accuracy;
   }
 }
@@ -221,8 +225,8 @@ export class HeadingEvent {
   watchId: number;
   heading: HeadingRecord;
 
-  constructor(watchId: number, heading: HeadingRecord) {
-    this.watchId = watchId;
+  constructor(id: number, heading: HeadingRecord) {
+    this.watchId = id;
     this.heading = heading;
   }
 }
@@ -231,19 +235,18 @@ export class LocationErrorEvent {
   watchId: number;
   reason: string;
 
-  constructor(watchId: number, reason: string) {
-    this.watchId = watchId;
+  constructor(id: number, reason: string) {
+    this.watchId = id;
     this.reason = reason;
   }
 }
 
 export class ProviderStatus {
-  // This port does not register background location task consumers.
   backgroundModeEnabled: boolean = false;
   locationServicesEnabled: boolean;
 
-  constructor(locationServicesEnabled: boolean) {
-    this.locationServicesEnabled = locationServicesEnabled;
+  constructor(enabled: boolean) {
+    this.locationServicesEnabled = enabled;
   }
 }
 
@@ -277,7 +280,6 @@ export class GeocodedAddress {
 }
 
 export function locationRequest(options: LocationOptions): geoLocationManager.LocationRequest {
-  // Defaults match Android LocationHelpers.buildLocationParamsForAccuracy in Expo 55.1.10.
   let distance: number = 100;
   let priority = geoLocationManager.LocationRequestPriority.ACCURACY;
 
