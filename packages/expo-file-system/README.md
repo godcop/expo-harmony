@@ -7,10 +7,10 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-file-system expo-file-system@55.0.24
+npm install @expo-harmony/expo-file-system expo-file-system@55.0.26
 ```
 
-本包已声明 `ohos.permission.INTERNET`。读写应用沙箱内的文件，以及通过系统选择器临时访问文件或目录，无需额外配置权限。
+本包已声明 `ohos.permission.INTERNET`。应用沙箱内的文件，以及通过系统选择器临时访问的文件或目录，都可以直接读写。最低支持 HarmonyOS 6.0.1（API 21），宿主应用的 `compatibleSdkVersion` 不能低于这个版本。
 
 如果需要在应用重启后继续访问所选文件或目录，需配置 `ohos.permission.FILE_ACCESS_PERSIST`。本包默认不声明该权限，可在 `app.json` 的 `expo.harmony.permissions` 数组中添加以下声明：
 
@@ -24,7 +24,7 @@ npm install @expo-harmony/expo-file-system expo-file-system@55.0.24
 
 持久授权成功后，应用会在下次启动时恢复访问。未配置该权限或未能取得持久授权时，本次选择仍可使用，应用重启后可能需要重新选择。
 
-文件操作限定在应用沙箱内：文档目录、缓存目录，以及通过系统选择器授权的路径。路径中出现符号链接时拒绝。
+本地路径操作限定在应用沙箱内：文档目录、缓存目录，以及通过系统选择器授权的路径。路径中出现符号链接时拒绝。Legacy `copyAsync` 还支持读取系统已授权的文件 URI，目标仍需在应用沙箱或已授权路径内。
 
 ## API 对照表
 
@@ -418,7 +418,9 @@ npm install @expo-harmony/expo-file-system expo-file-system@55.0.24
 
 #### `copyAsync({ from, to })`
 
-复制文件或目录，目标已存在时覆盖。源是打包资源时从应用资源复制。
+复制文件或目录，目标已存在时覆盖。源是打包资源时从应用资源复制。源也可以是系统已授权的文件 URI（例如图库的 `file://media/...`、文档选择器的 `file://docs/...`），此时按只读文件复制，不支持复制系统 URI 指向的目录。目标必须是本地沙箱或已授权路径。
+
+应传入系统返回的完整 URI，授权撤销、文件不可读或复制失败时拒绝。复制的内容由系统文件提供方决定，仅存在于云端的文件能否复制还取决于网络和授权。覆盖已有目标失败时会保留原文件。`ph://`、`assets-library://` 和 Android 的 `content://` 不是 HarmonyOS 的 URI，仍不支持。这一能力只在 Legacy `copyAsync` 中提供，需要用现代 `File` API 操作系统 URI 指向的文件时，可以先复制到沙箱再构造 `File`。
 
 #### `makeDirectoryAsync(fileUri, options?)`
 

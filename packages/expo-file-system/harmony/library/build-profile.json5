@@ -1,6 +1,11 @@
 {
   "apiType": "stageMode",
   "buildOption": {
+    "arkOptions": {
+      "types": [
+        "./src/main/ets/AtomicFileOperations"
+      ]
+    },
     "externalNativeOptions": {
       "path": "./src/main/cpp/CMakeLists.txt"
     }

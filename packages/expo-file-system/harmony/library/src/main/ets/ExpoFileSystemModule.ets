@@ -857,8 +857,6 @@ function networkConfiguration(events: rcp.HttpEventsHandler, autoRedirect: boole
   return {
     transfer: {
       autoRedirect,
-      // Request no whole-transfer deadline; validate the platform's zero-timeout behavior
-      // with the long-transfer device scenario. Keep connection/inactivity limits separate.
       timeout: { connectMs: NETWORK_IDLE_TIMEOUT_MS, transferMs: 0, inactivityMs: NETWORK_IDLE_TIMEOUT_MS },
     },
     tracing: { httpEventsHandler: events },
@@ -1105,6 +1103,34 @@ class FileSystemState {
     }
 
     return path;
+  }
+
+  async copyProviderFile(uri: string, target: string): Promise<void> {
+    const file = await fs.open(uri, fs.OpenMode.READ_ONLY);
+
+    try {
+      // Provider File.path can be a logical URI path; copy from the original fd.
+      const path = file.path;
+      if (!path.startsWith('/') || path.includes('\0')) {
+        throw new ExpoFileSystemError('ERR_FILE_SYSTEM_INVALID_URI', 'The file provider did not return an absolute path');
+      }
+
+      // Own-bundle URIs must not bypass the file:/// sandbox.
+      if (new url.URL(uri).hostname.toLowerCase() === this.context.uiAbilityContext.abilityInfo.bundleName.toLowerCase()) {
+        this.resolve(toFileUri(path));
+      } else {
+        this.context.assertFileAccess(path, 'read');
+      }
+
+      if (!(await fs.stat(file.fd)).isFile()) {
+        throw new ExpoFileSystemError('ERR_FILE_SYSTEM_INVALID_FILE_TYPE', 'The selected URI is not a file');
+      }
+      assertSeparatePaths(path, target);
+
+      await copyPathOverwriteAsync(file.fd, target);
+    } finally {
+      await fs.close(file);
+    }
   }
 
   probe(uri: string): string | null {
@@ -1856,13 +1882,21 @@ export class ExponentFileSystemModule extends ExpoModule {
         ExpoFunction.typed1(RECORD_TYPE, async (options: FileSystemRecord): Promise<void> => {
           const state = this.fileState();
           await state.ready();
-          const sourceUri = requiredRecordString(options, 'from');
+
+          const source = requiredRecordString(options, 'from');
           const target = state.resolve(requiredRecordString(options, 'to'), false, 'write');
-          if (isPackagedResource(sourceUri)) {
-            await this.service.download({ url: sourceUri, destination: target, idempotent: true });
+
+          if (isPackagedResource(source)) {
+            await this.service.download({ url: source, destination: target, idempotent: true });
             return;
           }
-          await copyPathOverwriteAsync(state.resolve(sourceUri, true), target);
+
+          if (isProviderFileUri(source)) {
+            await state.copyProviderFile(source, target);
+            return;
+          }
+
+          await copyPathOverwriteAsync(state.resolve(source, true), target);
         }),
       )
       .asyncFunction(
@@ -2019,20 +2053,34 @@ export class ExponentFileSystemModule extends ExpoModule {
   }
 }
 
+function isProviderFileUri(uri: string): boolean {
+  if (!uri.startsWith('file://')) return false;
+
+  try {
+    const authority = new url.URL(uri).hostname;
+    return authority.length > 0 && authority !== 'localhost';
+  } catch (error) {
+    throw new ExpoFileSystemError('ERR_FILE_SYSTEM_INVALID_URI', 'The file URI is malformed', error as Object);
+  }
+}
+
 function decodeFileUri(uri: string): string {
   if (!uri.startsWith('file:')) {
     throw new ExpoFileSystemError('ERR_FILE_SYSTEM_UNSUPPORTED_SCHEME', `Unsupported URI '${uri}'`);
   }
+
   let encoded = uri.slice(5);
   if (encoded.startsWith('//')) {
     encoded = encoded.slice(2);
-    if (encoded.startsWith('localhost/')) encoded = encoded.slice('localhost'.length);
+    if (/^localhost\//i.test(encoded)) encoded = encoded.slice('localhost'.length);
     else if (!encoded.startsWith('/')) {
       throw new ExpoFileSystemError('ERR_FILE_SYSTEM_INVALID_URI', 'Only an empty or localhost file authority is allowed');
     }
   }
+
   const suffix = encoded.search(/[?#]/);
   if (suffix >= 0) encoded = encoded.slice(0, suffix);
+
   let decoded: string;
   try {
     decoded = decodeURIComponent(encoded);
@@ -2042,6 +2090,7 @@ function decodeFileUri(uri: string): string {
   if (decoded.includes('\0') || !decoded.startsWith('/')) {
     throw new ExpoFileSystemError('ERR_FILE_SYSTEM_INVALID_URI', 'The file URI must contain an absolute path');
   }
+
   return normalizeAbsolutePath(decoded);
 }
 
@@ -2862,31 +2911,38 @@ async function copyPathAsync(source: string, target: string): Promise<void> {
   for (const name of await fs.listFile(source)) await copyPathAsync(joinPath(source, name), joinPath(target, name));
 }
 
-async function copyPathOverwriteAsync(source: string, target: string): Promise<void> {
-  assertSeparatePaths(source, target);
+async function copyPathOverwriteAsync(source: string | number, target: string): Promise<void> {
+  if (typeof source === 'string') assertSeparatePaths(source, target);
+
   const staging = await fs.mkdtemp(joinPath(parentPath(target), '.expo-copy-XXXXXX'));
   const replacement = joinPath(staging, 'replacement');
   const previous = joinPath(staging, 'previous');
-  let preservePrevious = false;
+  let preserve = false;
+
   try {
-    await copyPathAsync(source, replacement);
-    const hadTarget = await fs.access(target);
-    if (hadTarget) await fs.rename(target, previous);
+    if (typeof source === 'number') await fs.copyFile(source, replacement);
+    else await copyPathAsync(source, replacement);
+
+    const exists = await fs.access(target);
+    if (exists) await fs.rename(target, previous);
+
     try {
       await fs.rename(replacement, target);
     } catch (error) {
-      if (hadTarget) {
+      if (exists) {
         try {
           await fs.rename(previous, target);
-        } catch (restoreError) {
-          preservePrevious = true;
+        } catch (cause) {
+          preserve = true;
+
           throw new ExpoFileSystemError(
             'ERR_FILE_SYSTEM_COPY_ROLLBACK_FAILED',
-            `The previous destination is retained at '${previous}': ${cleanErrorMessage(restoreError as Object)}`,
-            restoreError as Object,
+            `The previous destination is retained at '${previous}': ${cleanErrorMessage(cause as Object)}`,
+            cause as Object,
           );
         }
       }
+
       throw new ExpoFileSystemError(
         error instanceof ExpoModuleError ? error.code : String(Reflect.get(error as Object, 'code') ?? 'ERR_FILE_SYSTEM'),
         error instanceof Error ? error.message : String(error),
@@ -2895,7 +2951,7 @@ async function copyPathOverwriteAsync(source: string, target: string): Promise<v
       );
     }
   } finally {
-    if (!preservePrevious) await removePathAsync(staging);
+    if (!preserve) await removePathAsync(staging);
   }
 }
 
