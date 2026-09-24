@@ -7,8 +7,10 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-asset expo-asset@55.0.18
+npm install @expo-harmony/expo-asset expo-asset@55.0.20
 ```
+
+本包适配 Expo SDK 55 的 `expo-asset`，原生模块通过 Expo Harmony 自动链接。HAR 已声明 `ohos.permission.INTERNET` 普通权限。最低支持 HarmonyOS 5.0.1（API 13），宿主应用的 `compatibleSdkVersion` 也要满足这一要求。
 
 ## API 对照表
 
@@ -76,9 +78,9 @@ npm install @expo-harmony/expo-asset expo-asset@55.0.18
 
 返回 `Promise<Asset>`。把资源数据下载到应用缓存目录，文件名形如 `ExponentAsset-{cacheFileId}.{extension}`。
 
-缓存里已有同名文件时，资源带 `hash` 会校验内容，不匹配则重新下载；没有 `hash` 时直接复用。缓存目录由系统管理，应用会话之间不保证保留。
+缓存里已有同名文件时，资源带 `hash` 会校验内容，不匹配则重新下载；没有 `hash` 时直接复用。相同缓存路径的并发请求共用一次下载。缓存目录由系统管理，应用会话之间不保证保留。
 
-支持 `http`、`https`、`asset://`、`rawfile://` 和本地 `file://` 地址；不带协议的地址按打包资源处理。`file://` 直接返回，`asset://` 和 `rawfile://` 从应用内打包资源复制，其他协议报错。下载允许使用计费网络和漫游。
+支持 `http`、`https`、`asset://`、`rawfile://` 和本地 `file://` 地址；不带协议的地址按打包资源处理。`file://` 直接返回，`asset://` 和 `rawfile://` 从应用内打包资源复制，`data:` 和 Android 的 `content:` 等来源不支持，其他协议报错。`asset://` 对应应用包内的 `resources/rawfile/assets/` 目录，`rawfile://` 和不带协议的地址对应 `resources/rawfile/`；`asset://` 和不带协议的路径按字面文件名解释，`#`、`?`、`%` 保留原样，`rawfile://` 按 URL 百分号编码解释，文件名里的 `#` 要写成 `%23`，路径中不允许出现 `..`。下载允许使用计费网络和漫游。
 
 #### `Asset.fromMetadata(meta)`
 

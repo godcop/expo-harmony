@@ -61,6 +61,7 @@ export class ExpoAssetModule extends ExpoModule {
   private async prepareForReload(): Promise<void> {
     const pending = Array.from(this.inflight.values());
     this.beginShutdown();
+
     await Promise.all(
       pending.map(async (task: Promise<string>): Promise<void> => {
         try {
@@ -74,6 +75,7 @@ export class ExpoAssetModule extends ExpoModule {
     if (this.destroyed) return;
 
     this.destroyed = true;
+
     const error = new ExpoAssetError('ERR_ASSET_RUNTIME_DESTROYED', 'The Expo asset service was destroyed while a request was in progress.');
     this.requests.forEach((cancel: CancelRequest): void => cancel(error));
   }
@@ -93,9 +95,9 @@ export class ExpoAssetModule extends ExpoModule {
 
     const ext = safeAssetType(type);
     const key = md5 === null ? md5String(uri) : safeMd5(md5);
-    const suffix = ext.length === 0 ? '' : `.${ext}`;
-    const cachePath = new fileUri.FileUri(this.context.cacheDirectory).path.replace(/\/$/, '');
-    const file = `${cachePath}/ExponentAsset-${key}${suffix}`;
+
+    const cache = new fileUri.FileUri(this.context.cacheDirectory).path.replace(/\/$/, '');
+    const file = `${cache}/ExponentAsset-${key}.${ext}`;
 
     const pending = this.inflight.get(file);
     if (pending !== undefined) return await pending;
@@ -136,7 +138,10 @@ export class ExpoAssetModule extends ExpoModule {
         await fs.unlink(temp);
       } catch (_) {}
 
-      if (error instanceof ExpoAssetError) throw error;
+      if (error instanceof ExpoAssetError) {
+        throw new ExpoAssetError(error.code, error.message);
+      }
+
       throw new ExpoAssetError('ERR_ASSET_DOWNLOAD_FAILED', cleanErrorMessage(error as Object));
     }
   }
@@ -167,6 +172,7 @@ export class ExpoAssetModule extends ExpoModule {
 
         const buffer = new ArrayBuffer(64 * 1024);
         let written = 0;
+
         while (written < desc.length) {
           const size = Math.min(buffer.byteLength, desc.length - written);
           const count = await fs.read(desc.fd, buffer, { length: size });
@@ -186,7 +192,10 @@ export class ExpoAssetModule extends ExpoModule {
         await fs.close(output.fd);
       }
     } catch (error) {
-      if (error instanceof ExpoAssetError) throw error;
+      if (error instanceof ExpoAssetError) {
+        throw new ExpoAssetError(error.code, error.message);
+      }
+
       throw new ExpoAssetError('ERR_ASSET_RESOURCE_UNAVAILABLE', `Cannot read packaged asset '${name}': ${cleanErrorMessage(error as Object)}`);
     } finally {
       if (opened) {
@@ -223,13 +232,13 @@ export class ExpoAssetModule extends ExpoModule {
       );
     }
 
-    // Register the task even if shutdown happened during creation so it can be cancelled.
     await this.waitForDownload(task, uri);
   }
 
   private async waitForDownload(task: request.DownloadTask, uri: string): Promise<void> {
     await new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
       let settled = false;
+
       const cleanup = (): void => {
         this.requests.delete(task);
         try {
@@ -237,26 +246,48 @@ export class ExpoAssetModule extends ExpoModule {
           task.off('fail', fail);
         } catch (_) {}
       };
+
       const settle = (error?: ExpoAssetError): void => {
         if (settled) return;
+
         settled = true;
         cleanup();
+
         if (error === undefined) resolve();
         else reject(error as Error);
       };
+
       const complete = (): void => settle();
       const fail = (reason: number): void =>
         settle(new ExpoAssetError('ERR_ASSET_DOWNLOAD_FAILED', `Unable to download asset from '${sanitizedUri(uri)}' (Harmony reason ${reason}).`));
+
       const cancel = (error: ExpoAssetError): void => {
+        if (settled) return;
+
         settle(error);
         task.delete().catch((_: Object): void => {});
       };
 
       this.requests.set(task, cancel);
-      task.on('complete', complete);
-      task.on('fail', fail);
-      if (this.destroyed)
-        cancel(new ExpoAssetError('ERR_ASSET_RUNTIME_DESTROYED', 'The Expo asset service was destroyed while a request was in progress.'));
+      try {
+        task.on('complete', complete);
+        task.on('fail', fail);
+
+        if (this.destroyed) {
+          cancel(new ExpoAssetError('ERR_ASSET_RUNTIME_DESTROYED', 'The Expo asset service was destroyed while a request was in progress.'));
+          return;
+        }
+
+        // The download may finish before its listeners are registered.
+        task.getTaskInfo().then((info: request.DownloadInfo): void => {
+          if (info.status === request.SESSION_SUCCESSFUL) complete();
+          else if (info.status === request.SESSION_FAILED) fail(info.failedReason);
+        }).catch((error: Object): void => {
+          cancel(new ExpoAssetError('ERR_ASSET_DOWNLOAD_FAILED', cleanErrorMessage(error)));
+        });
+      } catch (error) {
+        cancel(new ExpoAssetError('ERR_ASSET_DOWNLOAD_FAILED', cleanErrorMessage(error as Object)));
+      }
     });
   }
 }
@@ -269,21 +300,25 @@ function isRawResource(uri: string): boolean {
 function rawResourceName(uri: string): string {
   const scheme = uriScheme(uri);
   const rnoh = scheme === 'asset';
-  let encoded = scheme === undefined ? uri : uri.slice(uri.indexOf(':') + 1).replace(/^\/{2}/, '');
-  encoded = encoded.replace(/^\/+/, '').split(/[?#]/, 1)[0];
-  if (/%(?:00|2f|5c)/i.test(encoded) || encoded.includes('\\')) {
-    throw new ExpoAssetError('ERR_ASSET_INVALID_RESOURCE', sanitizedUri(uri));
+  let path = scheme === undefined ? uri : uri.slice(uri.indexOf(':') + 1).replace(/^\/{2}/, '');
+  path = path.replace(/^\/+/, '');
+
+  // RNOH asset:// paths are literal; only rawfile:// uses URL encoding.
+  if (scheme === 'rawfile') {
+    const encoded = path.split(/[?#]/, 1)[0];
+    if (/%(?:00|2f|5c)/i.test(encoded)) {
+      throw new ExpoAssetError('ERR_ASSET_INVALID_RESOURCE', sanitizedUri(uri));
+    }
+
+    try {
+      path = decodeURIComponent(encoded);
+    } catch (_) {
+      throw new ExpoAssetError('ERR_ASSET_INVALID_RESOURCE', sanitizedUri(uri));
+    }
   }
 
-  let path: string;
-  try {
-    path = decodeURIComponent(encoded);
-  } catch (_) {
-    throw new ExpoAssetError('ERR_ASSET_INVALID_RESOURCE', sanitizedUri(uri));
-  }
   const parts = path.split('/');
-
-  if (parts.length === 0 || parts.some((part: string): boolean => part.length === 0 || part === '.' || part === '..' || part.includes('\0'))) {
+  if (path.includes('\\') || parts.some((part: string): boolean => part.length === 0 || part === '.' || part === '..' || part.includes('\0'))) {
     throw new ExpoAssetError('ERR_ASSET_INVALID_RESOURCE', sanitizedUri(uri));
   }
 
@@ -293,6 +328,7 @@ function rawResourceName(uri: string): string {
 
 async function writeAllAsync(fd: number, data: ArrayBuffer): Promise<number> {
   let written = 0;
+
   while (written < data.byteLength) {
     const end = Math.min(written + 64 * 1024, data.byteLength);
     const count = await fs.write(fd, data.slice(written, end), { length: end - written });
@@ -328,16 +364,17 @@ function uriScheme(value: string): string | undefined {
 }
 
 function sanitizedUri(value: string): string {
-  const withoutQuery = value.split(/[?#]/, 1)[0];
-  const authority = withoutQuery.indexOf('://');
-  if (authority < 0) return withoutQuery;
+  const uri = value.split(/[?#]/, 1)[0];
+  const scheme = uri.indexOf('://');
+  if (scheme < 0) return uri;
 
-  const start = authority + 3;
-  const end = withoutQuery.indexOf('/', start);
-  const hostEnd = end < 0 ? withoutQuery.length : end;
-  const host = withoutQuery.slice(start, hostEnd);
-  const userInfo = host.lastIndexOf('@');
-  return `${withoutQuery.slice(0, start)}${userInfo < 0 ? host : host.slice(userInfo + 1)}${withoutQuery.slice(hostEnd)}`;
+  const start = scheme + 3;
+  const slash = uri.indexOf('/', start);
+  const end = slash < 0 ? uri.length : slash;
+  const host = uri.slice(start, end);
+  const at = host.lastIndexOf('@');
+
+  return `${uri.slice(0, start)}${at < 0 ? host : host.slice(at + 1)}${uri.slice(end)}`;
 }
 
 function cleanErrorMessage(error: Object): string {
@@ -347,9 +384,11 @@ function cleanErrorMessage(error: Object): string {
 
 function md5String(text: string): string {
   const digest = cryptoFramework.createMd('MD5');
-  digest.updateSync({ data: new util.TextEncoder('utf-8').encode(text) });
-  const bytes = digest.digestSync().data;
+  if (text.length > 0) {
+    digest.updateSync({ data: new util.TextEncoder('utf-8').encodeInto(text) });
+  }
 
+  const bytes = digest.digestSync().data;
   let result = '';
   for (let i = 0; i < bytes.length; i += 1) {
     result += bytes[i].toString(16).padStart(2, '0');
