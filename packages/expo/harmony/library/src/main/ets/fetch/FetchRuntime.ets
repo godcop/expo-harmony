@@ -3,7 +3,6 @@ import fs from '@ohos.file.fs';
 import { rcp } from '@kit.RemoteCommunicationKit';
 import util from '@ohos.util';
 import url from '@ohos.url';
-import uniformTypeDescriptor from '@ohos.data.uniformTypeDescriptor';
 import { ExpoFetchError } from './ExpoFetchError';
 import { FetchInit, FetchResult, StreamPacket, EMPTY_BYTES } from './FetchTypes';
 import {
@@ -44,8 +43,8 @@ export class FetchTask {
   localFileSize: number = 0;
   activeAttempt: FetchAttempt | null = null;
 
-  constructor(urlValue: string) {
-    this.url = urlValue;
+  constructor(url: string) {
+    this.url = url;
   }
 }
 
@@ -74,16 +73,16 @@ export class FetchAttempt {
     this.metadataReady.catch((_error: Error): void => {});
   }
 
-  receiveStatus(status: number, reasonPhrase?: string): void {
-    if (reasonPhrase !== undefined) this.statusText = reasonPhrase;
+  receiveStatus(status: number, phrase?: string): void {
+    if (phrase !== undefined) this.statusText = phrase;
     if (this.metadataSettled) return;
 
     this.status = status;
     this.settleMetadata();
   }
 
-  setReasonPhrase(reasonPhrase?: string): void {
-    if (reasonPhrase !== undefined) this.statusText = reasonPhrase;
+  setReasonPhrase(phrase?: string): void {
+    if (phrase !== undefined) this.statusText = phrase;
   }
 
   receiveHeaders(headers: string[][]): void {
@@ -96,6 +95,7 @@ export class FetchAttempt {
 
   private settleMetadata(): void {
     if (!this.headersReceived || this.status === 0) return;
+
     // Informational responses are followed by another status/header pair.
     if (this.status < 200) {
       this.status = 0;
@@ -104,11 +104,13 @@ export class FetchAttempt {
 
       return;
     }
+
     this.metadataSettled = true;
     const headers: Record<string, string> = {};
     this.headers.forEach((pair: string[]): void => {
       headers[pair[0]] = pair[1];
     });
+
     this.inspection?.response(this.status, headers);
     this.resolveMetadata();
   }
@@ -150,21 +152,21 @@ export class ExpoFetchRuntime {
     this.tasks.clear();
   }
 
-  async start(id: string, inputUrl: string, init: FetchInit, requestBody: Uint8Array | null): Promise<FetchResult> {
+  async start(id: string, input: string, init: FetchInit, data: Uint8Array | null): Promise<FetchResult> {
     this.assertActive();
-    if (isFileURL(inputUrl)) {
-      return await this.startLocalFile(id, inputUrl, init, requestBody);
+    if (isFileURL(input)) {
+      return await this.startLocalFile(id, input, init, data);
     }
-    if (!isHttpURL(inputUrl)) {
-      throw new ExpoFetchError('ERR_FETCH_INVALID_URL', `Invalid fetch URL: ${inputUrl}`);
+    if (!isHttpURL(input)) {
+      throw new ExpoFetchError('ERR_FETCH_INVALID_URL', `Invalid fetch URL: ${input}`);
     }
 
-    const task = new FetchTask(inputUrl);
+    const task = new FetchTask(input);
     this.tasks.set(id, task);
 
-    let target = inputUrl;
+    let target = input;
     let method = init.method ?? 'GET';
-    let body: ArrayBuffer | null = requestBody === null ? null : copyBytes(requestBody);
+    let body: ArrayBuffer | null = data === null ? null : copyBytes(data);
     let headers = makeHeaders(init);
     let redirects = 0;
 
@@ -181,12 +183,13 @@ export class ExpoFetchRuntime {
         attempt.inspection = ExpoNetworkInspection.start(target, method, sent as Record<string, string>, body ?? undefined);
         task.activeAttempt = attempt;
         this.startAttempt(task, attempt);
-        // RCP reports the status and headers before the body finishes. Await
-        // only those events here; the fetch promise owns body completion/errors.
+
+        // Waiting for the body here would stall streaming responses.
         await attempt.metadataReady;
         const status = attempt.status;
 
         if (task.error !== null) throw new ExpoFetchError(task.error.code, task.error.message, task.error.cause);
+
         if (init.credentials === 'include') {
           await storeResponseCookies(target, attempt.headers);
         }
@@ -198,12 +201,14 @@ export class ExpoFetchRuntime {
           attempt.discarded = true;
           const error = new ExpoFetchError('ERR_FETCH_REDIRECT', 'Redirect Location must not be empty');
           this.failTask(task, error);
+
           throw new ExpoFetchError(error.code, error.message, error.cause);
         }
         if (redirect && init.redirect === 'error') {
           attempt.discarded = true;
           const error = new ExpoFetchError('ERR_FETCH_REDIRECT', "Redirect is not allowed when redirect mode is 'error'");
           this.failTask(task, error);
+
           throw new ExpoFetchError(error.code, error.message, error.cause);
         }
         if (redirect && init.redirect === 'follow') {
@@ -212,6 +217,7 @@ export class ExpoFetchRuntime {
             attempt.discarded = true;
             const error = new ExpoFetchError('ERR_FETCH_TOO_MANY_REDIRECTS', 'The fetch request exceeded 20 redirects');
             this.failTask(task, error);
+
             throw new ExpoFetchError(error.code, error.message, error.cause);
           }
 
@@ -220,6 +226,7 @@ export class ExpoFetchRuntime {
           attempt.inspection?.finish(false);
           attempt.discarded = true;
           this.destroySession(task);
+
           const next = url.URL.parseURL(location ?? '', target).toString();
           if (!isHttpURL(next)) {
             throw new ExpoFetchError('ERR_FETCH_INVALID_URL', `Invalid redirect URL: ${next}`);
@@ -242,6 +249,7 @@ export class ExpoFetchRuntime {
           }
 
           target = next;
+
           continue;
         }
 
@@ -263,6 +271,7 @@ export class ExpoFetchRuntime {
           error instanceof ExpoFetchError ? error.message : errorMessage(error as Object),
           error instanceof ExpoFetchError ? error.cause : (error as Object),
         );
+
       if (!task.completed) this.failTask(task, failure);
       else this.disposeTask(task);
       this.tasks.delete(id);
@@ -273,6 +282,7 @@ export class ExpoFetchRuntime {
 
   async startStreaming(id: string): Promise<StreamPacket> {
     this.assertActive();
+
     const task = this.requireTask(id);
     task.streaming = true;
 
@@ -298,25 +308,32 @@ export class ExpoFetchRuntime {
       }
     }
 
-    const queued = task.queued.shift() ?? new ArrayBuffer(0);
-    if (task.completed && task.queued.length === 0) {
+    // Do not yield while draining the prefix: incoming chunks must stay behind it.
+    const data = chunksToBuffer(task.queued);
+    task.queued = [];
+
+    if (task.completed) {
       this.tasks.delete(id);
-      return new StreamPacket(new Uint8Array(queued), true, true, task.error);
+
+      return new StreamPacket(new Uint8Array(data), true, true, task.error);
     }
 
-    return new StreamPacket(new Uint8Array(queued), false, false);
+    return new StreamPacket(new Uint8Array(data), false, false);
   }
 
   async readChunk(id: string): Promise<StreamPacket> {
     this.assertActive();
+
     const task = this.requireTask(id);
 
     if (task.localFilePath !== null) {
       if (task.localFileOffset >= task.localFileSize) {
         await this.closeLocalFile(task);
         this.tasks.delete(id);
+
         return new StreamPacket(EMPTY_BYTES, true, false, task.error);
       }
+
       try {
         return new StreamPacket(new Uint8Array(await this.readLocalFileChunk(task)), false, false);
       } catch (error) {
@@ -333,10 +350,12 @@ export class ExpoFetchRuntime {
 
     if (task.queued.length > 0) {
       const data = task.queued.shift() ?? new ArrayBuffer(0);
+
       return new StreamPacket(new Uint8Array(data), false, false);
     }
     if (task.completed) {
       this.tasks.delete(id);
+
       return new StreamPacket(EMPTY_BYTES, true, false, task.error);
     }
 
@@ -347,6 +366,7 @@ export class ExpoFetchRuntime {
 
   async consumeArrayBuffer(id: string): Promise<ArrayBuffer> {
     this.assertActive();
+
     const task = this.requireTask(id);
 
     try {
@@ -365,6 +385,7 @@ export class ExpoFetchRuntime {
           error instanceof ExpoFetchError ? error.cause : (error as Object),
         );
       }
+
       throw new ExpoFetchError(
         error instanceof ExpoFetchError ? error.code : 'ERR_FETCH_UNKNOWN',
         error instanceof ExpoFetchError ? error.message : errorMessage(error as Object),
@@ -378,6 +399,7 @@ export class ExpoFetchRuntime {
 
   async consumeText(id: string): Promise<string> {
     this.assertActive();
+
     const task = this.requireTask(id);
 
     try {
@@ -391,7 +413,6 @@ export class ExpoFetchRuntime {
           : await readFileBuffer(this.context.filePathForRead(task.localFilePath), task.localFileSize);
 
       // Harmony's legacy decoder can return undefined for an empty buffer.
-      // Fetch text() must resolve to the empty string, including after a 303.
       return buffer.byteLength === 0 ? '' : new util.TextDecoder('utf-8').decode(new Uint8Array(buffer));
     } catch (error) {
       if (task.localFilePath !== null) {
@@ -401,6 +422,7 @@ export class ExpoFetchRuntime {
           error instanceof ExpoFetchError ? error.cause : (error as Object),
         );
       }
+
       throw new ExpoFetchError(
         error instanceof ExpoFetchError ? error.code : 'ERR_FETCH_UNKNOWN',
         error instanceof ExpoFetchError ? error.message : errorMessage(error as Object),
@@ -444,17 +466,18 @@ export class ExpoFetchRuntime {
     this.tasks.delete(id);
   }
 
-  private async startLocalFile(id: string, inputUrl: string, init: FetchInit, requestBody: Uint8Array | null): Promise<FetchResult> {
-    const path = filePathFromUrl(inputUrl);
+  private async startLocalFile(id: string, input: string, init: FetchInit, data: Uint8Array | null): Promise<FetchResult> {
+    const path = filePathFromUrl(input);
     this.context.assertFileAccess(path);
 
-    const task = new FetchTask(inputUrl);
+    const task = new FetchTask(input);
     task.headers = [['content-type', mimeType(path)]];
+
     const method = init.method.toUpperCase();
     if (method !== 'GET' && method !== 'HEAD') {
       throw new ExpoFetchError('ERR_FETCH_METHOD', `The ${method} method is not supported for file URLs`);
     }
-    if (requestBody !== null) {
+    if (data !== null) {
       throw new ExpoFetchError('ERR_FETCH_BODY', 'A file URL request cannot have a body');
     }
 
@@ -469,7 +492,7 @@ export class ExpoFetchRuntime {
         task.completed = true;
         this.tasks.set(id, task);
 
-        return new FetchResult(404, inputUrl, false, task.headers, 'File not found');
+        return new FetchResult(404, input, false, task.headers, 'File not found');
       }
 
       const stat = await fs.stat(path);
@@ -482,7 +505,7 @@ export class ExpoFetchRuntime {
       task.completed = true;
       this.tasks.set(id, task);
 
-      return new FetchResult(200, inputUrl, false, task.headers);
+      return new FetchResult(200, input, false, task.headers);
     } catch (error) {
       throw new ExpoFetchError(
         error instanceof ExpoFetchError ? error.code : 'ERR_FETCH_FILE_READ',
@@ -495,6 +518,7 @@ export class ExpoFetchRuntime {
   private startAttempt(task: FetchTask, attempt: FetchAttempt): void {
     const session = rcp.createSession();
     task.session = session;
+
     attempt.request.configuration = {
       transfer: {
         autoRedirect: false,
@@ -504,15 +528,18 @@ export class ExpoFetchRuntime {
         httpEventsHandler: {
           onStatusCodeReceive: (status: number): void => {
             if (attempt.discarded || task.completed) return;
+
             attempt.receiveStatus(status);
           },
           onHeaderReceive: (headers: rcp.ResponseHeaders): void => {
             if (attempt.discarded || task.completed) return;
+
             attempt.receiveHeaders(headerPairs(headers));
           },
           // Supplying onDataReceive also disables RCP's whole-body buffering.
           onDataReceive: (chunk: ArrayBuffer): void => {
             if (attempt.discarded || task.completed) return;
+
             attempt.inspection?.data(chunk);
             if (attempt.accepted) this.receiveChunk(task, chunk);
             else attempt.chunks.push(chunk);
@@ -520,6 +547,7 @@ export class ExpoFetchRuntime {
         },
       },
     };
+
     session
       .fetch(attempt.request)
       .then((response: rcp.Response): void => {
@@ -537,6 +565,7 @@ export class ExpoFetchRuntime {
         attempt.inspection?.fail(false);
         // Closing a redirect's session must not fail the next request.
         if (attempt.discarded || task.completed) return;
+
         this.failTask(
           task,
           new ExpoFetchError(
@@ -548,16 +577,20 @@ export class ExpoFetchRuntime {
       });
   }
 
-  private receiveChunk(task: FetchTask, values: ArrayBuffer): void {
+  private receiveChunk(task: FetchTask, data: ArrayBuffer): void {
     if (task.completed) return;
+
+    // NativeResponse emits these reads after the buffered prefix, preserving event order.
     if (task.streaming && task.readers.length > 0) {
       const resolve = task.readers.shift();
       if (resolve !== undefined) {
-        resolve(new StreamPacket(new Uint8Array(values), false, false));
+        resolve(new StreamPacket(new Uint8Array(data), false, false));
+
         return;
       }
     }
-    task.queued.push(values);
+
+    task.queued.push(data);
   }
 
   private assertActive(): void {
@@ -577,11 +610,13 @@ export class ExpoFetchRuntime {
     if (task === undefined) {
       throw new ExpoFetchError('ERR_FETCH_TASK_NOT_FOUND', id);
     }
+
     return task;
   }
 
   private async awaitCompletion(task: FetchTask): Promise<void> {
     if (task.completed) return;
+
     await new Promise<void>((resolve: () => void): void => {
       task.completionWaiters.push(resolve);
     });
@@ -598,6 +633,7 @@ export class ExpoFetchRuntime {
       this.context.assertFileAccess(task.localFilePath);
       task.localFile = await fs.open(task.localFilePath, fs.OpenMode.READ_ONLY);
     }
+
     const count = await fs.read(task.localFile.fd, buffer, { length: buffer.byteLength });
     if (count <= 0) throw new Error(`Unable to read file: ${task.localFilePath}`);
 
@@ -629,6 +665,7 @@ export class ExpoFetchRuntime {
         resolve(new StreamPacket(EMPTY_BYTES, true, false, task.error));
       }
     }
+
     while (task.completionWaiters.length > 0) {
       const resolve = task.completionWaiters.shift();
       if (resolve !== undefined) resolve();
@@ -656,9 +693,11 @@ export class ExpoFetchRuntime {
       attempt.chunks = [];
       attempt.failMetadata(task.error ?? new ExpoFetchError('ERR_FETCH_REQUEST_CANCELED', 'Fetch request has been canceled'));
     }
+
     const session = task.session;
     task.session = null;
     if (session === null) return;
+
     if (attempt !== null && !attempt.ended) {
       try {
         session.cancel(attempt.request);

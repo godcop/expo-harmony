@@ -242,6 +242,10 @@ export class ExpoReactHost {
       core,
       owner: family,
       isHeadless: !ui,
+      getJSBundleProvider: (): JSBundleProvider | undefined => {
+        const runtime = this.owners.get(instance);
+        return !record.destroyed && runtime?.instance === instance ? runtime.sourceBundle : undefined;
+      },
       reload: (reason: string): Promise<void> => {
         if (record.destroyed) throw new ExpoModuleError('ERR_RELOAD_UNAVAILABLE', 'The React instance was destroyed.');
         return ExpoReloadRegistry.require(instance.getId())(reason);

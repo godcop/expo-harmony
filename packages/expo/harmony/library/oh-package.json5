@@ -1,6 +1,6 @@
 {
   "name": "@expo-harmony/expo",
-  "version": "55.0.26-harmony.3",
+  "version": "55.0.31-harmony.0",
   "description": "HarmonyOS port of expo",
   "keywords": [
     "react-native",
@@ -18,7 +18,7 @@
   "main": "Index.ets",
   "license": "MIT",
   "dependencies": {
-    "@expo-harmony/expo-modules-core": "55.0.25-harmony.5",
+    "@expo-harmony/expo-modules-core": "55.0.26-harmony.0",
     "@rnoh/react-native-openharmony": "0.84.1"
   }
 }
