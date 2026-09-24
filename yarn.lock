@@ -3035,6 +3035,24 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@expo-harmony/expo-web-browser@workspace:*, @expo-harmony/expo-web-browser@workspace:packages/expo-web-browser":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-web-browser@workspace:packages/expo-web-browser"
+  dependencies:
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    expo: "npm:55.0.31"
+    expo-modules-core: "npm:55.0.26"
+    expo-web-browser: "npm:55.0.20"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    expo-web-browser: 55.0.20
+  languageName: unknown
+  linkType: soft
+
 "@expo-harmony/expo@workspace:*, @expo-harmony/expo@workspace:packages/expo":
   version: 0.0.0-use.local
   resolution: "@expo-harmony/expo@workspace:packages/expo"
@@ -9054,6 +9072,16 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: 10c0/44ff8706f7b007438718dd6f044c335f9e504418d7d67d96d8ff97dd7661967a39900c4d8b18bfbcd1314b98f1ba5f1385575fdb0d64bcf41b0ab870540ed228
+  languageName: node
+  linkType: hard
+
+"expo-web-browser@npm:55.0.20":
+  version: 55.0.20
+  resolution: "expo-web-browser@npm:55.0.20"
+  peerDependencies:
+    expo: "*"
+    react-native: "*"
+  checksum: 10c0/c5d087a5cc5f2ba7a3500744385f28a9902746c2c0a032e13b9c042cf44516847286311dec35a2cc22fb4e3107202dd323f2569c3d907d3cb3ff75c5aad6dd30
   languageName: node
   linkType: hard
 

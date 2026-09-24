@@ -120,6 +120,7 @@
 - [expo-updates-interface](./packages/expo-updates-interface/)：提供 Updates 控制器、开发启动器与状态订阅的接口定义。
 - [expo-video](./packages/expo-video/)：提供在应用中实现视频播放的 API。
 - [expo-video-thumbnails](./packages/expo-video-thumbnails/)：从视频文件生成可用作缩略图的图片。
+- [expo-web-browser](./packages/expo-web-browser/)：提供对系统浏览器的访问，并支持处理重定向。
 
 可以查看 [快速开始](./docs/QuickStart.md) 获得接入教程。
 
