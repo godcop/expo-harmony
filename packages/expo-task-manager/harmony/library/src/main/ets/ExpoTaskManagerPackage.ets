@@ -593,12 +593,6 @@ export class ExpoTaskManagerWorkMetadata {
   }
 }
 
-/**
- * Persistence boundary used by a WorkSchedulerExtensionAbility before an RNOH
- * runtime is necessarily available. A live TaskManager scope consumes the
- * request immediately; otherwise the consumer-provided deadline remains
- * durable until native cleanup succeeds.
- */
 export class ExpoTaskManagerBackgroundQueue {
   static async enqueue(
     context: common.Context,
@@ -772,26 +766,31 @@ class TaskManagerQueueRepository {
 
   static async markExpiring(
     context: common.Context,
-    ownerKey: string,
-    taskType: string,
-    requestId: string,
+    owner: string,
+    type: string,
+    id: string,
   ): Promise<PendingExecutionRequest | undefined> {
     let found: PendingExecutionRequest | undefined;
+
     await TaskManagerStorageLock.serialize(async (): Promise<void> => {
       const store = await preferences.getPreferences(context.getApplicationContext(), { name: PREFERENCES_NAME });
       const requests = await readPendingExecutions(store);
       const request = requests.find((pending: PendingExecutionRequest): boolean => {
-        return pending.id === requestId && pending.taskType === taskType && pending.ownerKey === ownerKey;
+        return pending.id === id && pending.taskType === type && pending.ownerKey === owner;
       });
       if (request === undefined || request.phase === REQUEST_PHASE_FINISHING) return;
+
       request.phase = REQUEST_PHASE_EXPIRING;
       request.results = undefined;
       request.claimToken = undefined;
       request.claimExpiresAt = undefined;
-      request.expiresAt = Math.min(request.expiresAt, Date.now());
+      // The phase marks expiration even if the wall clock moved before enqueue time.
+      request.expiresAt = Math.max(request.createdAt, Math.min(request.expiresAt, Date.now()));
+
       await savePendingExecution(store, request);
       found = request;
     });
+
     return found;
   }
 
@@ -1267,11 +1266,12 @@ class ExpoTaskManagerScope {
     }
   }
 
-  async expireTaskType(taskType: string, requestId?: string): Promise<void> {
+  async expireTaskType(type: string, id?: string, notify: boolean = true): Promise<void> {
     let expired: boolean = false;
+
     for (const execution of this.activeExecutions.values()) {
-      if (execution.taskType !== taskType) continue;
-      if (requestId !== undefined && execution.requestId !== requestId) continue;
+      if (execution.taskType !== type) continue;
+      if (id !== undefined && execution.requestId !== id) continue;
 
       expired = true;
       this.activeExecutions.delete(execution.eventId);
@@ -1279,8 +1279,8 @@ class ExpoTaskManagerScope {
       execution.expire();
     }
 
-    if (expired || requestId !== undefined) {
-      await ExpoTaskManagerRegistry.consumer(taskType)?.onExecutionExpired?.(this.context, requestId);
+    if (notify && (expired || id !== undefined)) {
+      await ExpoTaskManagerRegistry.consumer(type)?.onExecutionExpired?.(this.context, id);
     }
   }
 
@@ -1450,18 +1450,24 @@ class ExpoTaskManagerScope {
     consumer: ExpoTaskConsumer,
     request?: PendingExecutionRequest,
   ): Promise<void> {
-    if (request !== undefined) {
-      await this.expirePendingExecution(request);
-      return;
-    }
+    // Unblock execution even if persisting expiration fails. Otherwise the drain
+    // waits forever for JS and cannot reach its queued cleanup retry.
     let expired = false;
+
     for (const execution of executions) {
       if (this.activeExecutions.get(execution.eventId) !== execution) continue;
+
       this.activeExecutions.delete(execution.eventId);
       this.removeQueuedEvent(execution.eventId);
       execution.expire();
       expired = true;
     }
+
+    if (request !== undefined) {
+      await this.expirePendingExecution(request);
+      return;
+    }
+
     if (expired) await consumer.onExecutionExpired?.(this.context);
   }
 
@@ -1476,7 +1482,12 @@ class ExpoTaskManagerScope {
     const expiration = (async (): Promise<void> => {
       const durable = await TaskManagerQueueRepository.markExpiring(app, request.ownerKey, request.taskType, request.id);
       if (durable === undefined) return;
-      await this.expireTaskType(request.taskType, request.id);
+
+      const consumer = ExpoTaskManagerRegistry.consumer(durable.taskType);
+      const compatible =
+        consumer !== undefined && consumer.consumerId === durable.consumerId && consumer.consumerVersion === durable.consumerVersion;
+
+      await this.expireTaskType(durable.taskType, durable.id, compatible);
       await TaskManagerQueueRepository.acknowledge(app, durable, REQUEST_PHASE_EXPIRING);
     })();
     this.expirations.set(request.id, expiration);
@@ -1489,18 +1500,19 @@ class ExpoTaskManagerScope {
   }
 
   private scheduleDrain(): void {
-    const ownerGeneration = ExpoTaskManagerRegistry.ownerGeneration(this);
-    if (ownerGeneration === undefined) return;
+    const generation = ExpoTaskManagerRegistry.ownerGeneration(this);
+    if (generation === undefined) return;
 
     const next = this.draining
       .catch((): void => {})
       .then(async (): Promise<void> => {
         const app = this.context.uiAbilityContext.getApplicationContext();
         const batch = await TaskManagerQueueRepository.pending(app, this.owner, Date.now());
-        if (!ExpoTaskManagerRegistry.ownsQueue(this, ownerGeneration)) return;
+        if (!ExpoTaskManagerRegistry.ownsQueue(this, generation)) return;
 
         for (const request of batch.expired) {
-          if (!ExpoTaskManagerRegistry.ownsQueue(this, ownerGeneration)) return;
+          if (!ExpoTaskManagerRegistry.ownsQueue(this, generation)) return;
+
           try {
             await this.expirePendingExecution(request);
           } catch (error) {
@@ -1512,7 +1524,7 @@ class ExpoTaskManagerScope {
         if (batch.retryAt !== undefined) this.scheduleRetry(Math.max(0, batch.retryAt - Date.now()));
 
         for (const request of batch.ready) {
-          if (!ExpoTaskManagerRegistry.ownsQueue(this, ownerGeneration)) return;
+          if (!ExpoTaskManagerRegistry.ownsQueue(this, generation)) return;
           if (this.claimedIds.has(request.id)) continue;
 
           const now = Date.now();
@@ -1527,22 +1539,29 @@ class ExpoTaskManagerScope {
           }
 
           this.claimedIds.add(request.id);
-          let claimed: PendingExecutionRequest | undefined;
 
           try {
             const consumer = ExpoTaskManagerRegistry.consumer(request.taskType);
             if (consumer === undefined || consumer.consumerId !== request.consumerId || consumer.consumerVersion !== request.consumerVersion) {
-              await this.expirePendingExecution(request);
+              if (request.phase === REQUEST_PHASE_FINISHING) {
+                await TaskManagerQueueRepository.acknowledge(app, request, REQUEST_PHASE_FINISHING);
+              } else {
+                await this.expirePendingExecution(request);
+              }
               continue;
             }
+
             let results: ExpoTaskExecutionResult[];
+
             if (request.phase === REQUEST_PHASE_FINISHING) {
               results = request.results ?? [];
             } else {
               if (this.foreground && !request.allowForeground) continue;
-              claimed = await TaskManagerQueueRepository.claim(app, request, util.generateRandomUUID(true));
+
+              const claimed = await TaskManagerQueueRepository.claim(app, request, util.generateRandomUUID(true));
               if (claimed === undefined) continue;
-              const executionResults = await this.executeTaskType(
+
+              const completed = await this.executeTaskType(
                 claimed.taskType,
                 claimed.allowForeground,
                 claimed.id,
@@ -1552,17 +1571,21 @@ class ExpoTaskManagerScope {
                 claimed.expiresAt,
                 claimed,
               );
-              if (executionResults === undefined) {
+              if (completed === undefined) {
                 if (Date.now() >= claimed.expiresAt) await this.expirePendingExecution(claimed);
+                else this.scheduleRetry(Math.max(0, claimed.expiresAt - Date.now()));
                 continue;
               }
-              results = executionResults;
+
+              results = completed;
               if (!(await TaskManagerQueueRepository.markFinishing(app, claimed, results))) continue;
+
               app.eventHub.emit(QUEUE_CHANGED_EVENT);
             }
 
             await consumer.onExecutionFinished?.(this.context, results, request.id);
             await TaskManagerQueueRepository.acknowledge(app, request, REQUEST_PHASE_FINISHING);
+
             app.eventHub.emit(QUEUE_CHANGED_EVENT);
             ExpoTaskManagerRegistry.releaseIdleRuntime(app, this.owner);
           } catch (error) {
@@ -1572,6 +1595,7 @@ class ExpoTaskManagerScope {
             this.claimedIds.delete(request.id);
           }
         }
+
         if (this.retryTimer < 0) this.retryAttempt = 0;
         ExpoTaskManagerRegistry.releaseIdleRuntime(app, this.owner);
       });
@@ -2034,7 +2058,6 @@ export class ExpoTaskManagerModule extends ExpoModule {
       .onDestroy((): void => this.destroy());
   }
 
-  /** @internal Used by the background task consumers in this Host/runtime. */
   async scopeForRegistry(): Promise<ExpoTaskManagerScope> {
     return await this.initialize();
   }
@@ -2088,10 +2111,13 @@ export class ExpoTaskManagerModule extends ExpoModule {
 
   private setObserving(observing: boolean): void {
     if (this.destroyed) return;
+
     this.observing = observing;
     if (observing) {
       this.initialize()
-        .then((scope: ExpoTaskManagerScope): void => scope.startObserving())
+        .then((scope: ExpoTaskManagerScope): void => {
+          if (this.observing && !this.destroyed) scope.startObserving();
+        })
         .catch((error: Object): void => {
           this.context.logger.error(`Unable to start observing Expo TaskManager: ${String(error)}`);
         });

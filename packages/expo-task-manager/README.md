@@ -7,10 +7,10 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-task-manager expo-task-manager@~55.0.16
+npm install @expo-harmony/expo-task-manager expo-task-manager@~55.0.20
 ```
 
-本包适配 Expo SDK 55 的 `expo-task-manager`，原生模块通过 Expo Harmony 自动链接，不需要配置插件，也不需要申请权限。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。
+本包适配 Expo SDK 55 的 `expo-task-manager`，原生模块通过 Expo Harmony 自动链接。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。
 
 业务代码从官方包导入：
 
@@ -97,7 +97,7 @@ import * as TaskManager from 'expo-task-manager';
 
 #### `TaskManagerTaskExecutor`
 
-任务函数的类型：`(body: TaskManagerTaskBody<T>) => Promise<any>`，作为 `defineTask` 的第二个参数传入。
+任务函数的类型：`(body: TaskManagerTaskBody<T>) => Promise<any>`，作为 `defineTask` 的第二个参数传入。单次执行最长两分钟，超时后本次执行结束，任务函数之后 resolve 的结果会被丢弃。系统可能在任务完成前终止应用进程，HarmonyOS 不保证任务恰好执行一次，任务函数中的副作用需要业务代码容忍重复或丢失。
 
 ## Author
 
