@@ -63,6 +63,7 @@ import { SMSDemo } from './modules/sms';
 import { SpeechDemo } from './modules/speech';
 import { SplashScreenDemo } from './modules/splash-screen';
 import { SQLiteDemo } from './modules/sqlite';
+import { StoreReviewDemo } from './modules/store-review';
 import { SystemUIDemo } from './modules/system-ui';
 import { SymbolsDemo } from './modules/symbols';
 import { TemplateDemo } from './modules/template';
@@ -151,6 +152,7 @@ const MODULE_DEMOS = {
   'speech': SpeechDemo,
   'splash-screen': SplashScreenDemo,
   'sqlite': SQLiteDemo,
+  'store-review': StoreReviewDemo,
   'system-ui': SystemUIDemo,
   'symbols': SymbolsDemo,
   'template': TemplateDemo,
