@@ -10,7 +10,7 @@
 npm install @expo-harmony/expo-eas-client expo-eas-client@55.0.5
 ```
 
-本包适配 Expo SDK 55 的 `expo-eas-client`，原生模块通过 Expo Harmony 自动链接，不需要配置插件，也不需要申请权限。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。
+本包适配 Expo SDK 55 的 `expo-eas-client`，原生模块通过 Expo Harmony 自动链接。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。
 
 业务代码从官方包导入：
 
@@ -36,7 +36,7 @@ EAS 服务的客户端 ID。首次访问时生成，保存在应用沙箱的一�
 
 类型：`number`
 
-由 `clientID` 派生的确定性数值，官方标注范围为 [0, 1]。同一次安装内取值不变，每次安装各不相同，可用于固定比例的采样和分流。对随机生成的 UUID，实际取值集中在 [0.5, 0.75)，与官方各平台一致。
+由 `clientID` 派生的确定性数值，官方标注范围为 [0, 1]。同一次安装内取值不变，每次安装各不相同，可用于固定比例的采样和分流。对随机生成的 UUID，实际取值集中在 0.5 到 0.75 之间，浮点舍入可能达到 0.75，与官方各平台一致。
 
 ## Author
 
