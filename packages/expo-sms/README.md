@@ -7,10 +7,10 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-sms expo-sms
+npm install @expo-harmony/expo-sms expo-sms@55.0.18
 ```
 
-本包适配 Expo SDK 55 的 `expo-sms`，与官方包配合使用。原生模块通过 Expo Harmony 自动链接，业务代码继续从 `expo-sms` 导入，不需要 Config Plugin，也不需要申请权限。最低支持 HarmonyOS 5.0.1（API 13），宿主应用的 `compatibleSdkVersion` 也要满足这一要求。
+本包适配 Expo SDK 55 的 `expo-sms`，业务代码继续从官方包导入。原生模块由 Expo Harmony 自动链接。最低支持 HarmonyOS 5.0.1（API 13），宿主应用的 `compatibleSdkVersion` 不能低于这个版本。
 
 ## API 对照表
 
@@ -18,13 +18,13 @@ npm install @expo-harmony/expo-sms expo-sms
 
 #### `SMS.isAvailableAsync()`
 
-返回 `Promise<boolean>`，设备是否具备短信能力。只反映设备能力，不检查 SIM 卡是否插入，也不检查运营商网络，返回 `true` 不代表短信一定能发出。
+返回 `Promise<boolean>`，设备是否具备短信收发能力。没有蜂窝通信硬件的设备返回 `false`。只反映设备能力，不检查 SIM 卡是否插入，也不检查运营商网络，返回 `true` 不代表短信一定能发出。
 
 #### `SMS.sendSMSAsync(addresses, message, options?)`
 
 返回 `Promise<SMSResponse>`，打开系统信息应用的短信编辑页，预填收件人和正文，由用户决定是否发送。`addresses` 接受单个号码字符串或字符串数组，空数组表示不预填收件人，号码里的前导零和国际区号不受影响。
 
-调用时应用必须处于前台，否则以 `ERR_SMS_BACKGROUND` 拒绝。设备不具备短信能力时以 `ERR_SMS_UNAVAILABLE` 拒绝，打开编辑页失败时以 `ERR_SMS_SENDING` 拒绝，例如设备上没有信息应用。同一时间只允许一个未完成的请求，前一个 Promise 结束前再次调用会以 `ERR_SMS_PENDING` 拒绝。
+设备不具备短信能力时以 `ERR_SMS_UNAVAILABLE` 拒绝。调用时应用必须处于前台，否则以 `ERR_SMS_BACKGROUND` 拒绝。同一时间只允许一个未完成的请求，前一个 Promise 结束前再次调用会以 `ERR_SMS_PENDING` 拒绝。打开编辑页失败时以 `ERR_SMS_SENDING` 拒绝，例如设备上没有系统信息应用。应用重载或销毁时，未完成的请求以 `ERR_SMS_DESTROYED` 拒绝。
 
 编辑页打开后应用退到后台，用户处理完回到前台时，Promise 以 `{ result: 'unknown' }` 结束，与 Android 一致，应用无法区分用户是发送还是取消。多窗口等应用没有经历后台和前台切换的场景下，请求会一直等待。
 
@@ -44,7 +44,7 @@ npm install @expo-harmony/expo-sms expo-sms
 
 > **未实现的内容**
 >
-> - `SMSAttachment`：系统信息应用的编辑页没有附件入口，无法把文件带入预填短信。
+> - `SMSAttachment`：系统不支持预填附件，用户仍可在短信编辑页内自行添加。
 
 ## Author
 

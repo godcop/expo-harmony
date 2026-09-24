@@ -67,8 +67,7 @@ export class ExpoSMSModule extends ExpoModule {
   }
 
   private isAvailable(): boolean {
-    if (canIUse(CAPABILITY)) return sms.hasSmsCapability();
-    return false;
+    return canIUse(CAPABILITY) && sms.hasSmsCapability();
   }
 
   private async sendSMS(addresses: string[], message: string, options: Record<string, ESObject>): Promise<SMSResponse> {
@@ -129,8 +128,9 @@ export class ExpoSMSModule extends ExpoModule {
   }
 
   private destroy(): void {
-    this.destroyed = true;
     const request = this.pending;
+
+    this.destroyed = true;
     this.pending = undefined;
 
     request?.reject(new ExpoModuleError('ERR_SMS_DESTROYED', 'The SMS module host was destroyed while the composer was open.'));
