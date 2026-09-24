@@ -1,6 +1,6 @@
 {
   "name": "@expo-harmony/expo__json-file",
-  "version": "10.0.15-harmony.1",
+  "version": "10.0.16-harmony.0",
   "description": "HarmonyOS port of @expo/json-file",
   "keywords": [
     "react-native",
@@ -21,7 +21,7 @@
   "react-native": "src/index.ts",
   "types": "index.d.ts",
   "peerDependencies": {
-    "@expo/json-file": "10.0.15"
+    "@expo/json-file": "10.0.16"
   },
   "engines": {
     "node": ">=20"

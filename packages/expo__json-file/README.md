@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo__json-file @expo/json-file@10.0.15
+npm install @expo-harmony/expo__json-file @expo/json-file@10.0.16
 ```
 
 ## Author
