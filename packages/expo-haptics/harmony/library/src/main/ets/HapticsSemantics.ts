@@ -24,8 +24,15 @@ export const PRESET_HARD: HapticPresetName = 'hard';
 export const PRESET_SHARP: HapticPresetName = 'sharp';
 
 const COMMON_PRESET_API: number = 12;
-const NOTICE_PRESET_API: number = 18;
+export const NOTICE_PRESET_API: number = 18;
 export const PATTERN_API: number = 18;
+
+const ANDROID_MAX_AMPLITUDE: number = 255;
+const HARMONY_MAX_INTENSITY: number = 100;
+
+function notificationIntensity(amplitude: number): number {
+  return Math.round(amplitude * HARMONY_MAX_INTENSITY / ANDROID_MAX_AMPLITUDE);
+}
 
 export type HapticUsage = 'notification' | 'physicalFeedback' | 'touch';
 
@@ -55,8 +62,8 @@ export function notificationRecipe(type: string): HapticRecipe | undefined {
       return {
         fallbackMs: 80,
         pattern: [
-          { durationMs: 40, intensity: 50, startMs: 0 },
-          { durationMs: 40, intensity: 60, startMs: 140 },
+          { durationMs: 40, intensity: notificationIntensity(50), startMs: 0 },
+          { durationMs: 40, intensity: notificationIntensity(60), startMs: 140 },
         ],
         presets: [
           { count: 1, intensity: 50, minApi: NOTICE_PRESET_API, name: PRESET_NOTICE_SUCCESS },
@@ -68,8 +75,8 @@ export function notificationRecipe(type: string): HapticRecipe | undefined {
       return {
         fallbackMs: 100,
         pattern: [
-          { durationMs: 40, intensity: 40, startMs: 0 },
-          { durationMs: 60, intensity: 60, startMs: 160 },
+          { durationMs: 40, intensity: notificationIntensity(40), startMs: 0 },
+          { durationMs: 60, intensity: notificationIntensity(60), startMs: 160 },
         ],
         presets: [
           { count: 1, intensity: 60, minApi: NOTICE_PRESET_API, name: PRESET_NOTICE_WARNING },
@@ -81,9 +88,9 @@ export function notificationRecipe(type: string): HapticRecipe | undefined {
       return {
         fallbackMs: 150,
         pattern: [
-          { durationMs: 60, intensity: 50, startMs: 0 },
-          { durationMs: 40, intensity: 40, startMs: 160 },
-          { durationMs: 50, intensity: 50, startMs: 280 },
+          { durationMs: 60, intensity: notificationIntensity(50), startMs: 0 },
+          { durationMs: 40, intensity: notificationIntensity(40), startMs: 160 },
+          { durationMs: 50, intensity: notificationIntensity(50), startMs: 280 },
         ],
         presets: [
           { count: 1, intensity: 70, minApi: NOTICE_PRESET_API, name: PRESET_NOTICE_FAILURE },
@@ -101,7 +108,6 @@ export function impactRecipe(style: string): HapticRecipe | undefined {
     case IMPACT_LIGHT:
       return {
         fallbackMs: 20,
-        pattern: [{ durationMs: 20, intensity: 20, startMs: 0 }],
         presets: [{ count: 1, intensity: 25, minApi: COMMON_PRESET_API, name: PRESET_SOFT }],
         usage: 'physicalFeedback',
       };

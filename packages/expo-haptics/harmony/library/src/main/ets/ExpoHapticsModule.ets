@@ -2,6 +2,7 @@ import { ExpoFunction, ExpoModule, ExpoModuleContext, ExpoModuleDefinition, Expo
 import { deviceInfo } from '@kit.BasicServicesKit';
 import { vibrator } from '@kit.SensorServiceKit';
 import {
+  NOTICE_PRESET_API,
   PATTERN_API,
   PRESET_HARD,
   PRESET_NOTICE_FAILURE,
@@ -13,7 +14,7 @@ import {
   notificationRecipe,
   selectionRecipe,
 } from './HapticsSemantics';
-import type { HapticPreset, HapticPresetName, HapticPulse, HapticRecipe, HapticUsage } from './HapticsSemantics';
+import type { HapticPreset, HapticPresetName, HapticRecipe, HapticUsage } from './HapticsSemantics';
 
 const UNSUPPORTED_CODE: number = 801;
 const ERROR_DESTROYED: string = 'ERR_HAPTICS_DESTROYED';
@@ -55,6 +56,7 @@ export class ExpoHapticsModule extends ExpoModule {
           this.assertActive();
 
           const recipe = notificationRecipe(type);
+
           if (recipe === undefined) {
             throw new ExpoHapticsError(ERROR_INVALID_ARGUMENT, `'type' must be one of ['success', 'warning', 'error']. Obtained '${type}'.`);
           }
@@ -68,6 +70,7 @@ export class ExpoHapticsModule extends ExpoModule {
           this.assertActive();
 
           const recipe = impactRecipe(style);
+
           if (recipe === undefined) {
             throw new ExpoHapticsError(
               ERROR_INVALID_ARGUMENT,
@@ -98,19 +101,25 @@ export class ExpoHapticsModule extends ExpoModule {
 
     const first: HapticPreset | undefined = recipe.presets[0];
     const notice: boolean = first !== undefined && isNoticePreset(first.name);
-    if (notice && (await this.tryPreset(first))) return;
+
+    if (notice && (await this.tryPreset(first, recipe.usage))) return;
+
+    if (this.destroyed) return;
 
     if (recipe.pattern !== undefined && deviceInfo.sdkApiVersion >= PATTERN_API) {
       try {
         const builder = new vibrator.VibratorPatternBuilder();
+
         for (const pulse of recipe.pattern) {
           builder.addContinuousEvent(pulse.startMs, pulse.durationMs, { intensity: pulse.intensity });
         }
+
         const pattern = builder.build();
 
         if (this.destroyed) return;
 
         await vibrator.startVibration({ type: 'pattern', pattern }, { usage: recipe.usage });
+
         return;
       } catch (error) {
         if (!isUnavailable(error)) this.warnFallback('pattern', error);
@@ -121,19 +130,11 @@ export class ExpoHapticsModule extends ExpoModule {
       if (this.destroyed) return;
 
       const preset: HapticPreset = recipe.presets[index];
+
       if (await this.tryPreset(preset, recipe.usage)) return;
     }
 
     if (this.destroyed) return;
-
-    if (recipe.pattern !== undefined && recipe.pattern.length > 1) {
-      try {
-        await this.playPulses(recipe.pattern, recipe.usage);
-        return;
-      } catch (error) {
-        if (!isUnavailable(error)) this.warnFallback('pulse timeline', error);
-      }
-    }
 
     try {
       await vibrator.startVibration({ type: 'time', duration: recipe.fallbackMs }, { usage: recipe.usage });
@@ -144,11 +145,12 @@ export class ExpoHapticsModule extends ExpoModule {
     }
   }
 
-  private async tryPreset(preset: HapticPreset, usage: HapticUsage = 'notification'): Promise<boolean> {
+  private async tryPreset(preset: HapticPreset, usage: HapticUsage): Promise<boolean> {
     if (deviceInfo.sdkApiVersion < preset.minApi) return false;
 
-    const id: string = presetId(preset.name);
-    if (!supports(id) || this.destroyed) return false;
+    const id: string | undefined = presetId(preset.name);
+
+    if (id === undefined || !supports(id) || this.destroyed) return false;
 
     try {
       if (isNoticePreset(preset.name)) {
@@ -162,20 +164,6 @@ export class ExpoHapticsModule extends ExpoModule {
       if (!isUnavailable(error)) this.warnFallback(`preset '${id}'`, error);
 
       return false;
-    }
-  }
-
-  private async playPulses(pulses: readonly HapticPulse[], usage: HapticUsage): Promise<void> {
-    let elapsed: number = 0;
-    for (const pulse of pulses) {
-      this.assertActive();
-
-      const wait: number = Math.max(0, pulse.startMs - elapsed);
-      if (wait > 0) await delay(wait);
-
-      this.assertActive();
-      await vibrator.startVibration({ type: 'time', duration: pulse.durationMs }, { usage });
-      elapsed = pulse.startMs;
     }
   }
 
@@ -224,13 +212,14 @@ function errorMessage(error: Object): string {
     if (typeof message === 'string' && message.length > 0) return message;
 
     const text = String(error);
+
     return text.length > 0 ? text : UNKNOWN_VIBRATOR_ERROR;
   } catch (_) {
     return UNKNOWN_VIBRATOR_ERROR;
   }
 }
 
-function presetId(name: HapticPresetName): string {
+function presetId(name: HapticPresetName): string | undefined {
   switch (name) {
     case PRESET_SOFT:
       return vibrator.HapticFeedback.EFFECT_SOFT;
@@ -238,23 +227,22 @@ function presetId(name: HapticPresetName): string {
       return vibrator.HapticFeedback.EFFECT_HARD;
     case PRESET_SHARP:
       return vibrator.HapticFeedback.EFFECT_SHARP;
-    case PRESET_NOTICE_SUCCESS:
-      return vibrator.HapticFeedback.EFFECT_NOTICE_SUCCESS;
-    case PRESET_NOTICE_WARNING:
-      return vibrator.HapticFeedback.EFFECT_NOTICE_WARNING;
-    case PRESET_NOTICE_FAILURE:
-      return vibrator.HapticFeedback.EFFECT_NOTICE_FAILURE;
-    default:
-      throw new ExpoHapticsError(ERROR_VIBRATION, `Unknown HarmonyOS haptic preset '${name}'.`);
   }
+
+  if (deviceInfo.sdkApiVersion >= NOTICE_PRESET_API) {
+    switch (name) {
+      case PRESET_NOTICE_SUCCESS:
+        return vibrator.HapticFeedback.EFFECT_NOTICE_SUCCESS;
+      case PRESET_NOTICE_WARNING:
+        return vibrator.HapticFeedback.EFFECT_NOTICE_WARNING;
+      case PRESET_NOTICE_FAILURE:
+        return vibrator.HapticFeedback.EFFECT_NOTICE_FAILURE;
+    }
+  }
+
+  return undefined;
 }
 
 function isNoticePreset(name: HapticPresetName): boolean {
   return name === PRESET_NOTICE_SUCCESS || name === PRESET_NOTICE_WARNING || name === PRESET_NOTICE_FAILURE;
-}
-
-function delay(duration: number): Promise<void> {
-  return new Promise((resolve: () => void): void => {
-    setTimeout(resolve, duration);
-  });
 }
