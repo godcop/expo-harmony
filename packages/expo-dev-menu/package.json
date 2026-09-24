@@ -1,6 +1,6 @@
 {
   "name": "@expo-harmony/expo-dev-menu",
-  "version": "55.0.30-harmony.2",
+  "version": "55.0.35-harmony.0",
   "description": "HarmonyOS port of expo-dev-menu",
   "keywords": [
     "react-native",
@@ -30,14 +30,14 @@
   },
   "peerDependencies": {
     "@expo-harmony/expo-modules-core": "workspace:*",
-    "expo-dev-menu": "55.0.30"
+    "expo-dev-menu": "55.0.35"
   },
   "devDependencies": {
     "@expo-harmony/expo-module-scripts": "workspace:*",
     "@expo-harmony/expo-modules-core": "workspace:*",
     "@react-native-oh/react-native-harmony": "0.84.1",
     "expo": "55.0.26",
-    "expo-dev-menu": "55.0.30",
+    "expo-dev-menu": "55.0.35",
     "expo-modules-core": "55.0.25",
     "react": "19.2.3",
     "react-native": "0.84.1"

@@ -19,13 +19,15 @@ export class DevMenuDialogItem {
   readonly shouldCollapse: boolean;
   readonly action: DevMenuAction;
   readonly enabled: boolean;
+  readonly checked?: boolean;
 
-  constructor(id: string, title: string, detail: string, shouldCollapse: boolean, action: DevMenuAction, enabled: boolean = true) {
+  constructor(id: string, title: string, detail: string, shouldCollapse: boolean, action: DevMenuAction, enabled: boolean = true, checked?: boolean) {
     this.id = id;
     this.title = title;
     this.detail = detail;
     this.shouldCollapse = shouldCollapse;
     this.action = action;
     this.enabled = enabled;
+    this.checked = checked;
   }
 }

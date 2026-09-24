@@ -5,6 +5,7 @@ import { FabPoint } from './DevMenuFabGeometry';
 
 const STORE_NAME: string = 'expo.modules.devmenu.preferences';
 const FAB_METADATA: string = 'EXDevMenuShowFloatingActionButton';
+const FAST_REFRESH: string = 'hotLoadingEnabled';
 const PREFERENCES_TYPE = ExpoValueTypes.custom<Record<string, ESObject>>(
   'DevMenuPreferences',
   (value: ESObject): Record<string, ESObject> => {
@@ -55,19 +56,34 @@ export class DevMenuPreferences {
   }
 
   async set(key: DevMenuPreference, value: boolean): Promise<void> {
+    await this.setBoolean(key, value);
+  }
+
+  getFastRefreshEnabled(): boolean {
+    const value = this.store?.getSync(FAST_REFRESH, true) ?? this.values.get(FAST_REFRESH) ?? true;
+    return typeof value === 'boolean' ? value : true;
+  }
+
+  async setFastRefreshEnabled(value: boolean): Promise<void> {
+    await this.setBoolean(FAST_REFRESH, value);
+  }
+
+  private async setBoolean(key: string, value: boolean): Promise<void> {
     const store = this.store;
     if (store === undefined) {
       this.values.set(key, value);
       this.onChange();
+
       throw new Error('Preferences storage is unavailable. This change applies only to the current session.');
     }
-    if (this.get(key) === value) {
+
+    if (store.getSync(key, !value) === value) {
       await store.flush();
       return;
     }
 
     store.putSync(key, value);
-    // Notify this instance immediately; the store's event also updates other runtimes.
+    // Notify locally before flush; storage events synchronize other runtimes.
     this.onChange();
     await store.flush();
   }

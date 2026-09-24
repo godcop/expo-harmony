@@ -7,7 +7,7 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-dev-menu expo-dev-menu@55.0.30
+npm install @expo-harmony/expo-dev-menu expo-dev-menu@55.0.35
 ```
 
 本包适配 Expo SDK 55 的 `expo-dev-menu`，提供鸿蒙端的原生菜单，API 从官方包导入。原生模块通过 Expo Harmony 自动链接，本包没有单独的配置插件。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。菜单只在开发构建中出现，生产构建不会包含开发菜单。
@@ -20,14 +20,17 @@ npm install @expo-harmony/expo-dev-menu expo-dev-menu@55.0.30
 
 #### `openMenu()`
 
-打开开发菜单。菜单是底部弹层，包含 Reload、元素检查器、React Native DevTools、性能监视器、React Native 菜单、Home（启动器提供时）、自定义项目以及设置和源码浏览入口。bundle 还在执行时 Reload 不可用。React Native DevTools 只对来自 Metro 的网络 bundle 开放，元素检查器和性能监视器的菜单项不带选中状态。
+打开开发菜单。菜单是底部弹层，包含 Reload、元素检查器、React Native DevTools、性能监视器、React Native 菜单、Fast Refresh 开关、Home（启动器提供时）、自定义项目以及设置和源码浏览入口。bundle 还在执行时 Reload 不可用。React Native DevTools 只对来自 Metro 的网络 bundle 开放，元素检查器和性能监视器的菜单项不带选中状态。
 
 除调用该方法外，还可以点 FAB、三指长按或 Ctrl/Command + D 打开菜单。Ctrl/Command + R、I、P 分别触发重载、元素检查器和性能监视器。快捷键要求 Ctrl 或 Command 修饰键，按住 Alt 或 Shift 时不响应，软键盘弹出时暂停。三指长按和快捷键分别受 `touchGestureEnabled` 和 `keyCommandsEnabled` 偏好控制。
 
 > **未实现的内容**
 >
 > - 摇动设备打开菜单、Metro 的 `devMenu` 命令直达菜单。RNOH 0.84.1 没有公开的拦截接口，这两条路径先打开 RNOH 菜单，再选择 “Open Expo development menu” 进入本菜单，设置中的摇动开关因此不可用。
-> - Fast Refresh 开关，由 RNOH 菜单的 Settings 提供。
+
+Fast Refresh 开关切换后菜单保持打开，选择会持久化保存，新的 Metro bundle 执行完成后重新应用。开关只对已执行完成的 HTTP(S) 开发 bundle 开放，本地、缓存 bundle、URL 标记 `dev=false` 的 bundle，以及未配置 HMR 的自定义网络 bundle 下禁用。
+
+切换不能把生产 bundle 转成开发 bundle，也不会自动恢复断开的 Metro 连接。开关反映的是保存的设置，不代表 Metro 当前在线。
 
 #### `closeMenu()` / `hideMenu()`
 

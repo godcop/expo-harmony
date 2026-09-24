@@ -1,6 +1,7 @@
 import { UIContext, window } from '@kit.ArkUI';
 import type { common } from '@kit.AbilityKit';
 import { KeyCode } from '@kit.InputKit';
+import { url } from '@kit.ArkTS';
 import type { DevMenuHostDelegate, DevMenuManagerProtocol, DevMenuUIResponderExtensionProtocol } from '@expo-harmony/expo-dev-menu-interface';
 import { ExpoModuleError, ReactRuntimeBinding, ReactRuntimeContext } from '@expo-harmony/expo-modules-core';
 import type { RNOHCoreContext } from '@rnoh/react-native-openharmony';
@@ -13,6 +14,7 @@ import { DevMenuAppInfo, DevMenuAppInfoProvider, readDevMenuAppInfo } from './De
 const RNOH_MENU_ITEM_EVENT: 'DID_PRESS_MENU_ITEM' = 'DID_PRESS_MENU_ITEM';
 const OPEN_EXPO_MENU_ITEM: string = 'Open Expo development menu';
 const RELOAD_REASON: string = 'Reload from Expo Dev Menu';
+const HMR_CLIENT: string = 'HMRClient';
 
 class RnohMenuItemEvent {
   readonly title: string;
@@ -43,6 +45,8 @@ export class ExpoDevMenuRuntime implements DevMenuManagerProtocol, DevMenuUIResp
   private windowActive: boolean = false;
   private foreground: boolean = true;
   private bundleReady: boolean = false;
+  // RNOH initializes each Metro HMR client with isEnabled=true.
+  private fastRefreshEnabled: boolean = true;
   private launchPending: boolean = true;
   private keyboardVisible: boolean = false;
   private callbacks: DevMenuCallback[] = [];
@@ -82,10 +86,13 @@ export class ExpoDevMenuRuntime implements DevMenuManagerProtocol, DevMenuUIResp
 
   private start(): void {
     this.foreground = this.runtime.core.getUIAbilityState() === 'FOREGROUND';
+
     this.cleanup.push(
       this.preferences.subscribe((): void => {
         if (!this.active) return;
+
         try {
+          this.syncFastRefresh();
           this.presenter.update(this.menuItems());
           this.refreshFab();
         } catch (error) {
@@ -96,8 +103,15 @@ export class ExpoDevMenuRuntime implements DevMenuManagerProtocol, DevMenuUIResp
     this.cleanup.push(
       this.runtime.instance.subscribeToLifecycleEvents('JS_BUNDLE_EXECUTION_FINISH', (): void => {
         this.bundleReady = true;
-        this.maybeShowAtLaunch();
-        this.refreshFab();
+
+        try {
+          this.syncFastRefresh();
+          this.presenter.update(this.menuItems());
+          this.maybeShowAtLaunch();
+          this.refreshFab();
+        } catch (error) {
+          this.reportActionError(error instanceof Error ? error : new Error(String(error)));
+        }
       }),
     );
     this.cleanup.push(
@@ -125,8 +139,10 @@ export class ExpoDevMenuRuntime implements DevMenuManagerProtocol, DevMenuUIResp
       }),
     );
 
-    const initialUrl = this.runtime.instance.getInitialBundleUrl();
-    this.bundleReady = initialUrl !== undefined && this.runtime.instance.getBundleExecutionStatus(initialUrl) === 'DONE';
+    const source = this.runtime.instance.getInitialBundleUrl();
+    this.bundleReady = source !== undefined && this.runtime.instance.getBundleExecutionStatus(source) === 'DONE';
+
+    this.restoreFastRefresh();
   }
 
   mountRoot(owner: Object, ui: UIContext): void {
@@ -379,6 +395,43 @@ export class ExpoDevMenuRuntime implements DevMenuManagerProtocol, DevMenuUIResp
     }
   }
 
+  private get canToggleFastRefresh(): boolean {
+    if (!this.active || !this.bundleReady) return false;
+
+    const source = this.runtime.instance.getInitialBundleUrl();
+    if (source === undefined) return false;
+
+    try {
+      const provider = this.runtime.getJSBundleProvider?.();
+      if (provider?.getHotReloadConfig() == null) return false;
+
+      const bundle = new url.URL(source);
+
+      return (bundle.protocol === 'http:' || bundle.protocol === 'https:') && bundle.params.get('dev') !== 'false';
+    } catch (_error) {
+      return false;
+    }
+  }
+
+  private syncFastRefresh(): void {
+    if (!this.canToggleFastRefresh) return;
+
+    const enabled = this.preferences.getFastRefreshEnabled();
+    if (enabled === this.fastRefreshEnabled) return;
+
+    // RNOH's DevSettings setter is a no-op; use RN's HMR client.
+    this.runtime.instance.callRNFunction(HMR_CLIENT, enabled ? 'enable' : 'disable', []);
+    this.fastRefreshEnabled = enabled;
+  }
+
+  private restoreFastRefresh(): void {
+    try {
+      this.syncFastRefresh();
+    } catch (error) {
+      this.reportActionError(error instanceof Error ? error : new Error(String(error)));
+    }
+  }
+
   reportActionError(error: Error): void {
     this.runtime.core.logger.warn(`Expo Dev Menu action failed: ${error.message}`);
   }
@@ -563,12 +616,34 @@ export class ExpoDevMenuRuntime implements DevMenuManagerProtocol, DevMenuUIResp
 
     if (this.shouldShowReactNativeDevMenu) {
       items.push(
-        new DevMenuDialogItem('rnoh-menu', 'Open React Native menu', 'Includes RNOH Settings and Fast Refresh', false, async (): Promise<void> => {
+        new DevMenuDialogItem('rnoh-menu', 'Open React Native dev menu', 'Open the RNOH developer menu', false, async (): Promise<void> => {
           await this.close();
+
           if (this.active) this.runtime.core.devMenu.show();
         }),
       );
     }
+
+    items.push(
+      new DevMenuDialogItem(
+        'fast-refresh',
+        'Fast Refresh',
+        'Requires a loaded development bundle from Metro',
+        false,
+        async (): Promise<void> => {
+          if (!this.canToggleFastRefresh) return;
+
+          await this.preferences.setFastRefreshEnabled(!this.fastRefreshEnabled);
+
+          // Retry a failed RN call even when the saved preference is unchanged.
+          this.syncFastRefresh();
+          this.presenter.update(this.menuItems());
+        },
+        this.canToggleFastRefresh,
+        this.fastRefreshEnabled,
+      ),
+    );
+
     if (this.canNavigateHome) {
       items.push(
         new DevMenuDialogItem('home', 'Go home', 'Return to the development launcher', false, async (): Promise<void> => {

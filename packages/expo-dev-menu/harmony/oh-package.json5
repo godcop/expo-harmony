@@ -1,7 +1,7 @@
 {
   "modelVersion": "5.0.0",
   "name": "@expo-harmony-internal/expo-dev-menu",
-  "version": "55.0.30-harmony.2",
+  "version": "55.0.35-harmony.0",
   "description": "HarmonyOS port of expo-dev-menu",
   "keywords": [
     "react-native",
@@ -22,8 +22,8 @@
     "@expo-harmony/expo-dev-menu": "./library"
   },
   "overrides": {
-    "@expo-harmony/expo-dev-menu-interface": "55.0.2-harmony.1",
-    "@expo-harmony/expo-modules-core": "55.0.25-harmony.5",
+    "@expo-harmony/expo-dev-menu-interface": "55.0.2-harmony.0",
+    "@expo-harmony/expo-modules-core": "55.0.26-harmony.0",
     "@rnoh/react-native-openharmony": "0.84.1"
   }
 }

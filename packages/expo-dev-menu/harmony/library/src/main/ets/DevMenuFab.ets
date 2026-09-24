@@ -15,10 +15,11 @@ struct DevMenuFabView {
         Button({ type: ButtonType.Normal, stateEffect: false }) {
           Column() {
             Stack() {
-              Circle()
+              Stack()
                 .width(44)
                 .height(44)
-                .fill(this.model.blue)
+                .backgroundColor(this.model.blue)
+                .borderRadius(22)
               Image($r('app.media.expo_dev_menu_gear_fill'))
                 .width(26)
                 .height(26)

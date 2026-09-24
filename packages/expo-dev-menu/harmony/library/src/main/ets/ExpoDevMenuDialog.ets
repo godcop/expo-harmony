@@ -199,6 +199,49 @@ export class DevMenuDialogModel {
 }
 
 @Component
+struct DevMenuToggleRow {
+  @ObjectLink model: DevMenuDialogModel;
+  @Prop checked: boolean = false;
+  @Prop available: boolean = true;
+  @State pending: boolean = false;
+  itemId: string = '';
+  title: string = '';
+
+  private async select(value: boolean): Promise<void> {
+    this.checked = value;
+    this.pending = true;
+
+    try {
+      const item = this.model.items.find((entry: DevMenuDialogItem): boolean => entry.id === this.itemId);
+
+      if (item !== undefined) await this.model.select(item);
+    } finally {
+      // Even an ignored action can change the native toggle's visual state.
+      const item = this.model.items.find((entry: DevMenuDialogItem): boolean => entry.id === this.itemId);
+
+      this.checked = item?.checked ?? false;
+      this.pending = false;
+    }
+  }
+
+  build(): void {
+    Row() {
+      Text(this.title)
+        .layoutWeight(1)
+        .fontSize(16)
+      Toggle({ type: ToggleType.Switch, isOn: this.checked })
+        .enabled(this.available && !this.pending)
+        .accessibilityText(this.title)
+        .onChange((value: boolean): void => {
+          if (value !== this.checked) this.model.run((): Promise<void> => this.select(value));
+        })
+    }
+    .width('100%')
+    .padding(12);
+  }
+}
+
+@Component
 struct ExpoDevMenuDialog {
   @ObjectLink model: DevMenuDialogModel;
 
@@ -244,14 +287,19 @@ struct ExpoDevMenuDialog {
     ForEach(
       this.model.items,
       (item: DevMenuDialogItem): void => {
-        this.action(item.title, (): Promise<void> => this.model.select(item), item.enabled);
+        if (item.checked !== undefined) {
+          DevMenuToggleRow({ model: this.model, itemId: item.id, title: item.title, available: item.enabled, checked: item.checked });
+        } else {
+          this.action(item.title, (): Promise<void> => this.model.select(item), item.enabled);
+        }
+
         if (!item.enabled && item.detail.length > 0) {
           Text(item.detail)
             .fontSize(12)
             .fontColor($r('sys.color.font_secondary'));
         }
       },
-      (item: DevMenuDialogItem): string => item.id,
+      (item: DevMenuDialogItem): string => `${item.id}-${item.enabled}-${item.checked}`,
     );
     this.setting('Tools button', DevMenuPreference.ShowFab);
     this.action('Menu settings', (): void => {
