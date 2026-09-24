@@ -24,7 +24,7 @@ class BlobOptions {
   endings: EndingType = EndingType.Transparent;
 }
 
-const BLOB_OPTIONS_TYPE = ExpoValueTypes.shapedRecord<BlobOptions>(
+const OPTIONS = ExpoValueTypes.shapedRecord<BlobOptions>(
   'BlobOptions',
   new ExpoRecordShape().field('type', ExpoValueTypes.string().nullable().optional()).field(
     'endings',
@@ -60,10 +60,12 @@ class BlobObject extends ExpoSharedObject {
     super(context);
 
     let size = 0;
+
     for (const part of parts) {
       if (part.byteLength > Number.MAX_SAFE_INTEGER - size) {
         throw new RangeError('Blob size exceeds the safe integer range.');
       }
+
       size += part.byteLength;
     }
 
@@ -85,6 +87,7 @@ class BlobObject extends ExpoSharedObject {
         for (const bytes of part.second.parts) parts.push(bytes);
       } else {
         const view = part.third as ExpoNumericTypedArray;
+
         if (view.byteLength > 0) {
           parts.push(new Uint8Array(new Uint8Array(view.buffer, view.byteOffset, view.byteLength)));
         }
@@ -97,17 +100,19 @@ class BlobObject extends ExpoSharedObject {
   slice(start?: number | null, end?: number | null, type?: string | null): BlobObject {
     const from = start === undefined || start === null ? 0 : resolveSliceIndex(start, this.size);
     const to = end === undefined || end === null ? this.size : resolveSliceIndex(end, this.size);
+
     const parts: Uint8Array[] = [];
 
     if (from < to) {
       let offset = 0;
+
       for (const part of this.parts) {
         const next = offset + part.byteLength;
+
         if (next > from && offset < to) {
           const begin = Math.max(from - offset, 0);
           const stop = Math.min(to - offset, part.byteLength);
 
-          // Copy partial parts so small slices cannot retain unreported backing memory.
           parts.push(begin === 0 && stop === part.byteLength ? part : part.slice(begin, stop));
         }
 
@@ -157,7 +162,7 @@ export class ExpoBlobModule extends ExpoModule {
       .construct(
         ExpoFunction.ownedTyped2(
           ExpoValueTypes.array(part).nullable().optional(),
-          BLOB_OPTIONS_TYPE.nullable().optional(),
+          OPTIONS.nullable().optional(),
           (context: ExpoModuleContext, parts?: BlobPart[] | null, options?: BlobOptions | null): BlobObject =>
             BlobObject.fromParts(context, parts ?? [], options ?? new BlobOptions()),
         ),

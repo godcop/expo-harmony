@@ -7,8 +7,10 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-blob expo-blob@55.0.13
+npm install @expo-harmony/expo-blob expo-blob@55.0.17
 ```
+
+本包适配 Expo SDK 55 的 `expo-blob`，与官方包配合使用。原生模块通过 Expo Harmony 自动链接，业务代码继续从 `expo-blob` 导入。模块只处理内存中的数据。最低支持 HarmonyOS 5.0.1（API 13），宿主应用的 `compatibleSdkVersion` 也要满足这一要求。
 
 ## API 对照表
 
@@ -50,7 +52,7 @@ MIME 类型，无法确定时为空字符串。
 
 #### `Blob.slice(start?, end?, contentType?)`
 
-返回新的 `Blob`，取字节范围 `[start, end)`。`start`、`end` 为有符号 32 位整数，负值从末尾算起，小数向零取整，越界时截到 `0` 或 `size`。省略时分别取 `0` 和 `size`。`end` 不大于 `start` 时返回空 Blob。
+返回新的 `Blob`，取字节范围 `[start, end)`。`start`、`end` 为有符号 32 位整数，负值从末尾算起，小数向零取整，`NaN` 按 `0` 处理，越界时截到 `0` 或 `size`。省略时分别取 `0` 和 `size`。`end` 不大于 `start` 时返回空 Blob。
 
 `contentType` 是结果的 MIME 类型，默认空字符串，处理方式与构造参数 `type` 相同。切片不继承原 Blob 的类型。
 
@@ -69,6 +71,8 @@ MIME 类型，无法确定时为空字符串。
 #### `BlobPart`
 
 `string | ArrayBuffer | ArrayBufferView | Blob`，构造 `Blob` 时单个片段的取值。字符串按 UTF-8 编码，ArrayBuffer 和 TypedArray 按字节使用，嵌套的 `Blob` 沿用其内容。
+
+`DataView` 和 `Uint8ClampedArray` 不会被当作二进制片段，而是先转换成字符串再编码，与官方包一致。需要传入这类视图时，先转换为 `new Uint8Array(view.buffer, view.byteOffset, view.byteLength)`。
 
 ## Author
 
