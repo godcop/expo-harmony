@@ -51,6 +51,7 @@ import { MeshGradientDemo } from './modules/mesh-gradient';
 import { MetroConfigDemo } from './modules/metro-config';
 import { NavigationBarDemo } from './modules/navigation-bar';
 import { NetworkDemo } from './modules/network';
+import { NotificationsDemo } from './modules/notifications';
 import { PrebuildConfigDemo } from './modules/prebuild-config';
 import { PrintDemo } from './modules/print';
 import { ScreenCaptureDemo } from './modules/screen-capture';
@@ -137,6 +138,7 @@ const MODULE_DEMOS = {
   'metro-config': MetroConfigDemo,
   'navigation-bar': NavigationBarDemo,
   'network': NetworkDemo,
+  'notifications': NotificationsDemo,
   'prebuild-config': PrebuildConfigDemo,
   'print': PrintDemo,
   'screen-capture': ScreenCaptureDemo,

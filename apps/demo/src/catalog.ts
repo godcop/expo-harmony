@@ -43,6 +43,7 @@ export const MODULES = [
   { id: 'intent-launcher', title: 'Intent 启动器', packageName: '@expo-harmony/expo-intent-launcher', category: '应用', summary: '应用启动、图标读取、Want 参数、结果回传与并发保护。' },
   { id: 'splash-screen', title: '启动屏', packageName: '@expo-harmony/expo-splash-screen', category: '应用', summary: '启动过程接管与幂等的内容就绪交接。' },
   { id: 'system-ui', title: '系统 UI', packageName: '@expo-harmony/expo-system-ui', category: '应用', summary: '根窗口背景与界面样式配置。' },
+  { id: 'notifications', title: '通知', packageName: '@expo-harmony/expo-notifications', category: '应用', summary: '通知授权、本地通知、定时提醒、点击响应、角标与华为推送注册。' },
   { id: 'localization', title: '语言与地区', packageName: '@expo-harmony/expo-localization', category: '应用', summary: '偏好语言、地区、货币、日历、时区与系统设置变化 Hooks。' },
 
   { id: 'audio', title: '音频', packageName: '@expo-harmony/expo-audio', category: '设备与媒体', summary: '播放、预加载、播放列表状态与后台音频。' },

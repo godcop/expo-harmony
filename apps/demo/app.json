@@ -25,6 +25,7 @@
         }
       ],
       "@expo-harmony/expo-constants",
+      "@expo-harmony/expo-notifications",
       "@expo-harmony/expo-font",
       [
         "@expo-harmony/expo-calendar",
@@ -108,7 +109,7 @@
         "@expo-harmony/expo-build-properties",
         {
           "harmony": {
-            "compatibleSdkVersion": 21,
+            "compatibleSdkVersion": 23,
             "targetSdkVersion": 24
           }
         }
@@ -143,6 +144,9 @@
         },
         {
           "name": "ohos.permission.GET_NETWORK_INFO"
+        },
+        {
+          "name": "ohos.permission.PUBLISH_AGENT_REMINDER"
         }
       ],
       "backgroundColor": "#F2F2F7",
