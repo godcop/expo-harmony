@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-auth-session expo-auth-session@55.0.16
+npm install @expo-harmony/expo-auth-session expo-auth-session@55.0.18
 ```
 
 ## Author
