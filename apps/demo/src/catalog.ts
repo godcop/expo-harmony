@@ -64,6 +64,7 @@ export const MODULES = [
   { id: 'haptics', title: '触感反馈', packageName: '@expo-harmony/expo-haptics', category: '设备与媒体', summary: '官方反馈样式与参数校验。' },
   { id: 'keep-awake', title: '保持唤醒', packageName: '@expo-harmony/expo-keep-awake', category: '设备与媒体', summary: '带标签的屏幕常亮与 React 生命周期处理。' },
   { id: 'linear-gradient', title: '线性渐变', packageName: '@expo-harmony/expo-linear-gradient', category: '设备与媒体', summary: '多色渐变、端点控制与圆角裁剪。' },
+  { id: 'mesh-gradient', title: '网格渐变', packageName: '@expo-harmony/expo-mesh-gradient', category: '设备与媒体', summary: '网格顶点、颜色插值、透明度、动态尺寸与子视图交互。' },
   { id: 'symbols', title: '系统图标', packageName: '@expo-harmony/expo-symbols', category: '设备与媒体', summary: '鸿蒙系统图标、名称回退、尺寸字重与多色渲染。' },
   { id: 'linking', title: '链接', packageName: '@expo-harmony/expo-linking', category: '设备与媒体', summary: 'URL 构造、解析、初始状态与前台链接。' },
   { id: 'live-photo', title: '实况照片', packageName: '@expo-harmony/expo-live-photo', category: '设备与媒体', summary: '图片与配对视频加载、播放控制、显示属性、生命周期事件及错误恢复。' },

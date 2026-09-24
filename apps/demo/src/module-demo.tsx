@@ -47,6 +47,7 @@ import { LocalizationDemo } from './modules/localization';
 import { LocationDemo } from './modules/location';
 import { MailComposerDemo } from './modules/mail-composer';
 import { MediaLibraryDemo } from './modules/media-library';
+import { MeshGradientDemo } from './modules/mesh-gradient';
 import { MetroConfigDemo } from './modules/metro-config';
 import { NavigationBarDemo } from './modules/navigation-bar';
 import { NetworkDemo } from './modules/network';
@@ -132,6 +133,7 @@ const MODULE_DEMOS = {
   'location': LocationDemo,
   'mail-composer': MailComposerDemo,
   'media-library': MediaLibraryDemo,
+  'mesh-gradient': MeshGradientDemo,
   'metro-config': MetroConfigDemo,
   'navigation-bar': NavigationBarDemo,
   'network': NetworkDemo,
