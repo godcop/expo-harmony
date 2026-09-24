@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo__schema-utils @expo/schema-utils@55.0.4
+npm install @expo-harmony/expo__schema-utils @expo/schema-utils@55.0.5
 ```
 
 ## Author

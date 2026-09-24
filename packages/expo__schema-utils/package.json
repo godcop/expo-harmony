@@ -1,6 +1,6 @@
 {
   "name": "@expo-harmony/expo__schema-utils",
-  "version": "55.0.4-harmony.1",
+  "version": "55.0.5-harmony.0",
   "description": "HarmonyOS port of @expo/schema-utils",
   "keywords": [
     "react-native",
@@ -21,7 +21,7 @@
   "react-native": "src/index.ts",
   "types": "index.d.ts",
   "peerDependencies": {
-    "@expo/schema-utils": "55.0.4"
+    "@expo/schema-utils": "55.0.5"
   },
   "engines": {
     "node": ">=20"
