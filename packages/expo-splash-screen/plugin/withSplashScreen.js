@@ -24,7 +24,7 @@ const IMAGE_WIDTH = 'expo_splash_screen_image_width';
 const RESIZE_MODES = new Set(['contain', 'cover', 'native']);
 const COLOR = /^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$/;
 const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.svg', '.webp', '.gif']);
-const TRANSPARENT_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAF/gL+3MxZ5wAAAABJRU5ErkJggg==', 'base64');
+const TRANSPARENT_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=', 'base64');
 const OWNERSHIP = Object.freeze({
   ability: {
     startWindowBackground: '$color:expo_splash_screen_background',
@@ -296,6 +296,7 @@ const withHarmonySplashScreen = (config, props) => {
   config = withMedia(config, (mod) => {
     const { qualified } = resolveOptions();
     const root = mod.modRequest.projectRoot;
+
     const image = resolveImage(root, qualified.entryImage, 'image');
     const dark = resolveImage(root, qualified.entryDarkImage, 'darkImage');
 

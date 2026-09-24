@@ -7,10 +7,10 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-splash-screen expo-splash-screen@55.0.21
+npm install @expo-harmony/expo-splash-screen expo-splash-screen@55.0.25
 ```
 
-本包适配 Expo SDK 55 的 `expo-splash-screen`，原生模块通过 Expo Harmony 自动链接，不需要申请权限。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也需满足此要求。
+本包适配 Expo SDK 55 的 `expo-splash-screen`，原生模块通过 Expo Harmony 自动链接。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也需满足此要求。
 
 启动画面的外观在预构建时生成，需要在 `app.json` 的 `plugins` 中传入 `@expo-harmony/expo-splash-screen`：
 
@@ -40,9 +40,9 @@ npm install @expo-harmony/expo-splash-screen expo-splash-screen@55.0.21
 
 `backgroundColor` 接受 `#RRGGBB` 或 `#RRGGBBAA`，默认 `#FFFFFF`。`image` 支持 png、jpg、jpeg、svg、webp、gif，未配置时只显示背景色。`resizeMode` 支持 `contain`（默认，按 `imageWidth` 等比缩放后居中显示，宽度默认 100）、`cover`（铺满窗口，超出部分裁剪）和 `native`（原始尺寸居中显示）。
 
-深色模式在 `dark` 中单独配置，背景色缺省时沿用 `backgroundColor`，未配置深色图片时深色模式下只显示背景色。`expo.userInterfaceStyle` 设为 `automatic` 时深浅色资源分开生成，不设置或固定为 `light`、`dark` 时只生成对应的一套。这些选项也可以放在 `harmony` 键下，只对鸿蒙生效。修改配置后需要重新 prebuild。
+深色模式在 `dark` 中单独配置，背景色缺省时沿用 `backgroundColor`，未配置深色图片时深色模式沿用基础图片。`expo.userInterfaceStyle` 设为 `automatic` 时深浅色资源分开生成，不设置或固定为 `light`、`dark` 时深浅色使用同一套外观。这些选项也可以放在 `harmony` 键下，只对鸿蒙生效。修改配置后需要重新 prebuild。
 
-运行时启动画面默认在首帧内容出现后自动隐藏，多数应用不需要额外代码。要等字体、接口数据等准备就绪后再隐藏，在模块顶层调用 `SplashScreen.preventAutoHideAsync()`，就绪后调用 `SplashScreen.hide()`：
+运行时启动画面默认在首帧内容出现后自动隐藏。要等字体、接口数据等准备就绪后再隐藏，在模块顶层调用 `SplashScreen.preventAutoHideAsync()`，就绪后调用 `SplashScreen.hide()`：
 
 ```ts
 import * as SplashScreen from 'expo-splash-screen';
@@ -71,7 +71,7 @@ await SplashScreen.hide();
 
 #### `SplashScreen.setOptions(options)`
 
-设置隐藏启动画面时的淡出动画，在隐藏前设置才有效果。参数为 `SplashScreenOptions`，只需传入要修改的字段，取值不合法时抛出 `ERR_SPLASH_SCREEN_OPTIONS`。
+设置隐藏启动画面时的淡出动画，在隐藏前设置才有效果。参数为 `SplashScreenOptions`，每次调用整体生效，省略的字段恢复默认值，取值不合法时抛出 `ERR_SPLASH_SCREEN_OPTIONS`。
 
 ### Types
 

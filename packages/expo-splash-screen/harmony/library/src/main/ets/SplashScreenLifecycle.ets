@@ -30,17 +30,17 @@ export class SplashScreenRenderState {
 
   constructor(
     visible: boolean,
-    backgroundColor: number,
+    background: number,
     image: DrawableDescriptor | undefined,
-    resizeMode: SplashScreenResizeMode,
-    imageWidth: number,
+    resize: SplashScreenResizeMode,
+    width: number,
     opacity: number,
   ) {
     this.visible = visible;
-    this.backgroundColor = backgroundColor;
+    this.backgroundColor = background;
     this.image = image;
-    this.resizeMode = resizeMode;
-    this.imageWidth = imageWidth;
+    this.resizeMode = resize;
+    this.imageWidth = width;
     this.opacity = opacity;
   }
 
@@ -68,16 +68,16 @@ class SplashScreenResources {
   readonly imageWidth: number;
 
   constructor(
-    backgroundColor: number,
+    background: number,
     image: DrawableDescriptor | undefined,
-    resizeMode: SplashScreenResizeMode,
-    imageWidth: number,
+    resize: SplashScreenResizeMode,
+    width: number,
     valid: boolean,
   ) {
-    this.backgroundColor = backgroundColor;
+    this.backgroundColor = background;
     this.image = image;
-    this.resizeMode = resizeMode;
-    this.imageWidth = imageWidth;
+    this.resizeMode = resize;
+    this.imageWidth = width;
     this.valid = valid;
   }
 }
@@ -117,8 +117,8 @@ class SplashScreenAbilityOwner {
 
     this.ui = ui;
     this.listener = listener;
-    if (this.resources.valid) this.state.markNativeVisible();
 
+    if (this.resources.valid) this.state.markNativeVisible();
     this.publish();
 
     return (): void => {
@@ -126,6 +126,7 @@ class SplashScreenAbilityOwner {
 
       this.generation += 1;
       this.clearTimer();
+
       this.opacity = 1;
       this.listener = undefined;
       this.ui = undefined;
@@ -143,8 +144,9 @@ class SplashScreenAbilityOwner {
     this.epoch = epoch;
     this.generation += 1;
     this.clearTimer();
+
     this.opacity = 1;
-    this.state.prepareForRuntime(this.listener !== undefined);
+    this.state.prepareForRuntime(this.resources.valid && this.listener !== undefined);
 
     this.publish();
   }
@@ -197,8 +199,9 @@ class SplashScreenAbilityOwner {
 
     this.generation += 1;
     this.clearTimer();
+
     this.opacity = 1;
-    this.state.prepareForRuntime(true);
+    this.state.prepareForRuntime(this.resources.valid && this.listener !== undefined);
 
     this.publish();
   }
@@ -209,8 +212,8 @@ class SplashScreenAbilityOwner {
     this.epoch = undefined;
     this.generation += 1;
     this.clearTimer();
-    this.opacity = 1;
 
+    this.opacity = 1;
     this.publish();
 
     this.listener = undefined;
@@ -236,6 +239,9 @@ class SplashScreenAbilityOwner {
     }
 
     try {
+      // Schedule first: animateTo may call onFinish synchronously when animations are disabled.
+      this.timer = setTimeout((): void => this.finishRemoval(generation), Math.ceil(this.duration) + FADE_WATCHDOG_GRACE_MS);
+
       ui.animateTo(
         {
           duration: this.duration,
@@ -249,8 +255,6 @@ class SplashScreenAbilityOwner {
           this.publish();
         },
       );
-
-      this.timer = setTimeout((): void => this.finishRemoval(generation), Math.ceil(this.duration) + FADE_WATCHDOG_GRACE_MS);
     } catch (_) {
       this.finishRemoval(generation);
     }
@@ -449,6 +453,7 @@ function resolveResources(manager: resourceManager.ResourceManager): SplashScree
 
   try {
     const value: string = manager.getStringByNameSync('expo_splash_screen_resize_mode');
+
     if (value === 'contain' || value === 'cover' || value === 'native') resize = value;
     else console.warn(`Ignoring invalid Expo splash resize mode '${value}'.`);
   } catch (error) {
