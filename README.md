@@ -95,6 +95,7 @@
 - [expo-modules-core](./packages/expo-modules-core/)：提供 Expo Modules 所需的原生运行时。
 - [expo-navigation-bar](./packages/expo-navigation-bar/)：与系统导航栏进行交互。
 - [expo-network](./packages/expo-network/)：获取设备网络信息，如 IP 地址、MAC 地址和飞行模式状态。
+- [expo-notifications](./packages/expo-notifications/)：提供获取推送通知 token 以及展示、调度、接收和响应通知的 API。
 - [expo-print](./packages/expo-print/)：提供打印功能。
 - [expo-processing](./packages/expo-processing/)：在 Expo 中使用 Processing.js 的工具。
 - [expo-router](./packages/expo-router/)：面向 React Native 和 Web 应用的基于文件的路由库。

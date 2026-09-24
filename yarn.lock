@@ -2581,6 +2581,29 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@expo-harmony/expo-notifications@workspace:*, @expo-harmony/expo-notifications@workspace:packages/expo-notifications":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-notifications@workspace:packages/expo-notifications"
+  dependencies:
+    "@expo-harmony/config-plugins": "workspace:*"
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@expo/config-plugins": "npm:55.0.11"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    "@types/react": "npm:19.2.2"
+    expo: "npm:55.0.31"
+    expo-modules-core: "npm:55.0.26"
+    expo-notifications: "npm:55.0.27"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+    typescript: "npm:6.0.3"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    expo-modules-core: 55.0.26
+    expo-notifications: 55.0.27
+  languageName: unknown
+  linkType: soft
+
 "@expo-harmony/expo-print@workspace:*, @expo-harmony/expo-print@workspace:packages/expo-print":
   version: 0.0.0-use.local
   resolution: "@expo-harmony/expo-print@workspace:packages/expo-print"
@@ -8563,6 +8586,23 @@ __metadata:
     react-native-worklets:
       optional: true
   checksum: 10c0/f3ae7e51e42d1ef54a879279beb86a01246ed54762001ca7864da70a84b9c63922ef2040fae2a54951a333de696c4976fe2649d3f316bc7241475f5821039251
+  languageName: node
+  linkType: hard
+
+"expo-notifications@npm:55.0.27":
+  version: 55.0.27
+  resolution: "expo-notifications@npm:55.0.27"
+  dependencies:
+    "@expo/image-utils": "npm:^0.8.17"
+    abort-controller: "npm:^3.0.0"
+    badgin: "npm:^1.1.5"
+    expo-application: "npm:~55.0.19"
+    expo-constants: "npm:~55.0.17"
+  peerDependencies:
+    expo: "*"
+    react: "*"
+    react-native: "*"
+  checksum: 10c0/329683875111de728486d45702343d8c0175ff6f8bd4ed878f7040261992dfb79e55e468df8f357ae4bd8f965e944b6fe503cbd6af9bfc6181f5ee8f185ddf28
   languageName: node
   linkType: hard
 

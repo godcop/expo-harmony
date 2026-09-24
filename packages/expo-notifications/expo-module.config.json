@@ -1,0 +1,27 @@
+{
+  "platforms": [
+    "harmony"
+  ],
+  "harmony": {
+    "modules": [
+      "ExpoPushTokenManager",
+      "ExpoNotificationPermissionsModule",
+      "ExpoBadgeModule",
+      "ExpoNotificationScheduler",
+      "ExpoNotificationPresenter",
+      "ExpoNotificationsEmitter",
+      "ExpoNotificationsHandlerModule",
+      "ExpoNotificationCategoriesModule",
+      "ExpoBackgroundNotificationTasksModule",
+      "NotificationsServerRegistrationModule",
+      "ExpoNotificationChannelManager",
+      "ExpoNotificationChannelGroupManager"
+    ],
+    "appLifecycleSubscribers": [
+      "ExpoNotificationsAppLifecycleSubscriber"
+    ],
+    "abilityLifecycleSubscribers": [
+      "ExpoNotificationsAbilityLifecycleSubscriber"
+    ]
+  }
+}
