@@ -1,6 +1,6 @@
 {
   "name": "@expo-harmony/expo-keep-awake",
-  "version": "55.0.8-harmony.5",
+  "version": "55.0.8-harmony.0",
   "description": "HarmonyOS port of expo-keep-awake",
   "keywords": [
     "react-native",
@@ -32,9 +32,9 @@
     "@expo-harmony/expo-module-scripts": "workspace:*",
     "@expo-harmony/expo-modules-core": "workspace:*",
     "@react-native-oh/react-native-harmony": "0.84.1",
-    "expo": "55.0.26",
+    "expo": "55.0.31",
     "expo-keep-awake": "55.0.8",
-    "expo-modules-core": "55.0.25",
+    "expo-modules-core": "55.0.26",
     "react": "19.2.3",
     "react-native": "0.84.1"
   },

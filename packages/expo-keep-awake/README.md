@@ -10,11 +10,11 @@
 npm install @expo-harmony/expo-keep-awake expo-keep-awake@55.0.8
 ```
 
-鸿蒙适配会通过 Autolinking 自动接入，无需额外配置。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也需满足此要求。
+鸿蒙适配会通过 Autolinking 自动接入。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也需满足此要求。
 
-保持屏幕常亮基于窗口能力实现，不需要任何权限，本包也未声明权限。应用进入后台时会暂停屏幕常亮，返回前台后按仍然有效的标签恢复；所有标签释放后恢复系统默认的屏幕休眠行为。
+保持屏幕常亮基于窗口能力实现。应用进入后台时会暂停屏幕常亮，返回前台后按仍然有效的标签恢复；所有标签释放后恢复系统默认的屏幕休眠行为。系统仍可能根据自身策略恢复自动灭屏，异源虚拟屏不保证常亮，应只在导航、视频等必要的屏幕交互场景使用。前后台切换等生命周期中的系统操作失败只记录警告，系统持续故障时无法保证窗口常亮状态，后续请求或切换会重新尝试。
 
-本包的原生实现依赖宿主 Ability 的生命周期事件，对应的订阅器已在包内声明，业务代码无需额外处理。CNG 工程由 prebuild 自动生成所需入口；Bare 工程需按 [接入说明](https://github.com/renbaoshuo/expo-harmony/blob/master/docs/BareInstallation.md) 手动接入 AbilityStage 和 ExpoRNAbility。
+本包的原生实现依赖宿主 Ability 的生命周期事件，对应的订阅器已在包内声明。CNG 工程由 prebuild 自动生成所需入口；Bare 工程需按 [接入说明](https://github.com/renbaoshuo/expo-harmony/blob/master/docs/BareInstallation.md) 手动接入 AbilityStage 和 ExpoRNAbility。
 
 业务代码依旧使用官方包：
 
@@ -51,7 +51,7 @@ await KeepAwake.deactivateKeepAwake('MyTag');
 
 返回 `Promise<void>`，按标签请求屏幕常亮。`tag` 省略时使用 `ExpoKeepAwakeTag`。同一标签重复激活不叠加，多个标签各自独立，全部释放前屏幕不会休眠。
 
-设置的是当前 React Native 窗口的常亮状态，不修改系统屏幕休眠设置，也不影响其他窗口。窗口尚未就绪或设置失败时拒绝。
+设置的是当前 React Native 窗口的常亮状态，不修改系统屏幕休眠设置，也不影响其他窗口。窗口尚未就绪或设置失败时拒绝。常亮标志是窗口的共享属性，其他模块直接修改同一窗口的常亮状态时，需要业务层自行协调。
 
 #### `KeepAwake.deactivateKeepAwake(tag)`
 
@@ -59,7 +59,7 @@ await KeepAwake.deactivateKeepAwake('MyTag');
 
 #### `KeepAwake.isAvailableAsync()`
 
-返回 `Promise<boolean>`，恒为 `true`。窗口常亮所依赖的接口从 API 9 起提供，本包支持的各 HarmonyOS 版本行为一致。
+返回 `Promise<boolean>`，普通 UI runtime 为 `true`，headless runtime 为 `false`。它表示能力可用性，不保证当前主窗口已就绪；headless runtime 调用激活或释放会拒绝。
 
 ### Event Subscriptions
 
@@ -75,7 +75,7 @@ await KeepAwake.deactivateKeepAwake('MyTag');
 
 | 属性                         | 类型                | 说明                                                                                            |
 | ---------------------------- | ------------------- | ----------------------------------------------------------------------------------------------- |
-| `suppressDeactivateWarnings` | `boolean`           | Android 上用于抑制 Activity 已销毁时的未处理拒绝；HarmonyOS 上释放不存在的标签不会拒绝，该选项不生效 |
+| `suppressDeactivateWarnings` | `boolean`           | 抑制 Hook 卸载时释放失败产生的未处理拒绝；HarmonyOS 上窗口操作失败、runtime 失效或 headless 调用也可能拒绝 |
 | `listener`                   | `KeepAwakeListener` | Web 专属，HarmonyOS 上不触发                                                                    |
 
 > **未实现的内容**
