@@ -9,16 +9,35 @@ export class ExpoManifestError extends Error {
 
 function isRecord(value: unknown): value is Record<string, ESObject> {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
+
   const prototype = Object.getPrototypeOf(value);
+
   return prototype === Object.prototype || prototype === null;
 }
 
-function cloneValue(value: ESObject, depth: number = 0): ESObject {
-  if (depth > 64) throw new ExpoManifestError('Plugin properties exceed the maximum JSON nesting depth.');
-  if (Array.isArray(value)) return value.map(item => cloneValue(item, depth + 1));
-  if (!isRecord(value)) return value;
+function clonePluginProperties(value: Record<string, ESObject>): Record<string, ESObject> {
+  const ancestors = new Set<object>();
 
-  return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, cloneValue(item, depth + 1)]));
+  function clone(item: ESObject): ESObject {
+    if (!Array.isArray(item) && !isRecord(item)) return item;
+    if (ancestors.has(item)) throw new ExpoManifestError('Plugin properties must not contain circular references.');
+
+    ancestors.add(item);
+
+    try {
+      return Array.isArray(item)
+        ? item.map(child => clone(child))
+        : Object.fromEntries(Object.entries(item).map(([key, child]) => [key, clone(child)]));
+    } finally {
+      ancestors.delete(item);
+    }
+  }
+
+  try {
+    return clone(value);
+  } catch (error) {
+    throw new ExpoManifestError(error instanceof ExpoManifestError ? error.message : 'Plugin properties could not be copied.');
+  }
 }
 
 type FieldType = 'object' | 'array' | 'string' | 'boolean';
@@ -32,6 +51,7 @@ export abstract class Manifest {
 
   constructor(value: unknown) {
     if (!isRecord(value)) throw new ExpoManifestError('A manifest must be a JSON object.');
+
     this.json = value;
   }
 
@@ -61,15 +81,27 @@ export abstract class Manifest {
 
   isDevelopmentMode(): boolean {
     const config = this.getExpoGoConfigRootObject();
-    try { return !!config && hasOwn(config, 'developer') && (this.value(this.value(config, 'packagerOpts', 'object'), 'dev', 'boolean') ?? false); }
-    catch (_) { return false; }
+
+    try {
+      return !!config && hasOwn(config, 'developer') && (this.value(this.value(config, 'packagerOpts', 'object'), 'dev', 'boolean') ?? false);
+    } catch (_) {
+      return false;
+    }
   }
 
   isDevelopmentSilentLaunch(): boolean { return this.value(this.value(this.getExpoGoConfigRootObject(), 'developmentClient', 'object'), 'silentLaunch', 'boolean') ?? false; }
-  isUsingDeveloperTool(): boolean { const developer = this.value(this.getExpoGoConfigRootObject(), 'developer', 'object'); return developer !== null && hasOwn(developer, 'tool'); }
+  isUsingDeveloperTool(): boolean {
+    const developer = this.value(this.getExpoGoConfigRootObject(), 'developer', 'object');
+
+    return developer !== null && hasOwn(developer, 'tool');
+  }
   getRevisionId(): string { return this.string(this.getExpoClientConfigRootObject(), 'revisionId'); }
   getDebuggerHost(): string { return this.string(this.getExpoGoConfigRootObject(), 'debuggerHost'); }
-  getMainModuleName(): string { const config = this.getExpoGoConfigRootObject(); return config === null ? 'main' : this.string(config, 'mainModuleName'); }
+  getMainModuleName(): string {
+    const config = this.getExpoGoConfigRootObject();
+
+    return config === null ? 'main' : this.string(config, 'mainModuleName');
+  }
   getHostUri(): string | null { return this.value(this.getExpoClientConfigRootObject(), 'hostUri', 'string'); }
   getName(): string | null { return this.value(this.getExpoClientConfigRootObject(), 'name', 'string'); }
   getVersion(): string | null { return this.value(this.getExpoClientConfigRootObject(), 'version', 'string'); }
@@ -83,6 +115,7 @@ export abstract class Manifest {
   getFacebookAutoInitEnabled(): boolean {
     const value = this.value(this.getExpoClientConfigRootObject(), 'facebookAutoInitEnabled', 'boolean');
     if (value === null) throw new ExpoManifestError("Manifest field 'facebookAutoInitEnabled' must be boolean.");
+
     return value;
   }
   getPlatformSplashInfo(): Record<string, ESObject> | null { return this.value(this.getPlatformConfig(), 'splash', 'object'); }
@@ -91,6 +124,7 @@ export abstract class Manifest {
   private platformStringOrRoot(key: string): string | null {
     const platform = this.getPlatformConfig();
     if (platform !== null && hasOwn(platform, key)) return this.string(platform, key);
+
     return this.value(this.getExpoClientConfigRootObject(), key, 'string');
   }
   getUserInterfaceStyle(): string | null { return this.platformStringOrRoot('userInterfaceStyle'); }
@@ -110,11 +144,14 @@ export abstract class Manifest {
     if (plugins === null) return null;
 
     let result: Record<string, ESObject> | null = null;
+
     for (let index = 0; index < plugins.length; index++) {
       const plugin = plugins[index];
+
       if (typeof plugin === 'string') continue;
       if (!Array.isArray(plugin) || plugin.length === 0) throw new ExpoManifestError(`Manifest plugins entry ${index} must contain a name or nonempty array.`);
-      if (result === null && plugin.length === 2 && plugin[0] === name && isRecord(plugin[1])) result = cloneValue(plugin[1]);
+
+      if (result === null && plugin.length === 2 && plugin[0] === name && isRecord(plugin[1])) result = clonePluginProperties(plugin[1]);
     }
 
     return result;
@@ -145,7 +182,11 @@ export class ExpoUpdatesManifest extends Manifest {
   getEASProjectID(): string | null { return this.value(this.value(this.value(this.json, 'extra', 'object'), 'eas', 'object'), 'projectId', 'string'); }
   getRuntimeVersion(): string { return this.string(this.json, 'runtimeVersion'); }
   getBundleURL(): string { return this.string(this.getLaunchAsset(), 'url'); }
-  getExpoGoSDKVersion(): string | null { const config = this.getExpoClientConfigRootObject(); return config === null ? null : this.string(config, 'sdkVersion'); }
+  getExpoGoSDKVersion(): string | null {
+    const config = this.getExpoClientConfigRootObject();
+
+    return config === null ? null : this.string(config, 'sdkVersion');
+  }
   getCreatedAt(): string { return this.string(this.json, 'createdAt'); }
   getExpoGoConfigRootObject(): Record<string, ESObject> | null { return this.value(this.value(this.json, 'extra', 'object'), 'expoGo', 'object'); }
   getExpoClientConfigRootObject(): Record<string, ESObject> | null { return this.value(this.value(this.json, 'extra', 'object'), 'expoClient', 'object'); }
@@ -154,6 +195,7 @@ export class ExpoUpdatesManifest extends Manifest {
 
   getLaunchAsset(): Record<string, ESObject> {
     if (!hasOwn(this.json, 'launchAsset') || !isRecord(this.json.launchAsset)) throw new ExpoManifestError('A remote manifest requires a launchAsset.');
+
     return this.json.launchAsset;
   }
 }

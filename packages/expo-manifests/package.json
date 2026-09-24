@@ -1,6 +1,6 @@
 {
   "name": "@expo-harmony/expo-manifests",
-  "version": "55.0.17-harmony.2",
+  "version": "55.0.21-harmony.0",
   "description": "HarmonyOS port of expo-manifests",
   "keywords": [
     "react-native",
@@ -38,7 +38,7 @@
     "access": "public"
   },
   "dependencies": {
-    "expo-manifests": "55.0.17"
+    "expo-manifests": "55.0.21"
   },
   "peerDependencies": {
     "expo": "55.0.26"
