@@ -3,6 +3,8 @@ export const TASK_TYPE: string = 'backgroundFetch';
 export const WORK_SCHEDULER_EXTENSION_NAME: string = 'ExpoBackgroundFetchWorkSchedulerExtension';
 export const WORK_SCHEDULER_CAPABILITY: string = 'SystemCapability.ResourceSchedule.WorkScheduler';
 export const WORK_SCHEDULER_MINIMUM_INTERVAL_MS: number = 2 * 60 * 60 * 1000;
+// WorkScheduler's ArkTS binding reads repeatCycleTime as a signed 32-bit millisecond value.
+export const WORK_SCHEDULER_MAXIMUM_INTERVAL_MS: number = 0x7fffffff;
 export const WORK_SCHEDULER_EXECUTION_WINDOW_MS: number = 2 * 60 * 1000;
 export const WORK_SCHEDULER_CLEANUP_MARGIN_MS: number = 10 * 1000;
 export const DEFAULT_MINIMUM_INTERVAL_SECONDS: number = 10 * 60;

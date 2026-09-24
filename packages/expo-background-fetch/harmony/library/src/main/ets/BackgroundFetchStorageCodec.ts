@@ -48,65 +48,68 @@ export class PendingWorkDecodeResult {
 
 export function decodePendingWorks(raw: ESObject): PendingWorkDecodeResult {
   const data = decodeArray(raw);
+
   if (data === undefined) return new PendingWorkDecodeResult([], true);
 
   const works: StoredPendingWork[] = [];
-  const requestIds: Set<string> = new Set();
+  const requests: Set<string> = new Set();
   let corrupted = data.length > MAXIMUM_PENDING_WORKS;
   const limit = Math.min(data.length, MAXIMUM_PENDING_WORKS);
 
   for (let index = 0; index < limit; ++index) {
     const item = asRecord(data[index]);
+
     if (item === undefined) {
       corrupted = true;
       continue;
     }
 
-    const requestId = item['requestId'];
+    const request = item['requestId'];
     const version = item['version'];
-    const workId = item['workId'];
-    const bundleName = item['bundleName'];
-    const abilityName = item['abilityName'];
-    const taskName = item['taskName'];
-    const ownerKey = item['ownerKey'];
-    const schedulerGeneration = item['schedulerGeneration'];
-    const expiresAt = item['expiresAt'];
+    const id = item['workId'];
+    const bundle = item['bundleName'];
+    const ability = item['abilityName'];
+    const name = item['taskName'];
+    const owner = item['ownerKey'];
+    const scheduler = item['schedulerGeneration'];
+    const expires = item['expiresAt'];
     const generation = version === 2 ? 0 : item['registrationGeneration'];
 
     if (
       (version !== 2 && version !== PENDING_WORK_SCHEMA_VERSION)
-      || !isSafeString(requestId, 256)
-      || requestIds.has(requestId as string)
-      || typeof workId !== 'number'
-      || !Number.isSafeInteger(workId)
-      || workId < 1
-      || workId > 0x7fffffff
-      || !isSafeString(bundleName, 256)
-      || !isSafeString(abilityName, 256)
-      || !isSafeString(taskName, 256)
-      || !isSafeString(ownerKey, 1024)
-      || !isSafeString(schedulerGeneration, 128)
+      || !isSafeString(request, 256)
+      || requests.has(request as string)
+      || typeof id !== 'number'
+      || !Number.isSafeInteger(id)
+      || id < 1
+      || id > 0x7fffffff
+      || !isSafeString(bundle, 256)
+      || !isSafeString(ability, 256)
+      || typeof name !== 'string'
+      || name.length === 0
+      || !isSafeString(owner, 1024)
+      || !isSafeString(scheduler, 128)
       || typeof generation !== 'number'
       || !Number.isSafeInteger(generation)
       || generation < 0
-      || typeof expiresAt !== 'number'
-      || !Number.isSafeInteger(expiresAt)
-      || expiresAt <= 0
+      || typeof expires !== 'number'
+      || !Number.isSafeInteger(expires)
+      || expires <= 0
     ) {
       corrupted = true;
       continue;
     }
 
-    requestIds.add(requestId as string);
+    requests.add(request as string);
     works.push(new StoredPendingWork(
-      requestId as string,
-      workId as number,
-      bundleName as string,
-      abilityName as string,
-      taskName as string,
-      ownerKey as string,
-      schedulerGeneration as string,
-      expiresAt as number,
+      request as string,
+      id as number,
+      bundle as string,
+      ability as string,
+      name as string,
+      owner as string,
+      scheduler as string,
+      expires as number,
       generation as number,
     ));
   }
@@ -126,11 +129,13 @@ function decodeArray(raw: ESObject): ESObject[] | undefined {
   }
 }
 
-function isSafeString(value: ESObject, maximumLength: number): boolean {
-  if (typeof value !== 'string' || value.length === 0 || value.length > maximumLength) return false;
+function isSafeString(value: ESObject, limit: number): boolean {
+  if (typeof value !== 'string' || value.length === 0 || value.length > limit) return false;
+
   for (let index = 0; index < value.length; ++index) {
     if (value.charCodeAt(index) < 0x20) return false;
   }
+
   return true;
 }
 

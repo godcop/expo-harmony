@@ -7,7 +7,7 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-background-fetch expo-background-fetch@55.0.16 expo-task-manager@~55.0.16
+npm install @expo-harmony/expo-background-fetch expo-background-fetch@55.0.20 expo-task-manager@~55.0.20
 ```
 
 使用前必须在 `app.json` 的 `plugins` 中传入 `@expo-harmony/expo-background-fetch`，并将其放在 `@expo-harmony/prebuild-config` 之前：
@@ -25,6 +25,8 @@ npm install @expo-harmony/expo-background-fetch expo-background-fetch@55.0.16 ex
 
 HarmonyOS Work Scheduler 的周期任务最短间隔为 2 小时，实际执行时间还会受到系统电量、配额和应用活跃度影响。
 
+本包最低支持 HarmonyOS 5.0.1（API 13），宿主应用的 `compatibleSdkVersion` 不能低于这个版本。模块和 config plugin 都不声明权限，任务需要访问网络等资源时，由应用按实际业务声明所需权限。
+
 ## API 对照表
 
 ### Methods
@@ -35,7 +37,9 @@ HarmonyOS Work Scheduler 的周期任务最短间隔为 2 小时，实际执行�
 
 #### `BackgroundFetch.registerTaskAsync(taskName, options)`
 
-返回 `Promise<void>`。任务先用 `TaskManager.defineTask` 定义，注册后写入 Work Scheduler，应用初始化时自动恢复。同名任务重复注册会替换之前的注册。
+返回 `Promise<void>`。任务先用 `TaskManager.defineTask` 定义，注册后写入 Work Scheduler，应用初始化时自动恢复。同名任务重复注册会替换之前的注册，并复用原来的调度名额，已注册满 10 个任务时也能完成替换。
+
+与上游一样，注册不要求联网，离线任务也会被系统调度。升级后恢复旧版本注册的任务时，会移除当时附带的联网条件。
 
 `taskName` 需为非空字符串，`options` 默认 `{}`。应用在前台时暂停执行，切回后台后允许系统继续调度。单次回调最长运行 2 分钟，超时系统会终止承载任务的 Extension 进程。单个应用同一时刻最多注册 10 个延迟任务。
 
@@ -59,7 +63,7 @@ Work Scheduler 不可用、config plugin 未应用、任务名或选项不合法
 | `stopOnTerminate` | `boolean` |
 | `startOnBoot`     | `boolean` |
 
-`minimumInterval` 以秒为单位，默认 600（10 分钟）。重复间隔会被抬到至少 2 小时，实际触发时间由系统调度决定，不保证精确。执行频率还按应用活跃分组分级限制：
+`minimumInterval` 以秒为单位，默认 600（10 分钟），必须是正有限数。Work Scheduler 能接受的间隔上限是 `2147483.647` 秒（约 24.86 天），更大的值在注册时拒绝。重复间隔会被抬到至少 2 小时，实际触发时间由系统调度决定，不保证精确。执行频率还按应用活跃分组分级限制：
 
 - 活跃分组：最短 2 小时
 - 经常使用分组：4 小时

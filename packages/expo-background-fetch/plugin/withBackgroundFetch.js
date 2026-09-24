@@ -33,6 +33,7 @@ export default class ExpoBackgroundFetchWorkSchedulerExtension
 
 function updateModuleJson(json) {
   const result = { ...json, module: json.module === undefined ? {} : json.module };
+
   HarmonyManifest.getModuleOrThrow(result);
 
   result.module = { ...result.module };
@@ -72,6 +73,7 @@ const withBackgroundFetch = (config) => {
 
 async function writeGeneratedSource(file) {
   let current;
+
   try {
     current = await fs.promises.readFile(file, 'utf8');
   } catch (cause) {
@@ -88,10 +90,3 @@ async function writeGeneratedSource(file) {
 }
 
 module.exports = createRunOncePlugin(withBackgroundFetch, pkg.name, pkg.version);
-module.exports.EXTENSION_NAME = EXTENSION_NAME;
-module.exports.EXTENSION_SOURCE = EXTENSION_SOURCE;
-module.exports.GENERATED_MARKER = GENERATED_MARKER;
-module.exports.GENERATED_SOURCE = GENERATED_SOURCE;
-module.exports.updateModuleJson = updateModuleJson;
-module.exports.withBackgroundFetch = withBackgroundFetch;
-module.exports.writeGeneratedSource = writeGeneratedSource;
