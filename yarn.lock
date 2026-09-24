@@ -2999,6 +2999,24 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@expo-harmony/expo-video-thumbnails@workspace:*, @expo-harmony/expo-video-thumbnails@workspace:packages/expo-video-thumbnails":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-video-thumbnails@workspace:packages/expo-video-thumbnails"
+  dependencies:
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    expo: "npm:55.0.31"
+    expo-modules-core: "npm:55.0.26"
+    expo-video-thumbnails: "npm:55.0.19"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    expo-video-thumbnails: 55.0.19
+  languageName: unknown
+  linkType: soft
+
 "@expo-harmony/expo-video@workspace:*, @expo-harmony/expo-video@workspace:packages/expo-video":
   version: 0.0.0-use.local
   resolution: "@expo-harmony/expo-video@workspace:packages/expo-video"
@@ -9016,6 +9034,15 @@ __metadata:
   bin:
     expo-updates: bin/cli.js
   checksum: 10c0/d1136501ba07cc4ea976f52c989bf46228811362658f6a11aa42e1f04d0fc018af3c5b41b760d8d763c90779161e16c2b87d5b4ece3d34f5a29a41a5460d5a1c
+  languageName: node
+  linkType: hard
+
+"expo-video-thumbnails@npm:55.0.19":
+  version: 55.0.19
+  resolution: "expo-video-thumbnails@npm:55.0.19"
+  peerDependencies:
+    expo: "*"
+  checksum: 10c0/7ad9342c293a0773ae5f43ff297db71103b7094cc0816353fc467da34d68ed4164bb2f58e43f0b75ad93f9ddeeed1843920fec21852014d654e0a6dde3d193f8
   languageName: node
   linkType: hard
 

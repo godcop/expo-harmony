@@ -1,0 +1,135 @@
+import {
+  ExpoFunction,
+  ExpoModule,
+  ExpoModuleDefinition,
+  ExpoModuleError,
+  ExpoValueTypes,
+  fileUriFromPath,
+} from '@expo-harmony/expo-modules-core';
+import { util } from '@kit.ArkTS';
+import { fileIo } from '@kit.CoreFileKit';
+import { image } from '@kit.ImageKit';
+import { media } from '@kit.MediaKit';
+
+import { VIDEO_THUMBNAILS_OPTIONS, VideoThumbnailsOptions, timeInMicroseconds } from './VideoThumbnailsOptions';
+
+const CACHE_DIRECTORY = 'VideoThumbnails';
+const JPEG_MIME_TYPE = 'image/jpeg';
+const ERROR_CODE = 'E_VIDEO_THUMBNAILS';
+
+interface VideoThumbnailsResult {
+  uri: string;
+  width: number;
+  height: number;
+}
+
+export class ExpoVideoThumbnailsModule extends ExpoModule {
+  override definition(): ExpoModuleDefinition {
+    return new ExpoModuleDefinition()
+      .name('ExpoVideoThumbnails')
+      .asyncFunction(
+        'getThumbnail',
+        ExpoFunction.typed2(
+          ExpoValueTypes.string(),
+          VIDEO_THUMBNAILS_OPTIONS,
+          (source: string, options: VideoThumbnailsOptions): Promise<VideoThumbnailsResult> => this.getThumbnail(source, options),
+        ),
+      );
+  }
+
+  private async getThumbnail(source: string, options: VideoThumbnailsOptions): Promise<VideoThumbnailsResult> {
+    this.context.assertActive();
+    if (!canIUse('SystemCapability.Multimedia.Media.AVMetadataExtractor')) {
+      throw new ExpoModuleError(ERROR_CODE, 'This device does not support video thumbnail extraction.');
+    }
+
+    // URI schemes are case-insensitive, but the system media implementation matches lowercase prefixes.
+    const uri = source.replace(/^(https?|file):/i, (scheme: string): string => scheme.toLowerCase());
+    const remote = /^https?:\/\//.test(uri);
+    if (!remote && !uri.startsWith('/') && !/^file:\/\//.test(uri)) {
+      throw new ExpoModuleError('ERR_INVALID_SOURCE_FILENAME', 'Invalid source URI. Use HTTP(S), a file URI, or an absolute path.');
+    }
+
+    let input: fileIo.File | undefined;
+    let extractor: media.AVMetadataExtractor | undefined;
+    let pixel: image.PixelMap | undefined;
+    let packer: image.ImagePacker | undefined;
+    let output: fileIo.File | undefined;
+    let destination: string | undefined;
+    let complete = false;
+
+    try {
+      extractor = await media.createAVMetadataExtractor();
+      this.context.assertActive();
+
+      if (remote) {
+        extractor.setUrlSource(uri, options.headers);
+      } else {
+        const path = this.context.filePathForRead(uri);
+        input = await fileIo.open(path, fileIo.OpenMode.READ_ONLY);
+        this.context.assertFileAccess(input.path);
+
+        const stat = await fileIo.stat(input.fd);
+        this.context.assertActive();
+        if (!stat.isFile() || stat.size <= 0) {
+          throw new ExpoModuleError('ERR_THUMBNAIL_FILE', "Can't read file: the video must be a nonempty regular file.");
+        }
+
+        extractor.fdSrc = { fd: input.fd, offset: 0, length: stat.size };
+      }
+
+      pixel = await extractor.fetchFrameByTime(timeInMicroseconds(options), media.AVImageQueryOptions.AV_IMAGE_QUERY_CLOSEST_SYNC, {});
+      this.context.assertActive();
+
+      const size = (await pixel.getImageInfo()).size;
+
+      const directory = `${this.context.cachePath}/${CACHE_DIRECTORY}`;
+      try {
+        await fileIo.mkdir(directory, true);
+      } catch (error) {
+        if (!(await fileIo.stat(directory)).isDirectory()) {
+          throw new ExpoModuleError(ERROR_CODE, 'Could not create the thumbnail cache directory.', error as Object);
+        }
+      }
+
+      this.context.assertActive();
+      const path = `${directory}/${util.generateRandomUUID(true)}.jpg`;
+      output = await fileIo.open(path, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE | fileIo.OpenMode.TRUNC);
+      destination = path;
+      this.context.assertActive();
+
+      packer = image.createImagePacker();
+      await packer.packToFile(pixel, output.fd, { format: JPEG_MIME_TYPE, quality: Math.trunc(options.quality * 100) });
+      await fileIo.close(output);
+      output = undefined;
+
+      this.context.assertActive();
+      const result: VideoThumbnailsResult = { uri: fileUriFromPath(path), width: size.width, height: size.height };
+      complete = true;
+
+      return result;
+    } catch (error) {
+      if (error instanceof ExpoModuleError) {
+        throw new ExpoModuleError(error.code, error.message, error, error.path);
+      }
+
+      throw new ExpoModuleError(ERROR_CODE, 'Could not generate or save the video thumbnail.', error as Object);
+    } finally {
+      if (packer !== undefined) await cleanup((): Promise<void> => packer!.release());
+      if (output !== undefined) await cleanup((): Promise<void> => fileIo.close(output!));
+      if (pixel !== undefined) await cleanup((): Promise<void> => pixel!.release());
+      if (extractor !== undefined) await cleanup((): Promise<void> => extractor!.release());
+      if (input !== undefined) await cleanup((): Promise<void> => fileIo.close(input!));
+
+      if (!complete && destination !== undefined) await cleanup((): Promise<void> => fileIo.unlink(destination!));
+    }
+  }
+}
+
+async function cleanup(action: () => Promise<void>): Promise<void> {
+  try {
+    await action();
+  } catch (error) {
+    console.warn(`ExpoVideoThumbnails cleanup failed: ${String(error)}`);
+  }
+}
