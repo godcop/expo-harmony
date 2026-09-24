@@ -7,8 +7,10 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-linear-gradient expo-linear-gradient@55.0.14
+npm install @expo-harmony/expo-linear-gradient expo-linear-gradient@55.0.18
 ```
+
+本包适配 Expo SDK 55 的 `expo-linear-gradient`，业务代码继续从官方包导入，原生部分由 Expo Harmony 自动链接。最低支持 HarmonyOS 5.0.1（API 13），宿主应用的 `compatibleSdkVersion` 不能低于这个版本。渐变由系统绘制能力渲染，颜色插值、抗锯齿和透明色混合与 Android / iOS 不保证逐像素一致。
 
 ## API 对照表
 
@@ -24,13 +26,13 @@ npm install @expo-harmony/expo-linear-gradient expo-linear-gradient@55.0.14
 
 类型：`readonly [ColorValue, ColorValue, ...ColorValue[]]`
 
-渐变的颜色序列，按顺序参与渲染。至少需要两个颜色，少于两个时忽略该次更新。
+渐变的颜色序列，按顺序参与渲染。至少需要两个颜色，少于两个时不绘制，保留上一次的渐变。
 
 #### `locations`
 
 类型：`readonly [number, number, ...number[]] | null`，默认 `null`
 
-每个颜色在渐变轴上的位置，取值 0 到 1，数量与 `colors` 一致。不传时颜色均匀分布。位置必须从小到大排列，取相同值可以得到硬过渡。数量对不上、取值越界或顺序不对时，忽略该次更新，保留上一次的渐变。
+每个颜色在渐变轴上的位置，取值 0 到 1，数量与 `colors` 一致。不传时颜色均匀分布。位置必须从小到大排列，取相同值可以得到硬过渡。位置数量多于颜色时会先在控制台警告并截断到相同长度；少于颜色、取值越界或顺序不对时同样不绘制。`locations` 没有覆盖 0 到 1 的两端时，首尾颜色向渐变轴两端延伸。
 
 #### `start`
 

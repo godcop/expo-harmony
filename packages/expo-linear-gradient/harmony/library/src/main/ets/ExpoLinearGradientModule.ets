@@ -70,6 +70,7 @@ function gradientStops(colors: GradientColor[], locations: number[] | null): Gra
 
   const stops: GradientStop[] = [];
   let previous: number = -1;
+
   for (let index = 0; index < colors.length; index += 1) {
     const color: string | undefined = colorToString(colors[index]);
     if (color === undefined) return undefined;
@@ -113,6 +114,7 @@ function normalizeBorderRadii(radii: GradientRadius[] | null): CanvasRadius[] | 
   if (radii.length !== 4) return undefined;
 
   const normalized: CanvasRadius[] = [];
+
   for (let index = 0; index < radii.length; index += 1) {
     const radius: CanvasRadius | undefined = normalizeRadius(radii[index]);
     if (radius === undefined) return undefined;
@@ -160,6 +162,7 @@ struct ExpoLinearGradientViewContent {
       stops.forEach((stop: GradientStop): void => gradient.addColorStop(stop[1], stop[0]));
 
       this.context.clearRect(0, 0, width, height);
+
       this.context.fillStyle = gradient;
       this.context.fillRect(0, 0, width, height);
     } catch (error) {
