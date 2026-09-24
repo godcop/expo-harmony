@@ -28,6 +28,7 @@ export const MODULES = [
   { id: 'screen-capture', title: '截屏保护', packageName: '@expo-harmony/expo-screen-capture', category: '应用', summary: '窗口截屏与录屏保护、独立标签、截图通知与 Hooks。' },
   { id: 'secure-store', title: '安全存储', packageName: '@expo-harmony/expo-secure-store', category: '应用', summary: '加密键值存储、同步与异步读写、服务隔离、容量边界及生物认证。' },
   { id: 'app-integrity', title: '应用完整性', packageName: '@expo-harmony/expo-app-integrity', category: '应用', summary: '硬件证明能力、密钥生成、证书链读取、参数边界与平台限制。' },
+  { id: 'local-authentication', title: '本地身份认证', packageName: '@expo-harmony/expo-local-authentication', category: '应用', summary: '生物识别能力、凭据录入、系统认证、密码回退与取消。' },
   { id: 'age-range', title: '年龄范围', packageName: '@expo-harmony/expo-age-range', category: '应用', summary: '系统年龄段、未知年龄、阈值参数与重复请求。' },
   { id: 'app-metrics', title: '应用指标', packageName: '@expo-harmony/expo-app-metrics', category: '应用', summary: '启动耗时、会话、诊断信息与持久化指标。' },
   { id: 'application', title: '应用信息', packageName: '@expo-harmony/expo-application', category: '应用', summary: '应用包标识、版本号、显示名称与安装时间。' },

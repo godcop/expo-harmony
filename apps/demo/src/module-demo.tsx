@@ -42,6 +42,7 @@ import { KeepAwakeDemo } from './modules/keep-awake';
 import { LinearGradientDemo } from './modules/linear-gradient';
 import { LinkingDemo } from './modules/linking';
 import { LivePhotoDemo } from './modules/live-photo';
+import { LocalAuthenticationDemo } from './modules/local-authentication';
 import { LocalizationDemo } from './modules/localization';
 import { LocationDemo } from './modules/location';
 import { MediaLibraryDemo } from './modules/media-library';
@@ -125,6 +126,7 @@ const MODULE_DEMOS = {
   'linear-gradient': LinearGradientDemo,
   'linking': LinkingDemo,
   'live-photo': LivePhotoDemo,
+  'local-authentication': LocalAuthenticationDemo,
   'localization': LocalizationDemo,
   'location': LocationDemo,
   'media-library': MediaLibraryDemo,
