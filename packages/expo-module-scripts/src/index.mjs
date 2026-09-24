@@ -409,6 +409,11 @@ async function executeWorkspaceBuild(entries) {
       await assertNonEmptyRegularFile(dependency.bundledHar, 'Workspace dependency HAR', dependency.packageRoot);
     }
 
+    // Publisher preparation only. Consumer autolinking never executes package scripts.
+    if (project.packageJson.scripts?.['harmony:prepare']) {
+      await spawnCommand('npm', ['run', 'harmony:prepare'], { cwd: project.packageRoot });
+    }
+
     await withWorkspaceOverrides(project, plan.overrides, async (signal) => {
       const options = { cwd: project.projectRoot, signal };
 
@@ -450,7 +455,11 @@ export async function prepareModule(root = process.cwd(), options = {}) {
   return plan;
 }
 
-function allowedPackedFile(name, runtimeFiles) {
+function allowedPackedFile(name, runtimeFiles, sourceBuild = false) {
+  if (sourceBuild && (name.startsWith('harmony/') || name.startsWith('scripts/')
+    || name.startsWith('licenses/') || ['VALIDATION.md', 'THIRD_PARTY_NOTICES.md'].includes(name))) {
+    return !name.split('/').some(part => ['node_modules', 'oh_modules', 'build', '.hvigor', '.cxx', '.native-build', 'native-deps', '__pycache__', 'local.properties', 'oh-package-lock.json5', 'BuildProfile.ets'].includes(part));
+  }
   return runtimeFiles.has(name)
     || name === 'package.json'
     || name === 'expo-module.config.json'
@@ -496,7 +505,11 @@ export async function prepackModule(root = process.cwd(), options = {}) {
 
   if (options.dryRun) return plan;
 
-  if (!await hasBuildReceipt(project)) await executeWorkspaceBuild(entries);
+  // Source-build preparation can regenerate native inputs after the workspace receipt.
+  // Rebuild these HARs before packing; the receipt only fingerprints package metadata/HARs.
+  if (!await hasBuildReceipt(project) || project.config.buildOptionsFile) {
+    await executeWorkspaceBuild(entries);
+  }
 
   const output = await spawnCommand(plan.pack.command, plan.pack.args, { cwd: project.packageRoot, capture: true });
   const result = JSON.parse(output);
@@ -505,7 +518,8 @@ export async function prepackModule(root = process.cwd(), options = {}) {
     packageFile(project.packageJson.main, 'package.json#main'),
     packageFile(project.packageJson.types, 'package.json#types'),
   ]);
-  const unexpected = files.filter(file => !allowedPackedFile(file, runtimeFiles));
+  const sourceBuild = Boolean(project.config.buildOptionsFile);
+  const unexpected = files.filter(file => !allowedPackedFile(file, runtimeFiles, sourceBuild));
 
   if (unexpected.length > 0) throw new Error(`npm pack contains unexpected files: ${unexpected.join(', ')}`);
 
