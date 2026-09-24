@@ -1,0 +1,11 @@
+{
+  "module": {
+    "name": "expo_mail_composer",
+    "type": "har",
+    "deviceTypes": [
+      "default",
+      "tablet",
+      "2in1"
+    ]
+  }
+}

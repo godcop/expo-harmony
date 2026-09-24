@@ -2412,6 +2412,24 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@expo-harmony/expo-mail-composer@workspace:*, @expo-harmony/expo-mail-composer@workspace:packages/expo-mail-composer":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-mail-composer@workspace:packages/expo-mail-composer"
+  dependencies:
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    expo: "npm:55.0.31"
+    expo-mail-composer: "npm:55.0.18"
+    expo-modules-core: "npm:55.0.26"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    expo-mail-composer: 55.0.18
+  languageName: unknown
+  linkType: soft
+
 "@expo-harmony/expo-manifests@workspace:*, @expo-harmony/expo-manifests@workspace:packages/expo-manifests":
   version: 0.0.0-use.local
   resolution: "@expo-harmony/expo-manifests@workspace:packages/expo-manifests"
@@ -8389,6 +8407,15 @@ __metadata:
   peerDependencies:
     expo: "*"
   checksum: 10c0/9c59d11aa8d900db0c947f9ae567d138270c7884c02897a1fb206c741cd2062db8d76d56536be88f47d9066186c8cff0da0ee9d81721485c743c2ca95899d76d
+  languageName: node
+  linkType: hard
+
+"expo-mail-composer@npm:55.0.18":
+  version: 55.0.18
+  resolution: "expo-mail-composer@npm:55.0.18"
+  peerDependencies:
+    expo: "*"
+  checksum: 10c0/a9fd298c02453d3e06473b6298e77455b2c1b92ff1e6da2795613f596e50411fe237f6227ea9f5b97ad30cf64ecdb5f35692157c0f7965b83c9ab004dddf126b
   languageName: node
   linkType: hard
 

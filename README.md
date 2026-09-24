@@ -70,6 +70,7 @@
 - [expo-local-authentication](./packages/expo-local-authentication/)：通过面部或指纹扫描认证用户。
 - [expo-localization](./packages/expo-localization/)：读取语言、地区、时区、日历和货币等本地化信息。
 - [expo-location](./packages/expo-location/)：读取地理位置、轮询当前位置或订阅位置更新事件。
+- [expo-mail-composer](./packages/expo-mail-composer/)：提供使用系统界面撰写和发送电子邮件的功能。
 - [expo-manifests](./packages/expo-manifests/)：提供 Expo 更新清单的原生模型，可在原生代码中读取和校验。
 - [expo-media-library](./packages/expo-media-library/)：访问设备上的图片和视频等媒体资源。
 - [@expo/config](./packages/expo__config/)：用于操作 app.json 的库。
