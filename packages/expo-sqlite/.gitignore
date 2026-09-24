@@ -1,0 +1,4 @@
+harmony/native-deps/
+harmony/.native-build/
+scripts/__pycache__/
+harmony/generated/

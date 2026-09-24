@@ -1,0 +1,11 @@
+{
+  "platforms": [
+    "harmony"
+  ],
+  "harmony": {
+    "modules": [
+      "ExpoSQLiteModule"
+    ],
+    "buildOptionsFile": "sqlite-options.json"
+  }
+}

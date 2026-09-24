@@ -107,6 +107,7 @@
 - [expo-sms](./packages/expo-sms/)：查询短信能力，打开系统短信编辑页并预填收件人与正文。
 - [expo-speech](./packages/expo-speech/)：使用系统语音合成能力离线朗读文本，支持音色查询与播放控制。
 - [expo-splash-screen](./packages/expo-splash-screen/)：控制原生启动画面的显示行为。
+- [expo-sqlite](./packages/expo-sqlite/)：提供对可通过 SQLite API 查询的数据库的访问。
 - [expo-standard-web-crypto](./packages/expo-standard-web-crypto/)：W3C Crypto API 的部分实现。
 - [expo-status-bar](./packages/expo-status-bar/)：提供与 React Native StatusBar 一致的接口，但其默认值更适合 Expo 环境。
 - [expo-structured-headers](./packages/expo-structured-headers/)：解析和序列化 Structured Fields（RFC 8941）响应头。

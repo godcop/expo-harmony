@@ -1,0 +1,17 @@
+--- a/bindings/c/Cargo.toml
++++ b/bindings/c/Cargo.toml
+@@ -20,11 +20,11 @@
+ http = "1.1.0"
+ anyhow = "1.0.86"
+ 
+-[target.'cfg(not(any(target_os = "ios", target_os = "android")))'.dependencies]
++[target.'cfg(not(any(target_os = "ios", target_os = "android", target_os = "ohos")))'.dependencies]
+ libsql = { path = "../../libsql", features = ["encryption"] }
+ 
+-# Disable encryption for ios and android targets
+-[target.'cfg(any(target_os = "ios", target_os = "android"))'.dependencies]
++# Disable encryption for ios, android and ohos targets
++[target.'cfg(any(target_os = "ios", target_os = "android", target_os = "ohos"))'.dependencies]
+ libsql = { path = "../../libsql"}
+ 
+ 

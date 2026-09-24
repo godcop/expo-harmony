@@ -1,0 +1,20 @@
+[submodule "expo-sqlite-sqlite"]
+	path = packages/expo-sqlite/third-party/sqlite
+	url = https://github.com/sqlite/sqlite.git
+	shallow = true
+[submodule "expo-sqlite-sqlcipher"]
+	path = packages/expo-sqlite/third-party/sqlcipher
+	url = https://github.com/sqlcipher/sqlcipher.git
+	shallow = true
+[submodule "expo-sqlite-sqlite-vec"]
+	path = packages/expo-sqlite/third-party/sqlite-vec
+	url = https://github.com/asg017/sqlite-vec.git
+	shallow = true
+[submodule "expo-sqlite-libsql"]
+	path = packages/expo-sqlite/third-party/libsql
+	url = https://github.com/tursodatabase/libsql.git
+	shallow = true
+[submodule "expo-sqlite-openssl"]
+	path = packages/expo-sqlite/third-party/openssl
+	url = https://github.com/openssl/openssl.git
+	shallow = true

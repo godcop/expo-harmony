@@ -1,0 +1,28 @@
+{
+  "modelVersion": "5.0.0",
+  "name": "@expo-harmony-internal/expo-sqlite",
+  "version": "55.0.20-harmony.0",
+  "description": "HarmonyOS port of expo-sqlite",
+  "keywords": [
+    "react-native",
+    "expo",
+    "expo-harmony",
+    "sqlite"
+  ],
+  "homepage": "https://github.com/renbaoshuo/expo-harmony/tree/master/packages/expo-sqlite#readme",
+  "repository": "https://github.com/renbaoshuo/expo-harmony",
+  "author": {
+    "name": "Baoshuo",
+    "email": "i@baoshuo.ren",
+    "url": "https://github.com/renbaoshuo"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@expo-harmony/expo-sqlite": "./library",
+    "@rnoh/react-native-openharmony": "0.84.1"
+  },
+  "overrides": {
+    "@expo-harmony/expo-modules-core": "55.0.25-harmony.5",
+    "@rnoh/react-native-openharmony": "0.84.1"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "enableFTS": true,
+  "useSQLCipher": false,
+  "useLibSQL": false,
+  "withSQLiteVecExtension": false,
+  "customBuildFlags": ""
+}

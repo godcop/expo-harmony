@@ -1,0 +1,50 @@
+{
+  "name": "@expo-harmony/expo-sqlite",
+  "version": "55.0.20-harmony.0",
+  "description": "HarmonyOS port of expo-sqlite",
+  "keywords": [
+    "react-native",
+    "expo",
+    "expo-harmony",
+    "sqlite"
+  ],
+  "author": "Baoshuo <i@baoshuo.ren>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/renbaoshuo/expo-harmony.git",
+    "directory": "packages/expo-sqlite"
+  },
+  "homepage": "https://github.com/renbaoshuo/expo-harmony/tree/master/packages/expo-sqlite#readme",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "harmony:clean": "expo-harmony-module prepare --clean-only",
+    "harmony:build": "expo-harmony-module prepare",
+    "prepack": "node scripts/prepack.cjs",
+    "harmony:prepare": "python3 scripts/prepare-native.py"
+  },
+  "peerDependencies": {
+    "@expo-harmony/expo-modules-core": "workspace:*",
+    "expo-sqlite": "55.0.20"
+  },
+  "devDependencies": {
+    "@expo-harmony/expo-module-scripts": "workspace:*",
+    "@expo-harmony/expo-modules-core": "workspace:*",
+    "@react-native-oh/react-native-harmony": "0.84.1",
+    "expo": "55.0.31",
+    "expo-modules-core": "55.0.26",
+    "expo-sqlite": "55.0.20",
+    "react": "19.2.3",
+    "react-native": "0.84.1"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@expo-harmony/config-plugins": "workspace:*"
+  }
+}

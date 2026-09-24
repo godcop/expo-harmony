@@ -2807,6 +2807,25 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@expo-harmony/expo-sqlite@workspace:*, @expo-harmony/expo-sqlite@workspace:packages/expo-sqlite":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-sqlite@workspace:packages/expo-sqlite"
+  dependencies:
+    "@expo-harmony/config-plugins": "workspace:*"
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    expo: "npm:55.0.31"
+    expo-modules-core: "npm:55.0.26"
+    expo-sqlite: "npm:55.0.20"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    expo-sqlite: 55.0.20
+  languageName: unknown
+  linkType: soft
+
 "@expo-harmony/expo-standard-web-crypto@workspace:packages/expo-standard-web-crypto":
   version: 0.0.0-use.local
   resolution: "@expo-harmony/expo-standard-web-crypto@workspace:packages/expo-standard-web-crypto"
@@ -8795,6 +8814,19 @@ __metadata:
   peerDependencies:
     expo: "*"
   checksum: 10c0/f7e00eeae16b59b12ea8e796425483d50ba4484b37b3df99fa76961e99cef29a89b0bfd5044ba74b4bb16f932fdfbbd0617b4bb7e2ba3f14ad952a812decac21
+  languageName: node
+  linkType: hard
+
+"expo-sqlite@npm:55.0.20":
+  version: 55.0.20
+  resolution: "expo-sqlite@npm:55.0.20"
+  dependencies:
+    await-lock: "npm:^2.2.2"
+  peerDependencies:
+    expo: "*"
+    react: "*"
+    react-native: "*"
+  checksum: 10c0/ef166b511e5b69a47d0faeec4af5ec5a974abcccce1579fee4edd37cd26b42f98af6d703cb87edd60f634709511402eba5f39c47a9293423d71693a4154a0256
   languageName: node
   linkType: hard
 
