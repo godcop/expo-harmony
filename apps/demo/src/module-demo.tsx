@@ -45,6 +45,7 @@ import { LivePhotoDemo } from './modules/live-photo';
 import { LocalAuthenticationDemo } from './modules/local-authentication';
 import { LocalizationDemo } from './modules/localization';
 import { LocationDemo } from './modules/location';
+import { MailComposerDemo } from './modules/mail-composer';
 import { MediaLibraryDemo } from './modules/media-library';
 import { MetroConfigDemo } from './modules/metro-config';
 import { NavigationBarDemo } from './modules/navigation-bar';
@@ -129,6 +130,7 @@ const MODULE_DEMOS = {
   'local-authentication': LocalAuthenticationDemo,
   'localization': LocalizationDemo,
   'location': LocationDemo,
+  'mail-composer': MailComposerDemo,
   'media-library': MediaLibraryDemo,
   'metro-config': MetroConfigDemo,
   'navigation-bar': NavigationBarDemo,

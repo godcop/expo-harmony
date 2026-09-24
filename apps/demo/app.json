@@ -119,6 +119,7 @@
       "label": "Expo Harmony 模块实验室",
       "icon": "./assets/app-icon.svg",
       "versionCode": 1,
+      "querySchemes": ["mailto"],
       "permissions": [
         {
           "name": "ohos.permission.CAMERA",

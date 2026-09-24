@@ -74,6 +74,7 @@ export const MODULES = [
   { id: 'print', title: '打印', packageName: '@expo-harmony/expo-print', category: '设备与媒体', summary: 'HTML 转 PDF、分页与 Base64 校验，以及系统文档打印。' },
   { id: 'sharing', title: '分享', packageName: '@expo-harmony/expo-sharing', category: '设备与媒体', summary: '通过 Harmony 系统面板分享本地文件。' },
   { id: 'sms', title: '短信', packageName: '@expo-harmony/expo-sms', category: '设备与媒体', summary: '短信能力、系统编辑页、收件人与正文回填、返回结果及错误恢复。' },
+  { id: 'mail-composer', title: '邮件', packageName: '@expo-harmony/expo-mail-composer', category: '设备与媒体', summary: '邮件能力、客户端列表、系统邮件面板、正文附件与错误恢复。' },
 
   { id: 'background-fetch', title: '后台拉取', packageName: '@expo-harmony/expo-background-fetch', category: '后台任务', summary: 'WorkScheduler 注册与 JavaScript 回调。' },
   { id: 'background-task', title: '后台任务', packageName: '@expo-harmony/expo-background-task', category: '后台任务', summary: '新一代后台任务与调试触发行为。' },
