@@ -7,7 +7,7 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-contacts expo-contacts@55.0.14
+npm install @expo-harmony/expo-contacts expo-contacts@55.0.18
 ```
 
 鸿蒙适配会通过 Autolinking 自动接入。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也需满足此要求。
@@ -268,7 +268,7 @@ HarmonyOS 上不支持自定义表单，传入非空对象时抛出 `ERR_CONTACT
 
 #### `InstantMessageAddress`
 
-`service`、`username`、`label` 返回，`id`、`localizedService` 不返回。`service` 是 IM 服务名，`label` 固定为 `other`；写入时 `label` 用于映射系统标签。
+`service`、`username`、`label` 返回，`id`、`localizedService` 不返回。`service` 是 IM 服务名，`label` 固定为 `other`；写入时 `service` 用于映射系统 IM 服务，`label` 不保存。
 
 #### `UrlAddress`
 

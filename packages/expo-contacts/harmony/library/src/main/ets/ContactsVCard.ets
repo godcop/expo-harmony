@@ -12,7 +12,6 @@ export function serializeVCard(contacts: ExpoContactRecord[], photos: string[]):
 
 function serializeContactVCard(entry: ExpoContactRecord, photo?: string): string {
   const lines: string[] = ['BEGIN:VCARD', 'VERSION:3.0'];
-
   lines.push(`FN:${escapeVCard(entry.name)}`);
   lines.push(
     `N:${escapeVCard(entry.lastName ?? '')};${escapeVCard(entry.firstName ?? '')};${escapeVCard(entry.middleName ?? '')};${escapeVCard(entry.namePrefix ?? '')};${escapeVCard(entry.nameSuffix ?? '')}`,
@@ -49,7 +48,6 @@ function serializeContactVCard(entry: ExpoContactRecord, photo?: string): string
   });
 
   if (photo) lines.push(`PHOTO;ENCODING=b;TYPE=JPEG:${photo}`);
-
   lines.push('END:VCARD');
 
   return lines.map((line: string): string => foldVCardLine(line)).join(VCARD_LINE_BREAK);
@@ -108,18 +106,18 @@ function foldVCardLine(value: string): string {
   const parts: string[] = [];
   let line: string = '';
   let size: number = 0;
-  let i: number = 0;
+  let offset: number = 0;
 
-  while (i < value.length) {
+  while (offset < value.length) {
     let length = 1;
-    const first = value.charCodeAt(i);
+    const first = value.charCodeAt(offset);
 
-    if (first >= 0xd800 && first <= 0xdbff && i + 1 < value.length) {
-      const second = value.charCodeAt(i + 1);
+    if (first >= 0xd800 && first <= 0xdbff && offset + 1 < value.length) {
+      const second = value.charCodeAt(offset + 1);
       if (second >= 0xdc00 && second <= 0xdfff) length = 2;
     }
 
-    const char = value.slice(i, i + length);
+    const char = value.slice(offset, offset + length);
     const octets = encoder.encodeInto(char).byteLength;
     const capacity = parts.length === 0 ? VCARD_MAX_LINE_OCTETS : VCARD_MAX_LINE_OCTETS - 1;
 
@@ -131,7 +129,7 @@ function foldVCardLine(value: string): string {
 
     line += char;
     size += octets;
-    i += length;
+    offset += length;
   }
 
   parts.push(line);

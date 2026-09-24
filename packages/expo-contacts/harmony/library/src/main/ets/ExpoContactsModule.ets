@@ -35,7 +35,7 @@ const OPTIONAL_STRING = ExpoValueTypes.string().nullable().optional();
 export class ExpoContactsModule extends ExpoModule {
   private readonly permissions: ContactsPermissions;
   private readonly repository: ContactsRepository;
-  private static activeUi?: ExpoContactsModule;
+  private static presenter?: ExpoContactsModule;
 
   constructor(context: ExpoModuleContext) {
     super(context);
@@ -51,7 +51,7 @@ export class ExpoContactsModule extends ExpoModule {
         throw new ExpoContactsError('ERR_CONTACTS_UNSUPPORTED', 'Contacts Kit does not expose contact-store change notifications.');
       })
       .onDestroy((): void => {
-        if (ExpoContactsModule.activeUi === this) ExpoContactsModule.activeUi = undefined;
+        if (ExpoContactsModule.presenter === this) ExpoContactsModule.presenter = undefined;
       })
       .asyncFunction('getPermissionsAsync', async (): Promise<ContactsPermissionResponse> => await this.permissions.get())
       .asyncFunction('requestPermissionsAsync', async (): Promise<ContactsPermissionResponse> => await this.permissions.request())
@@ -101,8 +101,8 @@ export class ExpoContactsModule extends ExpoModule {
         ExpoFunction.typed2(
           CONTACT_RECORD,
           OPTIONAL_STRING,
-          async (record: Record<string, ESObject>, containerId: string | null | undefined): Promise<string> =>
-            await this.run(async (): Promise<string> => await this.repository.add(record, containerId)),
+          async (record: Record<string, ESObject>, container: string | null | undefined): Promise<string> =>
+            await this.run(async (): Promise<string> => await this.repository.add(record, container)),
         ),
       )
       .asyncFunction(
@@ -158,8 +158,8 @@ export class ExpoContactsModule extends ExpoModule {
         ExpoFunction.typed2(
           ExpoValueTypes.string(),
           ExpoValueTypes.string(),
-          async (id: string, groupId: string): Promise<void> =>
-            await this.run(async (): Promise<void> => await this.repository.changeGroupMembership(id, groupId, true)),
+          async (id: string, group: string): Promise<void> =>
+            await this.run(async (): Promise<void> => await this.repository.changeGroupMembership(id, group, true)),
         ),
       )
       .asyncFunction(
@@ -167,8 +167,8 @@ export class ExpoContactsModule extends ExpoModule {
         ExpoFunction.typed2(
           ExpoValueTypes.string(),
           ExpoValueTypes.string(),
-          async (id: string, groupId: string): Promise<void> =>
-            await this.run(async (): Promise<void> => await this.repository.changeGroupMembership(id, groupId, false)),
+          async (id: string, group: string): Promise<void> =>
+            await this.run(async (): Promise<void> => await this.repository.changeGroupMembership(id, group, false)),
         ),
       );
   }
@@ -203,15 +203,15 @@ export class ExpoContactsModule extends ExpoModule {
 
   private beginUi(): void {
     this.ensureActive();
-    if (ExpoContactsModule.activeUi !== undefined) {
+    if (ExpoContactsModule.presenter !== undefined) {
       throw new ExpoContactsError('ERR_CONTACTS_UI_IN_PROGRESS', 'A contacts picker, form, or share operation is already in progress.');
     }
 
-    ExpoContactsModule.activeUi = this;
+    ExpoContactsModule.presenter = this;
   }
 
   private endUi(): void {
-    if (ExpoContactsModule.activeUi === this) ExpoContactsModule.activeUi = undefined;
+    if (ExpoContactsModule.presenter === this) ExpoContactsModule.presenter = undefined;
   }
 
   private async presentPicker(): Promise<ExpoContactRecord | null> {
@@ -228,10 +228,11 @@ export class ExpoContactsModule extends ExpoModule {
       this.ensureActive();
       if (selected.length === 0) return null;
 
-      // The picker grants access to its result; it does not grant READ_CONTACTS.
+      // Picker results are authorized without READ_CONTACTS.
       return await this.repository.serialize(selected[0], new RequestedFields());
     } catch (error) {
       if ((error as BusinessError).code === USER_CANCELLED) return null;
+
       if (error instanceof ExpoModuleError) throw new ExpoContactsError(error.code, error.message, error);
       throw new ExpoContactsError('ERR_CONTACTS_PICKER', 'Unable to present the HarmonyOS contact picker.', error as Object);
     } finally {
@@ -259,7 +260,7 @@ export class ExpoContactsModule extends ExpoModule {
 
     try {
       const value = nativeContactFromExpo(data);
-      // Contacts Kit rejects an empty Contact; an empty Name opens a blank form.
+      // An empty Name opens a blank form; Contacts Kit rejects an empty Contact.
       if (Object.keys(value).length === 0) value.name = { fullName: '' };
 
       await contact.addContactViaUI(this.context.uiAbilityContext, value);

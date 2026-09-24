@@ -64,9 +64,8 @@ export class ContactsRepository {
       if (holder === undefined) return [];
     }
 
-    // Contacts Kit filters data rows by attributes before assembling contacts.
-    // Project fields after querying, so a phone-only contact survives fields: [].
-    // Contacts Kit's N-API parser distinguishes omitted arguments from undefined.
+    // Attribute filtering drops contacts with no matching data rows; project fields locally.
+    // The N-API parser distinguishes omitted arguments from undefined.
     let values =
       holder === undefined
         ? await contact.queryContacts(this.context.uiAbilityContext)
@@ -79,9 +78,10 @@ export class ContactsRepository {
       const needle = query.name.toLocaleLowerCase();
       values = values.filter((entry: contact.Contact): boolean => nativeDisplayName(entry).toLocaleLowerCase().includes(needle));
     } else if (query.groupId !== undefined) {
-      const groupId = query.groupId;
-      values = values.filter((entry: contact.Contact): boolean => hasGroup(entry, groupId));
+      const group = query.groupId;
+      values = values.filter((entry: contact.Contact): boolean => hasGroup(entry, group));
     }
+
     sortNativeContacts(values, query.sort);
 
     return values;
@@ -89,6 +89,7 @@ export class ContactsRepository {
 
   async getContacts(query: ContactQuery): Promise<ContactResponse> {
     const values = await this.select(query);
+
     const end = query.pageSize === 0 ? values.length : query.pageOffset + query.pageSize;
     const page = values.slice(query.pageOffset, end);
 
@@ -108,10 +109,9 @@ export class ContactsRepository {
   }
 
   private async findContact(id: string): Promise<contact.Contact | undefined> {
-    // Contact.id is the public identifier returned by every Expo entry point. A scan
-    // distinguishes missing contacts without swallowing queryKey's general 401 errors.
     this.permissions.ensureRead();
 
+    // queryKey reports missing contacts as generic 401 errors; scan numeric IDs instead.
     const entries = await contact.queryContacts(this.context.uiAbilityContext);
 
     return entries.find((entry: contact.Contact): boolean => contactIdentifier(entry) === id);
@@ -124,9 +124,9 @@ export class ContactsRepository {
     return entry;
   }
 
-  async add(record: Record<string, ESObject>, containerId?: string | null): Promise<string> {
+  async add(record: Record<string, ESObject>, container?: string | null): Promise<string> {
     validateWritableContact(record);
-    if (containerId !== undefined && containerId !== null) {
+    if (container !== undefined && container !== null) {
       throw new ExpoContactsError('ERR_CONTACTS_UNSUPPORTED', 'HarmonyOS cannot create a contact in a specified container.');
     }
 
@@ -145,23 +145,22 @@ export class ContactsRepository {
     validateWritableContact(record);
     const id = requireString(record['id'], 'contact.id');
 
-    const attrs = updateAttributes(record);
+    const attributes = updateAttributes(record);
 
     return await this.mutate(async (): Promise<string> => {
       const entry = await this.requireContact(id);
-      if (attrs.attributes.length === 0) return id;
+      if (attributes.attributes.length === 0) return id;
 
       mergeExpoContact(entry, record);
       if (hasConcreteField(record, 'image') && entry.portrait?.uri) this.context.filePathForRead(entry.portrait.uri);
 
       this.permissions.ensureWrite();
-      if (attrs.attributes.includes(contact.Attribute.ATTR_CONTACT_EVENT)) {
-        // The published ContactsData parser drops ATTR_CONTACT_EVENT (value 0).
-        // Use the documented all-attributes update with the complete native
-        // contact, preserving fields Expo does not expose (including SIP/groups).
+      if (attributes.attributes.includes(contact.Attribute.ATTR_CONTACT_EVENT)) {
+        // ContactsData drops ATTR_CONTACT_EVENT (0); update the complete native record
+        // to retain fields Expo cannot represent, including SIP and groups.
         await contact.updateContact(this.context.uiAbilityContext, entry);
       } else {
-        await contact.updateContact(this.context.uiAbilityContext, entry, attrs);
+        await contact.updateContact(this.context.uiAbilityContext, entry, attributes);
       }
 
       return id;
@@ -180,6 +179,7 @@ export class ContactsRepository {
 
   async writeVCard(query: ContactQuery): Promise<string | undefined> {
     const values = await this.select(query);
+
     const end = query.pageSize === 0 ? values.length : query.pageOffset + query.pageSize;
     const page = values.slice(query.pageOffset, end);
     if (page.length === 0) return undefined;
@@ -205,13 +205,13 @@ export class ContactsRepository {
   async getGroups(query?: Record<string, ESObject> | null): Promise<ExpoGroupRecord[]> {
     this.permissions.ensureRead();
 
-    const containerId = optionalInputString(query?.['containerId'], 'groupQuery.containerId');
-    const groupId = optionalInputString(query?.['groupId'], 'groupQuery.groupId');
+    const container = optionalInputString(query?.['containerId'], 'groupQuery.containerId');
+    const id = optionalInputString(query?.['groupId'], 'groupQuery.groupId');
     const name = optionalInputString(query?.['groupName'], 'groupQuery.groupName', true);
 
     let holder: contact.Holder | undefined;
-    if (name === undefined && containerId !== undefined) {
-      holder = await this.findHolder(containerId);
+    if (name === undefined && container !== undefined) {
+      holder = await this.findHolder(container);
       if (holder === undefined) return [];
     }
 
@@ -223,7 +223,7 @@ export class ContactsRepository {
     return groups
       .filter((entry: contact.Group): boolean => {
         if (name !== undefined) return entry.title === name;
-        return containerId !== undefined || groupId === undefined || groupIdentifier(entry) === groupId;
+        return container !== undefined || id === undefined || groupIdentifier(entry) === id;
       })
       .map((entry: contact.Group): ExpoGroupRecord => {
         const result = new ExpoGroupRecord();
@@ -252,6 +252,7 @@ export class ContactsRepository {
         const groups = await contact.queryGroups(this.context.uiAbilityContext, holder);
         if (!groups.some((group: contact.Group): boolean => groupIdentifier(group) === groupId)) continue;
       } else if (ids !== undefined && !ids.includes(holderIdentifier(holder))) continue;
+
       result.push(new ExpoContainerRecord(holderIdentifier(holder), holder.displayName || holder.bundleName));
     }
 
@@ -289,12 +290,14 @@ export function validateWritableContact(record: Record<string, ESObject>): void 
   for (const field of unsupported) {
     if (hasConcreteField(record, field)) throw new ExpoContactsError('ERR_CONTACTS_UNSUPPORTED', `HarmonyOS cannot write contact.${field}.`);
   }
+
   if (hasConcreteField(record, 'contactType') && record['contactType'] !== 'person') {
     throw new ExpoContactsError(
       'ERR_CONTACTS_UNSUPPORTED',
       'HarmonyOS does not expose the company contact type. Use the company field on a person contact.',
     );
   }
+
   if (hasConcreteField(record, 'image') && deviceInfo.sdkApiVersion < CONTACT_PORTRAIT_API) {
     throw new ExpoContactsError('ERR_CONTACTS_UNSUPPORTED', 'Writing contact images requires HarmonyOS API 22 or later.');
   }
@@ -324,6 +327,7 @@ function updateAttributes(record: Record<string, ESObject>): contact.ContactAttr
     'relationships': contact.Attribute.ATTR_RELATION,
     'image': contact.Attribute.ATTR_PORTRAIT,
   };
+
   const attributes: contact.Attribute[] = [];
   for (const key of Object.keys(mapping)) {
     if (hasConcreteField(record, key) && !attributes.includes(mapping[key])) attributes.push(mapping[key]);

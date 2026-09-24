@@ -14,6 +14,7 @@ async function withCleanup<Result>(operation: () => Promise<Result>, releases: (
     return await operation();
   } catch (error) {
     failed = true;
+
     if (error instanceof ExpoModuleError) throw new ExpoContactsError(error.code, error.message, error);
     throw new ExpoContactsError('ERR_CONTACTS_FILE', 'The contact file operation failed.', error as Object);
   } finally {
@@ -43,6 +44,7 @@ export async function writeCacheFile(context: ExpoModuleContext, extension: stri
 
   const path = `${directory}/${util.generateRandomUUID()}.${extension}`;
   context.assertFileAccess(path, 'write');
+
   const file = await fileIo.open(path, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY | fileIo.OpenMode.TRUNC);
 
   try {
@@ -52,6 +54,7 @@ export async function writeCacheFile(context: ExpoModuleContext, extension: stri
       while (written < bytes.byteLength) {
         const count = await fileIo.write(file.fd, bytes.slice(written));
         if (count <= 0) throw new ExpoContactsError('ERR_CONTACTS_FILE_WRITE', 'Unable to finish writing the contacts cache file.');
+
         written += count;
       }
     }, [
@@ -75,7 +78,7 @@ export async function writeCacheFile(context: ExpoModuleContext, extension: stri
 export async function cachePortrait(context: ExpoModuleContext, uri: string): Promise<ExpoImageRecord> {
   context.assertActive();
 
-  // This URI comes from Contacts Kit under the contacts read grant, never from JS input.
+  // Contacts Kit supplies this authorized URI; it is not a JS-provided file path.
   const file = await fileIo.open(uri, fileIo.OpenMode.READ_ONLY);
   let source: image.ImageSource | undefined;
   let packer: image.ImagePacker | undefined;
@@ -87,8 +90,10 @@ export async function cachePortrait(context: ExpoModuleContext, uri: string): Pr
     packer = image.createImagePacker();
     const bytes = await packer.packToData(source, { format: 'image/jpeg', quality: 100 });
 
+    const output = await writeCacheFile(context, 'jpg', bytes);
+
     const result = new ExpoImageRecord();
-    result.uri = await writeCacheFile(context, 'jpg', bytes);
+    result.uri = output;
     result.width = info.size.width;
     result.height = info.size.height;
 
@@ -119,6 +124,7 @@ export async function readBase64(context: ExpoModuleContext, uri: string): Promi
       const chunk = new ArrayBuffer(size - offset);
       const count = await fileIo.read(file.fd, chunk);
       if (count <= 0) throw new ExpoContactsError('ERR_CONTACTS_FILE_READ', 'Unable to read the complete contact image.');
+
       bytes.set(new Uint8Array(chunk, 0, count), offset);
       offset += count;
     }

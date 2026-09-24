@@ -92,8 +92,8 @@ export class ContactsPermissions {
 
   private async requestOnce(): Promise<ContactsPermissionResponse> {
     const request = await this.context.requestPermissions(PERMISSIONS);
-    let restricted = false;
 
+    let restricted = false;
     for (const result of request.systemResults) {
       for (const permission of PERMISSIONS) {
         const index = result.permissions.indexOf(permission);
@@ -112,6 +112,7 @@ export class ContactsPermissions {
 
         const blocked = reason === RequestReason.CannotRequest || reason === RequestReason.ManualSettings;
         restricted = restricted || blocked;
+
         if (
           deviceInfo.sdkApiVersion < SELF_PERMISSION_STATUS_API &&
           (((reason === undefined || reason === RequestReason.Success) &&
@@ -125,6 +126,7 @@ export class ContactsPermissions {
 
     const response = await this.get();
     if (this.context.services.get(ExpoRuntimePermissionsKey) !== undefined) return response;
+
     if (!response.granted) {
       response.status = 'denied';
       response.canAskAgain = response.canAskAgain && !restricted;
@@ -142,7 +144,7 @@ export class ContactsPermissions {
       const value = (await store.get(permission, false)) === true;
       if (!this.denials.has(permission)) this.denials.set(permission, value);
     } catch (_) {
-      // Persistence is best effort; grants always come from the OS.
+      // Missing history must never override an OS grant.
     }
 
     return this.denials.get(permission) ?? false;
@@ -150,6 +152,7 @@ export class ContactsPermissions {
 
   private async setDenied(permission: Permissions, denied: boolean): Promise<void> {
     if (this.denials.get(permission) === denied) return;
+
     this.denials.set(permission, denied);
 
     try {
@@ -157,7 +160,7 @@ export class ContactsPermissions {
       await store.put(permission, denied);
       await store.flush();
     } catch (_) {
-      // Preserve the in-memory history if storage fails.
+      // Keep in-memory denial history when persistence fails.
     }
   }
 }

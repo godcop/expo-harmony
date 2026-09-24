@@ -28,6 +28,7 @@ function withHarmonyContacts(config, options = {}) {
 
   return withStrings(config, (mod) => {
     const entry = mod.modResults.entry ??= {};
+
     for (const [name, value] of Object.entries(reasons)) {
       HarmonyResources.removeString(entry, name);
       if (value !== undefined) HarmonyResources.setString(entry, { name, value });

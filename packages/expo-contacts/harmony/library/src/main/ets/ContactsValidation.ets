@@ -46,9 +46,11 @@ export function readContactQuery(value: ESObject): ContactQuery {
 
 function optionalNonNegativeInteger(value: ESObject, name: string): number | undefined {
   if (value === undefined || value === null) return undefined;
+
   if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) {
     throw new ExpoContactsError('ERR_CONTACTS_INVALID_ARGUMENT', `'${name}' must be a non-negative integer.`);
   }
+
   return value;
 }
 
@@ -60,6 +62,7 @@ function optionalRecord(value: ESObject): Record<string, ESObject> | undefined {
 
 export function optionalInputRecord(value: ESObject, name: string): Record<string, ESObject> | undefined {
   if (value === undefined || value === null) return undefined;
+
   const record = optionalRecord(value);
   if (record === undefined) {
     throw new ExpoContactsError('ERR_CONTACTS_INVALID_ARGUMENT', `'${name}' must be an object.`);
@@ -83,10 +86,12 @@ function optionalString(value: ESObject): string | undefined {
 
 export function optionalInputString(value: ESObject, name: string, allowEmpty: boolean = false): string | undefined {
   if (value === undefined || value === null) return undefined;
+
   if (typeof value !== 'string' || (!allowEmpty && value.length === 0)) {
     const requirement = allowEmpty ? 'a string' : 'a non-empty string';
     throw new ExpoContactsError('ERR_CONTACTS_INVALID_ARGUMENT', `'${name}' must be ${requirement}.`);
   }
+
   return value;
 }
 

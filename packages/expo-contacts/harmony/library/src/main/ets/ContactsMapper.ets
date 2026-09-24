@@ -38,6 +38,7 @@ export function mapContact(entry: contact.Contact, fields: RequestedFields): Exp
 
       return item;
     });
+
     if (emails.length > 0) result.emails = emails;
   }
 
@@ -49,6 +50,7 @@ export function mapContact(entry: contact.Contact, fields: RequestedFields): Exp
 
       return item;
     });
+
     if (phones.length > 0) result.phoneNumbers = phones;
   }
 
@@ -65,6 +67,7 @@ export function mapContact(entry: contact.Contact, fields: RequestedFields): Exp
 
       return item;
     });
+
     if (addresses.length > 0) result.addresses = addresses;
   }
 
@@ -76,6 +79,7 @@ export function mapContact(entry: contact.Contact, fields: RequestedFields): Exp
 
       return item;
     });
+
     if (messages.length > 0) result.instantMessageAddresses = messages;
   }
 
@@ -86,6 +90,7 @@ export function mapContact(entry: contact.Contact, fields: RequestedFields): Exp
 
       return item;
     });
+
     if (urls.length > 0) result.urlAddresses = urls;
   }
 
@@ -96,6 +101,7 @@ export function mapContact(entry: contact.Contact, fields: RequestedFields): Exp
 
       return item;
     });
+
     if (relations.length > 0) result.relationships = relations;
   }
 
@@ -103,12 +109,12 @@ export function mapContact(entry: contact.Contact, fields: RequestedFields): Exp
     const dates: ExpoDateRecord[] = [];
 
     (entry.events ?? []).forEach((event: contact.Event): void => {
-      const parsed = parseContactDate(event.eventDate);
-      if (parsed === undefined) return;
+      const date = parseContactDate(event.eventDate);
+      if (date === undefined) return;
 
-      parsed.label = eventLabel(event);
-      if (isBirthdayEvent(event) && result.birthday === undefined) result.birthday = parsed;
-      else dates.push(parsed);
+      date.label = eventLabel(event);
+      if (isBirthdayEvent(event) && result.birthday === undefined) result.birthday = date;
+      else dates.push(date);
     });
 
     if (fields.has('dates') && dates.length > 0) result.dates = dates;
@@ -167,6 +173,7 @@ export function mergeExpoContact(target: contact.Contact, record: Record<string,
     const nickname = optionalContactString(record['nickname'], 'contact.nickname');
     target.nickName = { nickName: nickname ?? '' };
   }
+
   if (hasConcreteField(record, 'note')) {
     const note = optionalContactString(record['note'], 'contact.note');
     target.note = { noteContent: note ?? '' };
@@ -188,7 +195,6 @@ export function mergeExpoContact(target: contact.Contact, record: Record<string,
 
   const birthday = hasConcreteField(record, 'birthday');
   const dates = hasConcreteField(record, 'dates');
-
   if (birthday || dates) {
     const events: contact.Event[] = [];
 
@@ -217,7 +223,6 @@ export function mergeExpoContact(target: contact.Contact, record: Record<string,
 
   if (hasConcreteField(record, 'image')) {
     const image = requireRecord(record['image'], 'contact.image');
-
     target.portrait = { uri: requireString(image['uri'], 'contact.image.uri') };
   }
 }
@@ -465,9 +470,10 @@ export function holderIdentifier(holder: contact.Holder): string {
   if (holder.holderId !== undefined) {
     if (Number.isSafeInteger(holder.holderId) && holder.holderId >= 0) return String(holder.holderId);
   } else if (nonEmpty(holder.bundleName) !== undefined) {
-    // Include the account name; bundleName alone can identify multiple holders.
+    // A bundle can contain multiple accounts.
     return JSON.stringify([holder.bundleName, holder.displayName ?? '']);
   }
+
   throw new ExpoContactsError('ERR_CONTACTS_INVALID_CONTAINER', 'HarmonyOS returned a contact holder without a valid identifier.');
 }
 
@@ -479,8 +485,8 @@ export function groupIdentifier(group: contact.Group): string {
   return String(group.groupId);
 }
 
-export function hasGroup(entry: contact.Contact, groupId: string): boolean {
-  return (entry.groups ?? []).some((group: contact.Group): boolean => groupIdentifier(group) === groupId);
+export function hasGroup(entry: contact.Contact, id: string): boolean {
+  return (entry.groups ?? []).some((group: contact.Group): boolean => groupIdentifier(group) === id);
 }
 
 export function sortNativeContacts(values: contact.Contact[], sort?: string): void {
