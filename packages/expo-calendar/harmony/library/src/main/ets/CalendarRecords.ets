@@ -47,14 +47,14 @@ export class ExpoCalendarRecord {
     calendar: calendarManager.Calendar,
     account: calendarManager.CalendarAccount,
     config: calendarManager.CalendarConfig,
-    primaryId?: number,
+    primary?: number,
   ) {
     this.id = String(calendar.id);
     this.title = account.displayName || account.name;
     this.source = new ExpoCalendarSource(account);
     this.type = expoCalendarType(account.type);
     this.color = expoColor(config.color);
-    this.isPrimary = calendar.id === primaryId;
+    this.isPrimary = calendar.id === primary;
     this.name = account.name;
     this.ownerAccount = account.name;
   }
@@ -168,6 +168,7 @@ export class ExpoDialogResult {
     if (!Number.isSafeInteger(id) || id === 0) {
       throw new ExpoCalendarError('ERR_CALENDAR_DIALOG', 'Calendar Kit returned an invalid event creation result.');
     }
+
     this.action = id > 0 ? 'saved' : 'canceled';
     this.id = id > 0 ? String(id) : null;
   }
@@ -211,6 +212,7 @@ export function requireDate(value: ESObject, name: string): number {
 export function calendarAccountFromDetails(data: Record<string, ESObject>): calendarManager.CalendarAccount {
   validateEntityType(data['entityType']);
   const title = requireNonEmptyString(data['title'], 'title');
+
   let source: Record<string, ESObject> | undefined = undefined;
   if (has(data, 'source') && data['source'] !== undefined && data['source'] !== null) {
     source = requireRecord(data['source'], 'source');
@@ -266,9 +268,9 @@ export function validateCalendarUpdate(data: Record<string, ESObject>, account: 
     throw new ExpoCalendarError('ERR_CALENDAR_UNSUPPORTED', 'HarmonyOS Calendar Kit does not support changing an existing calendar account name.');
   }
 
-  const hasSource = has(data, 'source') && data['source'] !== undefined && data['source'] !== null;
-  const hasType = has(data, 'type') && data['type'] !== undefined && data['type'] !== null;
-  if (hasSource || hasType) {
+  const source = has(data, 'source') && data['source'] !== undefined && data['source'] !== null;
+  const type = has(data, 'type') && data['type'] !== undefined && data['type'] !== null;
+  if (source || type) {
     throw new ExpoCalendarError('ERR_CALENDAR_UNSUPPORTED', 'HarmonyOS Calendar Kit does not support moving an existing calendar to another source.');
   }
 }
@@ -298,7 +300,8 @@ export function eventFromDetails(data: Record<string, ESObject>, current?: calen
   const title = has(data, 'title') ? clearableString(data['title'], 'title') : current?.title;
   const location = has(data, 'location') ? nativeLocation(data['location']) : current?.location;
   const allDay = has(data, 'allDay') ? clearableBoolean(data['allDay'], 'allDay') : current?.isAllDay;
-  const timeZone = has(data, 'timeZone') ? clearableString(data['timeZone'], 'timeZone') : current?.timeZone;
+  const zone = has(data, 'timeZone') ? clearableString(data['timeZone'], 'timeZone') : current?.timeZone;
+
   let alarms = has(data, 'alarms') ? nativeAlarms(data['alarms'], allDay ?? false) : current?.reminderTime;
   if (!has(data, 'alarms') && current !== undefined && (allDay ?? false) !== (current.isAllDay ?? false)) {
     const shift = (allDay ? ALL_DAY_ALARM_ANCHOR_MINUTES : 0) - (current.isAllDay ? ALL_DAY_ALARM_ANCHOR_MINUTES : 0);
@@ -318,7 +321,7 @@ export function eventFromDetails(data: Record<string, ESObject>, current?: calen
   if (location !== undefined) event.location = location;
   if (allDay !== undefined) event.isAllDay = allDay;
   if (current?.attendee !== undefined) event.attendee = current.attendee;
-  if (timeZone !== undefined) event.timeZone = timeZone;
+  if (zone !== undefined) event.timeZone = zone;
   if (alarms !== undefined) event.reminderTime = alarms;
   if (recurrence !== undefined) event.recurrenceRule = recurrence;
   if (notes !== undefined) event.description = notes;
@@ -370,6 +373,7 @@ function optionalString(value: ESObject): string | undefined {
 
 function optionalNamedString(value: ESObject, name: string): string | undefined {
   if (value === undefined || value === null) return undefined;
+
   const result = optionalString(value);
   if (result === undefined) {
     throw new ExpoCalendarError('ERR_CALENDAR_INVALID_ARGUMENT', `'${name}' must be a non-empty string.`);
@@ -469,26 +473,25 @@ function nativeRecurrence(data: Record<string, ESObject>, current?: calendarMana
     throw new ExpoCalendarError('ERR_CALENDAR_UNSUPPORTED', 'Expo recurrence rules cannot modify a lunar calendar schedule.');
   }
 
-  const endDate: ESObject = record['endDate'];
-  const expire = endDate === undefined || endDate === null ? undefined : requireDate(endDate, 'recurrenceRule.endDate');
+  const end: ESObject = record['endDate'];
+  const expire = end === undefined || end === null ? undefined : requireDate(end, 'recurrenceRule.endDate');
   const count = expire === undefined ? optionalPositiveInteger(record['occurrence'], 'recurrenceRule.occurrence') : undefined;
   const interval = optionalPositiveInteger(record['interval'], 'recurrenceRule.interval');
   const weekdays = nativeWeekdays(record['daysOfTheWeek']);
-  const monthDays = nativeMonthDays(record['daysOfTheMonth'], record['monthsOfTheYear']);
-  const setPositions = numberArray(record['setPositions'], 'recurrenceRule.setPositions', -366, 366, true);
+  const dates = nativeMonthDays(record['daysOfTheMonth'], record['monthsOfTheYear']);
+  const positions = numberArray(record['setPositions'], 'recurrenceRule.setPositions', -366, 366, true);
 
-  if (setPositions !== undefined && setPositions.length > 0) {
+  if (positions !== undefined && positions.length > 0) {
     throw new ExpoCalendarError('ERR_CALENDAR_UNSUPPORTED', "HarmonyOS Calendar Kit does not support recurrence 'setPositions'.");
   }
 
   const rule: calendarManager.RecurrenceRule = {
     recurrenceFrequency: nativeFrequency(requireNonEmptyString(record['frequency'], 'recurrenceRule.frequency')),
   };
-  const yearWeeks = numberArray(record['weeksOfTheYear'], 'recurrenceRule.weeksOfTheYear', 1, 53);
-  const yearDays = numberArray(record['daysOfTheYear'], 'recurrenceRule.daysOfTheYear', 1, 366);
+  const weeks = numberArray(record['weeksOfTheYear'], 'recurrenceRule.weeksOfTheYear', 1, 53);
+  const days = numberArray(record['daysOfTheYear'], 'recurrenceRule.daysOfTheYear', 1, 366);
 
-  // Calendar Kit silently ignores or overwrites selectors unsupported by the frequency.
-  validateRecurrenceSelectors(rule.recurrenceFrequency, weekdays, monthDays, yearWeeks, yearDays);
+  validateRecurrenceSelectors(rule.recurrenceFrequency, weekdays, dates, weeks, days);
   if (expire !== undefined && expire <= 0) {
     throw new ExpoCalendarError('ERR_CALENDAR_UNSUPPORTED', 'Calendar Kit requires recurrence endDate to be after the Unix epoch.');
   }
@@ -499,10 +502,10 @@ function nativeRecurrence(data: Record<string, ESObject>, current?: calendarMana
   if (previous?.excludedDates !== undefined) rule.excludedDates = previous.excludedDates;
   if (weekdays.days !== undefined) rule.daysOfWeek = weekdays.days;
   if (weekdays.weeks !== undefined) rule.weeksOfMonth = weekdays.weeks;
-  if (monthDays.days !== undefined) rule.daysOfMonth = monthDays.days;
-  if (monthDays.months !== undefined) rule.monthsOfYear = monthDays.months;
-  if (yearWeeks !== undefined) rule.weeksOfYear = yearWeeks;
-  if (yearDays !== undefined) rule.daysOfYear = yearDays;
+  if (dates.days !== undefined) rule.daysOfMonth = dates.days;
+  if (dates.months !== undefined) rule.monthsOfYear = dates.months;
+  if (weeks !== undefined) rule.weeksOfYear = weeks;
+  if (days !== undefined) rule.daysOfYear = days;
 
   return rule;
 }
@@ -520,14 +523,14 @@ class MonthDays {
 function validateRecurrenceSelectors(
   frequency: calendarManager.RecurrenceFrequency,
   weekdays: NativeWeekdays,
-  monthDays: MonthDays,
+  dates: MonthDays,
   yearWeeks?: number[],
   yearDays?: number[],
 ): void {
   const week = weekdays.days !== undefined;
   const ordinal = weekdays.weeks !== undefined;
-  const day = monthDays.days !== undefined;
-  const month = monthDays.months !== undefined;
+  const day = dates.days !== undefined;
+  const month = dates.months !== undefined;
   const yearWeek = yearWeeks !== undefined;
   const yearDay = yearDays !== undefined;
   if (!week && !ordinal && !day && !month && !yearWeek && !yearDay) return;
@@ -571,6 +574,7 @@ function nativeWeekdays(value: ESObject): NativeWeekdays {
   const weeks: number[] = [];
   let ordinal: boolean = false;
   let plain: boolean = false;
+
   value.forEach((entry: ESObject): void => {
     const record = requireRecord(entry, 'recurrenceRule.daysOfTheWeek entry');
     const day = requireInteger(record['dayOfTheWeek'], 'recurrenceRule.daysOfTheWeek.dayOfTheWeek', 1, 7);

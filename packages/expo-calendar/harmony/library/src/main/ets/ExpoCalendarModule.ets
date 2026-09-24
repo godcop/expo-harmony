@@ -63,7 +63,7 @@ class LocatedEvent {
 
 export class ExpoCalendarModule extends ExpoModule {
   private permissions: CalendarPermissions;
-  private dialogPending: boolean = false;
+  private pending: boolean = false;
   private mutations: Promise<void> = Promise.resolve();
 
   constructor(context: ExpoModuleContext) {
@@ -174,8 +174,9 @@ export class ExpoCalendarModule extends ExpoModule {
 
     const manager = this.manager();
     const primary = await manager.getCalendar();
+    const calendars = await manager.getAllCalendars();
 
-    return (await manager.getAllCalendars()).map(
+    return calendars.map(
       (calendar: calendarManager.Calendar): ExpoCalendarRecord =>
         new ExpoCalendarRecord(calendar, calendar.getAccount(), calendar.getConfig(), primary.id),
     );
@@ -190,6 +191,7 @@ export class ExpoCalendarModule extends ExpoModule {
     validateEntityType(data['entityType']);
 
     const manager = this.manager();
+
     if (data['id'] === undefined || data['id'] === null) {
       const account = calendarAccountFromDetails(data);
       const config = calendarConfigFromDetails(data);
@@ -204,9 +206,7 @@ export class ExpoCalendarModule extends ExpoModule {
       } catch (error) {
         try {
           await manager.deleteCalendar(calendar);
-        } catch (_) {
-          // Preserve the configuration failure even if rollback fails.
-        }
+        } catch (_) {}
 
         throw new ExpoCalendarError('ERR_CALENDAR_NOT_SAVED', `Could not configure the calendar: ${(error as Error).message}`);
       }
@@ -217,7 +217,9 @@ export class ExpoCalendarModule extends ExpoModule {
     const calendar = await this.requireCalendar(requireCalendarId(data['id'], 'id'));
     validateCalendarUpdate(data, calendar.getAccount());
 
-    await calendar.setConfig(calendarConfigFromDetails(data, calendar.getConfig()));
+    const config = calendarConfigFromDetails(data, calendar.getConfig());
+
+    await calendar.setConfig(config);
 
     return String(calendar.id);
   }
@@ -230,13 +232,16 @@ export class ExpoCalendarModule extends ExpoModule {
   private async getEvents(start: number, end: number, ids: string[]): Promise<ExpoEventRecord[]> {
     if (end < start) throw new ExpoCalendarError('ERR_CALENDAR_INVALID_DATE_RANGE', 'endDate must not precede startDate.');
     if (ids.length === 0) throw new ExpoCalendarError('ERR_CALENDAR_INVALID_ARGUMENT', 'calendarIds must not be empty.');
+
     const selected = ids.map((id: string): number => requireCalendarId(id));
+    const calendars = await this.manager().getAllCalendars();
 
     const events: ExpoEventRecord[] = [];
-    for (const calendar of await this.manager().getAllCalendars()) {
+    for (const calendar of calendars) {
       if (!selected.includes(calendar.id)) continue;
 
       const instances = await calendar.queryEventInstances(start, end, undefined, INSTANCE_FIELDS);
+
       for (const event of instances) events.push(new ExpoEventRecord(event, String(calendar.id)));
     }
 
@@ -269,7 +274,9 @@ export class ExpoCalendarModule extends ExpoModule {
       throw new ExpoCalendarError('ERR_CALENDAR_UNSUPPORTED', 'Calendar Kit cannot move an event between calendars.');
     }
 
-    await located.calendar.updateEvent(eventFromDetails(data, located.event));
+    const event = eventFromDetails(data, located.event);
+
+    await located.calendar.updateEvent(event);
 
     return String(located.event.id);
   }
@@ -286,7 +293,7 @@ export class ExpoCalendarModule extends ExpoModule {
   }
 
   private async createEventInCalendar(data: Record<string, ESObject>): Promise<ExpoDialogResult> {
-    if (this.dialogPending) throw new ExpoCalendarError('ERR_CALENDAR_DIALOG_PENDING', 'A calendar dialog is already open.');
+    if (this.pending) throw new ExpoCalendarError('ERR_CALENDAR_DIALOG_PENDING', 'A calendar dialog is already open.');
     if (data['timeZone'] !== undefined && data['timeZone'] !== null) {
       throw new ExpoCalendarError('ERR_CALENDAR_UNSUPPORTED', 'Calendar Kit cannot set timeZone on the system creation page.');
     }
@@ -296,6 +303,7 @@ export class ExpoCalendarModule extends ExpoModule {
 
     const start = data['startDate'] == null ? Date.now() : requireDate(data['startDate'], 'startDate');
     const end = data['endDate'] == null ? start + DEFAULT_DIALOG_DURATION_MS : requireDate(data['endDate'], 'endDate');
+
     const input: Record<string, ESObject> = {};
     Object.keys(data).forEach((key: string): void => {
       input[key] = data[key];
@@ -304,11 +312,14 @@ export class ExpoCalendarModule extends ExpoModule {
     input['endDate'] = end;
     const event = eventFromDetails(input);
 
-    this.dialogPending = true;
+    this.pending = true;
     try {
-      return new ExpoDialogResult(await calendarManager.getCalendarManager(this.context.uiAbilityContext).editEvent(event));
+      const manager = calendarManager.getCalendarManager(this.context.uiAbilityContext);
+      const id = await manager.editEvent(event);
+
+      return new ExpoDialogResult(id);
     } finally {
-      this.dialogPending = false;
+      this.pending = false;
     }
   }
 

@@ -7,12 +7,12 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-calendar expo-calendar@55.0.15
+npm install @expo-harmony/expo-calendar expo-calendar@55.0.19
 ```
 
-鸿蒙适配会通过 Autolinking 自动接入，使用默认权限说明时无需额外配置。最低支持 HarmonyOS 5.1.0（API 18），宿主的 `compatibleSdkVersion` 也需满足此要求。
+鸿蒙适配会通过 Autolinking 自动接入。最低支持 HarmonyOS 5.1.0（API 18），宿主的 `compatibleSdkVersion` 也需满足此要求。
 
-读写日历和日程需要 `ohos.permission.READ_CALENDAR` 和 `ohos.permission.WRITE_CALENDAR`，本包已经声明并配置好默认用途说明，可通过下方的配置插件自定义文本，无需再次声明权限。权限声明挂在 `EntryAbility` 名下，宿主入口 Ability 如果叫别的名字，需要改成自己的 Ability 名称。这两个都是普通权限，只能访问系统默认日历和当前应用创建的日历及日程，读不到设备中的全部日程。日历和日程的读写接口要求两个权限均已授予，否则抛出 `E_MISSING_PERMISSIONS`。
+读写日历和日程需要 `ohos.permission.READ_CALENDAR` 和 `ohos.permission.WRITE_CALENDAR`，本包已经声明并配置好默认用途说明，可通过下方的配置插件自定义文本。权限声明挂在 `EntryAbility` 名下，宿主入口 Ability 如果叫别的名字，需要改成自己的 Ability 名称。这两个都是普通权限，可读取系统默认日历和当前应用创建的日历账户，但只能读写这些账户下由当前应用创建的日程，读不到其他应用或系统日历页面创建的日程。需要读写设备上的全部日程时，要按华为的流程自行申请并声明 `READ_WHOLE_CALENDAR` 和 `WRITE_WHOLE_CALENDAR` 受限权限，本包不会申请这两个权限。日历和日程的读写接口要求两个权限均已授予，否则抛出 `E_MISSING_PERMISSIONS`。
 
 业务代码依旧使用官方包：
 
@@ -59,7 +59,7 @@ if (permission.granted) {
 
 > **未实现的内容**
 >
-> - `openEventInCalendar(id)`、`openEventInCalendarAsync(params, presentationOptions?)`、`editEventInCalendarAsync(params, presentationOptions?)`：Calendar Kit 没有打开已有日程的查看或编辑页面的接口，调用抛出 `UnavailabilityError`。
+> - `openEventInCalendar(id)`、`openEventInCalendarAsync(params, presentationOptions?)`、`editEventInCalendarAsync(params, presentationOptions?)`：Calendar Kit 没有查看已有日程的页面，编辑页面接口从 API 26 起提供，本包未接入，调用抛出 `UnavailabilityError`。
 
 ### Hooks
 
@@ -198,7 +198,7 @@ API 20 及以上直接读取系统权限状态，未决定返回 `undetermined`�
 
 `frequency` 必填，支持 `daily`、`weekly`、`monthly`、`yearly`。`interval` 为非正整数时按 `1` 处理，`occurrence` 为非正整数时表示无限重复，`endDate` 优先于 `occurrence` 且必须晚于 Unix 纪元。
 
-支持的选择器：每周按星期；每月按日期或带周次的星期；每年按年内日期、年内周次加星期、月份加日期，或月份加带周次的星期。不支持负序号、`setPositions`、混合带周次和不带周次的星期，以及 Calendar Kit 会忽略或覆盖的组合。农历重复日程不支持，读取或修改时拒绝。
+支持的选择器：每周按星期；每月按日期或带周次的星期；每年按年内日期、年内周次加星期、月份加日期，或月份加带周次的星期。不支持负序号、`setPositions`、混合带周次和不带周次的星期，以及 Calendar Kit 会忽略或覆盖的组合。农历重复日程无法表示为 Expo 重复规则，读取和修改其重复规则时拒绝。仅更新标题等其他字段时保留原规则。
 
 #### `RecurringEventOptions`
 

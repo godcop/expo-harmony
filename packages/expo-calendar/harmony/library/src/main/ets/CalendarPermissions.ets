@@ -56,9 +56,9 @@ export class CalendarPermissions {
       const status = this.context.permissionStatus(permission, history);
       if (status === ExpoPermissionStatus.GRANTED) continue;
 
-      const isDenied = status !== ExpoPermissionStatus.NOT_DETERMINED;
-      denied = denied || isDenied;
-      undetermined = undetermined || !isDenied;
+      const rejected = status !== ExpoPermissionStatus.NOT_DETERMINED;
+      denied = denied || rejected;
+      undetermined = undetermined || !rejected;
     }
 
     return new CalendarPermissionResponse(denied ? 'denied' : undetermined ? 'undetermined' : 'granted', !denied);
@@ -79,7 +79,8 @@ export class CalendarPermissions {
 
   private async requestOnce(): Promise<CalendarPermissionResponse> {
     const request = await this.context.requestPermissions(CALENDAR_PERMISSIONS);
-    let cannotAsk: boolean = false;
+
+    let blocked: boolean = false;
 
     for (const result of request.systemResults) {
       for (const permission of CALENDAR_PERMISSIONS) {
@@ -107,14 +108,16 @@ export class CalendarPermissions {
         ) {
           await this.rememberDenial(permission, !granted);
         }
-        if (!granted && (reason === RequestReason.CannotRequest || reason === RequestReason.ManualSettings)) cannotAsk = true;
+
+        if (!granted && (reason === RequestReason.CannotRequest || reason === RequestReason.ManualSettings)) blocked = true;
       }
     }
 
     const response = await this.get();
+
     if (this.context.services.get(ExpoRuntimePermissionsKey) !== undefined)
-      return cannotAsk && !response.granted ? new CalendarPermissionResponse('denied', false) : response;
-    return response.granted ? response : new CalendarPermissionResponse('denied', response.canAskAgain && !cannotAsk);
+      return blocked && !response.granted ? new CalendarPermissionResponse('denied', false) : response;
+    return response.granted ? response : new CalendarPermissionResponse('denied', response.canAskAgain && !blocked);
   }
 
   private async wasDenied(permission: Permissions): Promise<boolean> {
