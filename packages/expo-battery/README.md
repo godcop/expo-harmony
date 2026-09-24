@@ -7,8 +7,10 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-battery expo-battery@55.0.13
+npm install @expo-harmony/expo-battery expo-battery@55.0.17
 ```
+
+本包适配 Expo SDK 55 的 `expo-battery`，与官方包配合使用。原生模块通过 Expo Harmony 自动链接，业务代码继续从 `expo-battery` 导入。最低支持 HarmonyOS 5.0.1（API 13），宿主应用的 `compatibleSdkVersion` 也要满足这一要求。
 
 ## API 对照表
 
@@ -50,11 +52,11 @@ npm install @expo-harmony/expo-battery expo-battery@55.0.13
 
 #### `Battery.isBatteryOptimizationEnabledAsync()`
 
-返回 `Promise<boolean>`，恒为 `false`。HarmonyOS 没有针对单个应用的电池优化开关，Android 上的这一概念在这里不适用。
+返回 `Promise<boolean>`，恒为 `false`。HarmonyOS 没有针对单个应用的电池优化开关，Android 上的这一概念在这里不适用。返回 `false` 不表示系统不会限制应用的后台活动。
 
 #### `Battery.getPowerStateAsync()`
 
-返回 `Promise<PowerState>`，一次读取电量、电池状态和低电量模式，取值分别与对应方法一致。任一项读取失败时整体拒绝。
+返回 `Promise<PowerState>`，一次读取电量、电池状态和低电量模式，取值分别与对应方法一致，三项不保证来自同一时刻。任一项读取失败时整体拒绝。
 
 ### Event Subscriptions
 

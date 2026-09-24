@@ -13,24 +13,24 @@ const MAX_UNSUBSCRIPTION_ATTEMPTS: number = 3;
 class BatteryLevelEvent {
   batteryLevel: number;
 
-  constructor(batteryLevel: number) {
-    this.batteryLevel = batteryLevel;
+  constructor(level: number) {
+    this.batteryLevel = level;
   }
 }
 
 class BatteryStateEvent {
   batteryState: ExpoBatteryStateValue;
 
-  constructor(batteryState: ExpoBatteryStateValue) {
-    this.batteryState = batteryState;
+  constructor(state: ExpoBatteryStateValue) {
+    this.batteryState = state;
   }
 }
 
 class PowerModeEvent {
   lowPowerMode: boolean;
 
-  constructor(lowPowerMode: boolean) {
-    this.lowPowerMode = lowPowerMode;
+  constructor(enabled: boolean) {
+    this.lowPowerMode = enabled;
   }
 }
 
@@ -75,21 +75,20 @@ export class ExpoBatteryModule extends ExpoModule {
         return this.readLowPowerMode();
       })
       .asyncFunction('isBatteryOptimizationEnabledAsync', async (): Promise<boolean> => {
-        // Android's per-application battery optimization allowlist has no
-        // HarmonyOS equivalent exposed to applications.
         return false;
       })
-      .onStartObserving((eventName: string): void => {
-        this.startObserving(eventName);
+      .onStartObserving((name: string): void => {
+        this.startObserving(name);
       })
-      .onStopObserving((eventName: string): void => {
-        this.stopObserving(eventName);
+      .onStopObserving((name: string): void => {
+        this.stopObserving(name);
       })
       .onPrepareForReload(async (): Promise<void> => {
         this.destroy();
       })
       .onForeground((): void => {
         if (this.destroyed) return;
+
         this.foreground = true;
         this.retryQuarantinedUnsubscriptions();
         this.startSystemObservation();
@@ -105,8 +104,10 @@ export class ExpoBatteryModule extends ExpoModule {
 
   private destroy(): void {
     if (this.destroyed) return;
+
     this.destroyed = true;
     this.events.clear();
+
     this.clearRetryTimer();
     this.clearUnsubscriptionRetryTimer();
     this.stopSystemObservation();
@@ -116,14 +117,17 @@ export class ExpoBatteryModule extends ExpoModule {
   private startObserving(name: string): void {
     if (this.destroyed) return;
     this.requireEventName(name);
+
     this.events.add(name);
     this.primeSnapshot(name);
+
     this.retryQuarantinedUnsubscriptions();
     this.startSystemObservation();
   }
 
   private stopObserving(name: string): void {
     this.requireEventName(name);
+
     this.events.delete(name);
     if (this.events.size === 0) this.stopSystemObservation();
   }
@@ -132,6 +136,7 @@ export class ExpoBatteryModule extends ExpoModule {
     if (this.destroyed || !this.foreground || this.events.size === 0 || this.subscriber !== undefined) {
       return;
     }
+
     this.clearRetryTimer();
 
     let created: commonEventManager.CommonEventSubscriber | undefined = undefined;
@@ -144,24 +149,29 @@ export class ExpoBatteryModule extends ExpoModule {
 
       commonEventManager.subscribe(subscriber, (error: BusinessError, data: commonEventManager.CommonEventData): void => {
         if (this.destroyed || this.subscriber !== subscriber) return;
+
         if (error !== undefined && error !== null) {
           this.handleSubscriptionFailure(subscriber, error);
           return;
         }
+
         if (data === undefined || data === null) {
           this.warn('HarmonyOS battery event callback returned no event data.');
           return;
         }
+
         this.handleSystemEvent(data);
       });
+
       if (this.subscriber !== subscriber) return;
-      // Reconcile changes missed in the background or while retrying a subscription.
+
       this.publishBatteryLevelIfChanged();
       this.publishBatteryStateIfChanged();
       this.publishPowerModeIfChanged();
     } catch (error) {
       this.subscriber = undefined;
       if (created !== undefined) this.queueUnsubscribe(created);
+
       this.warn(`Unable to observe HarmonyOS battery events: ${String(error)}`);
       this.scheduleSubscriptionRetry();
     }
@@ -169,6 +179,7 @@ export class ExpoBatteryModule extends ExpoModule {
 
   private stopSystemObservation(): void {
     this.clearRetryTimer();
+
     const subscriber = this.subscriber;
     this.subscriber = undefined;
     if (subscriber !== undefined) this.queueUnsubscribe(subscriber);
@@ -183,6 +194,7 @@ export class ExpoBatteryModule extends ExpoModule {
     if (!this.pending.has(subscriber) || this.unsubscribing.has(subscriber) || this.quarantine.has(subscriber)) {
       return;
     }
+
     const attempt = (this.pending.get(subscriber) ?? 0) + 1;
     this.pending.set(subscriber, attempt);
     this.unsubscribing.add(subscriber);
@@ -191,10 +203,12 @@ export class ExpoBatteryModule extends ExpoModule {
       commonEventManager.unsubscribe(subscriber, (error: BusinessError): void => {
         this.unsubscribing.delete(subscriber);
         if (!this.pending.has(subscriber)) return;
+
         if (error === undefined || error === null) {
           this.finishUnsubscribe(subscriber);
           return;
         }
+
         this.handleUnsubscribeFailure(subscriber, attempt, error);
       });
     } catch (error) {
@@ -205,6 +219,7 @@ export class ExpoBatteryModule extends ExpoModule {
 
   private handleUnsubscribeFailure(subscriber: commonEventManager.CommonEventSubscriber, attempt: number, error: Object): void {
     this.warn(`Unable to stop observing HarmonyOS battery events (attempt ${attempt}): ${String(error)}`);
+
     if (attempt >= MAX_UNSUBSCRIPTION_ATTEMPTS) {
       this.warn('HarmonyOS rejected the battery event unsubscription; the stale callback has been isolated.');
       this.quarantine.add(subscriber);
@@ -212,6 +227,7 @@ export class ExpoBatteryModule extends ExpoModule {
       this.unsubscribing.delete(subscriber);
       return;
     }
+
     this.scheduleUnsubscriptionRetry();
   }
 
@@ -219,11 +235,13 @@ export class ExpoBatteryModule extends ExpoModule {
     this.pending.delete(subscriber);
     this.unsubscribing.delete(subscriber);
     this.quarantine.delete(subscriber);
+
     if (this.pending.size === 0) this.clearUnsubscriptionRetryTimer();
   }
 
   private scheduleUnsubscriptionRetry(): void {
     if (this.unsubscribeRetry >= 0 || this.pending.size === 0) return;
+
     this.unsubscribeRetry = setTimeout((): void => {
       this.unsubscribeRetry = -1;
       Array.from(this.pending.keys()).forEach((subscriber: commonEventManager.CommonEventSubscriber): void => {
@@ -240,17 +258,25 @@ export class ExpoBatteryModule extends ExpoModule {
 
   private retryQuarantinedUnsubscriptions(): void {
     if (this.destroyed || this.quarantine.size === 0) return;
+
     Array.from(this.quarantine).forEach((subscriber: commonEventManager.CommonEventSubscriber): void => {
       this.quarantine.delete(subscriber);
       if (!this.pending.has(subscriber)) this.pending.set(subscriber, 0);
+
       this.attemptUnsubscribe(subscriber);
     });
   }
 
   private releasePendingSubscriptionsOnDestroy(): void {
+    // Quarantined subscribers still own native callbacks that need cleanup.
+    this.quarantine.forEach((subscriber: commonEventManager.CommonEventSubscriber): void => {
+      this.pending.set(subscriber, 0);
+    });
     this.quarantine.clear();
+
     Array.from(this.pending.keys()).forEach((subscriber: commonEventManager.CommonEventSubscriber): void => {
       if (this.unsubscribing.has(subscriber)) return;
+
       this.pending.set(subscriber, 0);
       this.attemptUnsubscribe(subscriber);
     });
@@ -258,14 +284,17 @@ export class ExpoBatteryModule extends ExpoModule {
 
   private handleSubscriptionFailure(subscriber: commonEventManager.CommonEventSubscriber, error: BusinessError): void {
     if (this.subscriber !== subscriber) return;
+
     this.subscriber = undefined;
     this.warn(`HarmonyOS battery event observation failed: ${String(error)}`);
+
     this.queueUnsubscribe(subscriber);
     this.scheduleSubscriptionRetry();
   }
 
   private scheduleSubscriptionRetry(): void {
     if (this.destroyed || !this.foreground || this.events.size === 0 || this.retry >= 0) return;
+
     this.retry = setTimeout((): void => {
       this.retry = -1;
       this.startSystemObservation();
@@ -284,6 +313,7 @@ export class ExpoBatteryModule extends ExpoModule {
       this.publishBatteryStateIfChanged();
       return;
     }
+
     if (data.event === commonEventManager.Support.COMMON_EVENT_POWER_SAVE_MODE_CHANGED) {
       this.publishPowerModeIfChanged();
     }
@@ -295,11 +325,13 @@ export class ExpoBatteryModule extends ExpoModule {
     } catch (error) {
       this.warn(`Unable to initialize the battery level observer: ${String(error)}`);
     }
+
     try {
       if (name === BATTERY_STATE_EVENT_NAME) this.lastBatteryState = this.readBatteryState();
     } catch (error) {
       this.warn(`Unable to initialize the battery state observer: ${String(error)}`);
     }
+
     try {
       if (name === POWER_MODE_EVENT_NAME) this.lastLowPowerMode = this.readLowPowerMode();
     } catch (error) {
@@ -309,9 +341,11 @@ export class ExpoBatteryModule extends ExpoModule {
 
   private publishBatteryLevelIfChanged(): void {
     if (!this.events.has(BATTERY_LEVEL_EVENT_NAME)) return;
+
     try {
       const value = this.readBatteryLevel();
       if (value === this.lastBatteryLevel) return;
+
       this.sendEvent(BATTERY_LEVEL_EVENT_NAME, new BatteryLevelEvent(value));
       this.lastBatteryLevel = value;
     } catch (error) {
@@ -321,9 +355,11 @@ export class ExpoBatteryModule extends ExpoModule {
 
   private publishBatteryStateIfChanged(): void {
     if (!this.events.has(BATTERY_STATE_EVENT_NAME)) return;
+
     try {
       const value = this.readBatteryState();
       if (value === this.lastBatteryState) return;
+
       this.sendEvent(BATTERY_STATE_EVENT_NAME, new BatteryStateEvent(value));
       this.lastBatteryState = value;
     } catch (error) {
@@ -333,9 +369,11 @@ export class ExpoBatteryModule extends ExpoModule {
 
   private publishPowerModeIfChanged(): void {
     if (!this.events.has(POWER_MODE_EVENT_NAME)) return;
+
     try {
       const value = this.readLowPowerMode();
       if (value === this.lastLowPowerMode) return;
+
       this.sendEvent(POWER_MODE_EVENT_NAME, new PowerModeEvent(value));
       this.lastLowPowerMode = value;
     } catch (error) {
@@ -369,6 +407,7 @@ export class ExpoBatteryModule extends ExpoModule {
   private readLowPowerMode(): boolean {
     try {
       const mode = power.getPowerMode();
+
       return (
         mode === power.DevicePowerMode.MODE_POWER_SAVE ||
         mode === power.DevicePowerMode.MODE_EXTREME_POWER_SAVE ||
