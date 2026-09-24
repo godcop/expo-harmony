@@ -2463,6 +2463,24 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@expo-harmony/expo-mesh-gradient@workspace:*, @expo-harmony/expo-mesh-gradient@workspace:packages/expo-mesh-gradient":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-mesh-gradient@workspace:packages/expo-mesh-gradient"
+  dependencies:
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    expo: "npm:55.0.26"
+    expo-mesh-gradient: "npm:55.0.18"
+    expo-modules-core: "npm:55.0.25"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    expo-mesh-gradient: 55.0.18
+  languageName: unknown
+  linkType: soft
+
 "@expo-harmony/expo-module-scripts@workspace:*, @expo-harmony/expo-module-scripts@workspace:packages/expo-module-scripts":
   version: 0.0.0-use.local
   resolution: "@expo-harmony/expo-module-scripts@workspace:packages/expo-module-scripts"
@@ -8416,6 +8434,17 @@ __metadata:
   peerDependencies:
     expo: "*"
   checksum: 10c0/a9fd298c02453d3e06473b6298e77455b2c1b92ff1e6da2795613f596e50411fe237f6227ea9f5b97ad30cf64ecdb5f35692157c0f7965b83c9ab004dddf126b
+  languageName: node
+  linkType: hard
+
+"expo-mesh-gradient@npm:55.0.18":
+  version: 55.0.18
+  resolution: "expo-mesh-gradient@npm:55.0.18"
+  peerDependencies:
+    expo: "*"
+    react: "*"
+    react-native: "*"
+  checksum: 10c0/ee953396e271a5481f3bc9b0f504d8e8f125ebc51c6cb7516deea2d98a2a571e4f353cab98d7ac5d2d7688820a9b82a473e014739e4e7f2858a5d9484ae9e8be
   languageName: node
   linkType: hard
 

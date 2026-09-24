@@ -73,6 +73,7 @@
 - [expo-mail-composer](./packages/expo-mail-composer/)：提供使用系统界面撰写和发送电子邮件的功能。
 - [expo-manifests](./packages/expo-manifests/)：提供 Expo 更新清单的原生模型，可在原生代码中读取和校验。
 - [expo-media-library](./packages/expo-media-library/)：访问设备上的图片和视频等媒体资源。
+- [expo-mesh-gradient](./packages/expo-mesh-gradient/)：将类似 SwiftUI 的 MeshGradient View 暴露给 React Native 的模块。
 - [@expo/config](./packages/expo__config/)：用于操作 app.json 的库。
 - [@expo/config-types](./packages/expo__config-types/)：Expo 配置对象 app.config.ts 的类型。
 - [@expo/devtools](./packages/expo__devtools/)：Expo 的 DevTools 插件辅助工具。
