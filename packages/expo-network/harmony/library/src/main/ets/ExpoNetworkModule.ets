@@ -8,8 +8,10 @@ const RETRY_BASE_DELAY_MS: number = 500;
 const RETRY_MAX_DELAY_MS: number = 8000;
 const RETRY_LIMIT: number = 5;
 const FALLBACK_IP: string = '0.0.0.0';
-const MISSING_SETTING: string = '__expo_network_setting_missing__';
-const TRANSIENT_ERRORS: Set<number> = new Set<number>([2100002, 2100003]);
+const SERVICE_UNAVAILABLE: number = 2100002;
+const INTERNAL_ERROR: number = 2100003;
+// NetAddress.family uses 1 for IPv4 (also its documented default), 2 for IPv6.
+const IPV4_FAMILY: number = 1;
 
 enum NetworkStateType {
   NONE = 'NONE',
@@ -35,8 +37,10 @@ class NetworkState {
 
 export class ExpoNetworkModule extends ExpoModule {
   private observer?: connection.NetConnection;
-  private readonly eventTimers: Set<number> = new Set<number>();
+  private readonly timers: Set<number> = new Set<number>();
+  private readonly registering: Set<connection.NetConnection> = new Set<connection.NetConnection>();
   private readonly pending: Set<connection.NetConnection> = new Set<connection.NetConnection>();
+  private revision: number = 0;
   private retryTimer: number = -1;
   private attempt: number = 0;
   private observing: boolean = false;
@@ -70,6 +74,7 @@ export class ExpoNetworkModule extends ExpoModule {
 
     this.observing = true;
     this.attempt = 0;
+
     this.registerObserver();
   }
 
@@ -87,16 +92,20 @@ export class ExpoNetworkModule extends ExpoModule {
       current.on('netCapabilitiesChange', (_: connection.NetCapabilityInfo): void => this.scheduleNetworkStateEvent(current));
 
       this.observer = current;
+      this.registering.add(current);
+
       current.register((error: BusinessError): void => {
+        this.registering.delete(current);
+
         if (error !== undefined && error !== null) {
           if (this.observer !== current) return;
 
           this.observer = undefined;
+
           if (!this.destroyed) {
             this.context.logger.warn(`Unable to observe Expo Network state changes: ${String(error)}`);
           }
 
-          this.unregisterObserver(current);
           this.scheduleObserverRetry(error);
           return;
         }
@@ -111,7 +120,8 @@ export class ExpoNetworkModule extends ExpoModule {
       });
     } catch (error) {
       if (this.observer === observer) this.observer = undefined;
-      if (observer !== undefined) this.unregisterObserver(observer);
+      if (observer !== undefined) this.registering.delete(observer);
+
       if (!this.destroyed) {
         this.context.logger.warn(`Unable to initialize the Expo Network observer: ${String(error)}`);
       }
@@ -135,9 +145,13 @@ export class ExpoNetworkModule extends ExpoModule {
   }
 
   private unregisterObserver(observer: connection.NetConnection, attempt: number = 0): void {
+    // A late successful registration will unregister itself. Calling unregister before
+    // register completes can fail with "not registered" and leak the later subscription.
+    if (this.registering.has(observer)) return;
     if (this.pending.has(observer) && attempt === 0) return;
 
     this.pending.add(observer);
+
     try {
       observer.unregister((error: BusinessError): void => {
         if (error === undefined || error === null) {
@@ -145,31 +159,34 @@ export class ExpoNetworkModule extends ExpoModule {
           return;
         }
 
-        if (!this.destroyed) {
-          this.context.logger.warn(`Unable to stop the Expo Network observer: ${String(error)}`);
-        }
-
-        if (isTransientNetworkError(error) && attempt < RETRY_LIMIT) {
-          setTimeout(
-            (): void => {
-              this.unregisterObserver(observer, attempt + 1);
-            },
-            Math.min(RETRY_BASE_DELAY_MS * Math.pow(2, attempt), RETRY_MAX_DELAY_MS),
-          );
-        }
+        this.handleUnregisterError(observer, error, attempt);
       });
     } catch (error) {
-      if (!this.destroyed) {
-        this.context.logger.warn(`Unable to stop the Expo Network observer: ${String(error)}`);
-      }
+      this.handleUnregisterError(observer, error as Object, attempt);
+    }
+  }
+
+  private handleUnregisterError(observer: connection.NetConnection, error: Object, attempt: number): void {
+    if (!this.destroyed) {
+      this.context.logger.warn(`Unable to stop the Expo Network observer: ${String(error)}`);
+    }
+
+    if (isTransientNetworkError(error) && attempt < RETRY_LIMIT) {
+      // Finish native cleanup even after module destruction; this never emits JS events.
+      const delay = Math.min(RETRY_BASE_DELAY_MS * Math.pow(2, attempt), RETRY_MAX_DELAY_MS);
+
+      setTimeout((): void => this.unregisterObserver(observer, attempt + 1), delay);
+    } else {
+      this.pending.delete(observer);
     }
   }
 
   private stopObserving(): void {
     this.observing = false;
+    this.revision += 1;
 
-    this.eventTimers.forEach((timer: number): void => clearTimeout(timer));
-    this.eventTimers.clear();
+    this.timers.forEach((timer: number): void => clearTimeout(timer));
+    this.timers.clear();
 
     if (this.retryTimer >= 0) {
       clearTimeout(this.retryTimer);
@@ -178,6 +195,7 @@ export class ExpoNetworkModule extends ExpoModule {
 
     const observer = this.observer;
     this.observer = undefined;
+
     if (observer === undefined) return;
 
     this.unregisterObserver(observer);
@@ -193,22 +211,30 @@ export class ExpoNetworkModule extends ExpoModule {
   private scheduleNetworkStateEvent(observer: connection.NetConnection): void {
     if (this.destroyed || !this.observing || this.observer !== observer) return;
 
+    const revision = ++this.revision;
+
+    this.timers.forEach((timer: number): void => clearTimeout(timer));
+    this.timers.clear();
+
     const timer = setTimeout((): void => {
-      this.eventTimers.delete(timer);
-      this.publishNetworkState(observer).catch((error: Object): void => {
+      this.timers.delete(timer);
+
+      this.publishNetworkState(observer, revision).catch((error: Object): void => {
         if (!this.destroyed) {
           this.context.logger.warn(`Unable to publish an Expo Network state change: ${String(error)}`);
         }
       });
     }, CHANGE_DELAY_MS);
-    this.eventTimers.add(timer);
+
+    this.timers.add(timer);
   }
 
-  private async publishNetworkState(observer: connection.NetConnection): Promise<void> {
+  private async publishNetworkState(observer: connection.NetConnection, revision: number): Promise<void> {
     if (this.destroyed || !this.observing || this.observer !== observer) return;
 
     const state = await this.readNetworkState();
-    if (this.destroyed || !this.observing || this.observer !== observer) return;
+
+    if (this.destroyed || !this.observing || this.observer !== observer || revision !== this.revision) return;
 
     this.sendEvent(STATE_EVENT, state);
   }
@@ -228,10 +254,8 @@ export class ExpoNetworkModule extends ExpoModule {
       const capabilities = await connection.getNetCapabilities(handle);
 
       const type = networkType(capabilities.bearerTypes);
-      const flags = capabilities.networkCap ?? [];
-      const reachable = flags.includes(connection.NetCap.NET_CAPABILITY_INTERNET) && flags.includes(connection.NetCap.NET_CAPABILITY_VALIDATED);
 
-      return new NetworkState(type, true, reachable);
+      return new NetworkState(type, type !== NetworkStateType.UNKNOWN, true);
     } catch (_) {
       return unknownState();
     }
@@ -268,12 +292,11 @@ export class ExpoNetworkModule extends ExpoModule {
   private async readAirplaneMode(): Promise<boolean> {
     let value: string;
     try {
-      value = settings.getValueSync(this.context.uiAbilityContext, settings.general.AIRPLANE_MODE_STATUS, MISSING_SETTING);
+      value = settings.getValueSync(this.context.uiAbilityContext, settings.general.AIRPLANE_MODE_STATUS, '0');
     } catch (error) {
       throw new ExpoModuleError('ERR_NETWORK_AIRPLANE_MODE', 'Unable to read the HarmonyOS airplane mode setting.', error as Object);
     }
 
-    if (value === MISSING_SETTING) return false;
     if (value === '0') return false;
     if (value === '1') return true;
 
@@ -291,7 +314,7 @@ function unknownState(): NetworkState {
 
 function isTransientNetworkError(error: Object): boolean {
   const code = (error as BusinessError).code;
-  return typeof code === 'number' && TRANSIENT_ERRORS.has(code);
+  return code === SERVICE_UNAVAILABLE || code === INTERNAL_ERROR;
 }
 
 function networkType(bearers: connection.NetBearType[]): NetworkStateType {
@@ -305,13 +328,6 @@ function networkType(bearers: connection.NetBearType[]): NetworkStateType {
 
 function isUsableIpv4Address(address: connection.NetAddress): boolean {
   const value = address.address;
-  if (!/^\d{1,3}(?:\.\d{1,3}){3}$/.test(value)) return false;
-  if (value === FALLBACK_IP || value.startsWith('127.')) return false;
-
-  const octets = value.split('.');
-
-  return octets.every((octet: string): boolean => {
-    const number = Number(octet);
-    return Number.isInteger(number) && number >= 0 && number <= 255;
-  });
+  return (address.family ?? IPV4_FAMILY) === IPV4_FAMILY &&
+    value.length > 0 && value !== FALLBACK_IP && !value.startsWith('127.');
 }
