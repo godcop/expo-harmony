@@ -19,18 +19,23 @@ export class ExpoDevLauncherLifecycleSubscriber extends ExpoAbilityLifecycleSubs
   override onWillReceiveWant(want: Want): void {
     this.receive(want);
   }
+
   override onForeground(): void {
     this.controller.foreground();
   }
+
   override onDidForeground(): void {
     this.controller.foreground();
   }
+
   override onBackground(): void {
     this.controller.background();
   }
+
   override onDidBackground(): void {
     this.controller.background();
   }
+
   override onDestroy(): void {
     this.controller.detachAbility(this.context);
   }
@@ -40,11 +45,14 @@ export class ExpoDevLauncherLifecycleSubscriber extends ExpoAbilityLifecycleSubs
 
     const value = want.uri;
     if (value === undefined || value.length === 0) return;
+
     try {
-      const parsed = new uri.URI(value);
-      if ((parsed.scheme ?? '').toLowerCase() === DEEP_LINK_SCHEME || (parsed.host ?? '').toLowerCase() === EXPO_DEV_CLIENT_HOST) {
+      const link = new uri.URI(value);
+
+      if ((link.scheme ?? '').toLowerCase() === DEEP_LINK_SCHEME || (link.host ?? '').toLowerCase() === EXPO_DEV_CLIENT_HOST) {
         this.controller.receiveLink(value);
-        // This URI selects a runtime; it is not a route in the selected app.
+
+        // Clear the URI before RNOH caches it; preserve the original Want parameters.
         want.uri = undefined;
       }
     } catch (_) {}

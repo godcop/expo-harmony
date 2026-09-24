@@ -7,12 +7,12 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-dev-launcher expo-dev-launcher@55.0.36
+npm install @expo-harmony/expo-dev-launcher expo-dev-launcher@55.0.41
 ```
 
 本包适配 Expo SDK 55 的 `expo-dev-launcher`，提供鸿蒙端的原生启动器，原生模块通过 Expo Harmony 自动链接。启动器只在开发构建中生效，配置插件负责写入开发链接入口和所需权限，见下文。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。
 
-使用 `@expo-harmony/expo-dev-client` 时本包由其引入，无需单独安装，但仍需按下文显式注册本包的配置插件。`@expo-harmony/expo-dev-client` 只聚合依赖，不提供插件入口。
+使用 `@expo-harmony/expo-dev-client` 时本包由其引入，但仍需按下文显式注册本包的配置插件。`@expo-harmony/expo-dev-client` 只聚合依赖，不提供插件入口。
 
 ## Config Plugin
 
