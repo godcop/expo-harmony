@@ -2942,6 +2942,27 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@expo-harmony/expo-tracking-transparency@workspace:*, @expo-harmony/expo-tracking-transparency@workspace:packages/expo-tracking-transparency":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-tracking-transparency@workspace:packages/expo-tracking-transparency"
+  dependencies:
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    "@types/react": "npm:19.2.2"
+    expo: "npm:55.0.31"
+    expo-modules-core: "npm:55.0.26"
+    expo-tracking-transparency: "npm:55.0.18"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+    typescript: "npm:6.0.3"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    expo-modules-core: 55.0.26
+    expo-tracking-transparency: 55.0.18
+  languageName: unknown
+  linkType: soft
+
 "@expo-harmony/expo-updates-interface@workspace:*, @expo-harmony/expo-updates-interface@workspace:packages/expo-updates-interface":
   version: 0.0.0-use.local
   resolution: "@expo-harmony/expo-updates-interface@workspace:packages/expo-updates-interface"
@@ -8906,6 +8927,16 @@ __metadata:
     react-native-web:
       optional: true
   checksum: 10c0/2af2333021536496ee4f6e852058584b8503e19952d6f76e1a750d32ac756b3dfc1480bd35b07b8ea4284b0eb1b039007919f10a7de2876c52616a690c9857da
+  languageName: node
+  linkType: hard
+
+"expo-tracking-transparency@npm:55.0.18":
+  version: 55.0.18
+  resolution: "expo-tracking-transparency@npm:55.0.18"
+  peerDependencies:
+    expo: "*"
+    react-native: "*"
+  checksum: 10c0/e17378668df7c9735d6e45dfafe8627266940fade0fc10d88df70114f79e9d33da01f9cac69abe4b39adc1605cfbe21fab05822dd1961f8809e7386acbb8bb8c
   languageName: node
   linkType: hard
 

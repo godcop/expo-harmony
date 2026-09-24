@@ -115,6 +115,7 @@
 - [expo-symbols](./packages/expo-symbols/)：显示系统 Symbol 图标。
 - [expo-system-ui](./packages/expo-system-ui/)：与系统 UI 元素进行交互。
 - [expo-task-manager](./packages/expo-task-manager/)：支持可在后台运行的任务。
+- [expo-tracking-transparency](./packages/expo-tracking-transparency/)：跟踪应用用户并管理跟踪权限。
 - [expo-updates](./packages/expo-updates/)：管理应用代码的远程更新。
 - [expo-updates-interface](./packages/expo-updates-interface/)：提供 Updates 控制器、开发启动器与状态订阅的接口定义。
 
