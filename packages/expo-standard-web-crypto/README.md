@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-standard-web-crypto expo-standard-web-crypto@55.0.11
+npm install @expo-harmony/expo-standard-web-crypto expo-standard-web-crypto@55.0.12
 ```
 
 ## Author
