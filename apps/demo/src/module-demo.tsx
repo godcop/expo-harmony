@@ -81,6 +81,7 @@ import { StructuredHeadersDemo } from './modules/structured-headers';
 import { UpdatesInterfaceDemo } from './modules/updates-interface';
 import { DevToolsDemo } from './modules/devtools';
 import { DevMenuDemo } from './modules/dev-menu';
+import { DomWebViewDemo } from './modules/dom-webview';
 import { LogBoxDemo } from './modules/log-box';
 
 const MODULE_DEMOS = {
@@ -88,6 +89,7 @@ const MODULE_DEMOS = {
   'app-integrity': AppIntegrityDemo,
   'devtools': DevToolsDemo,
   'dev-menu': DevMenuDemo,
+  'dom-webview': DomWebViewDemo,
   'log-box': LogBoxDemo,
   'expo': ExpoDemo,
   'eas-client': EASClientDemo,
