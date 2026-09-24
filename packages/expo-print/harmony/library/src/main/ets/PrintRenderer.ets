@@ -85,9 +85,11 @@ export class PrintRenderer {
       this.timeout = setTimeout((): void => {
         this.fail(new ExpoModuleError('ERR_PRINT_HTML_TIMEOUT', 'Timed out while rendering HTML to PDF.'));
       }, RENDER_TIMEOUT_MS);
+
       this.ui.postFrameCallback(
         new PrintFrameCallback((): void => {
           if (this.settled) return;
+
           try {
             this.content = new ComponentContent(this.ui, wrapBuilder<[PrintRenderer]>(printWebView), this);
             this.ui.getOverlayManager().addComponentContent(this.content);
@@ -111,8 +113,9 @@ export class PrintRenderer {
       // Base64 avoids loadData interpreting literal '%' or '#' in the supplied HTML as URL escapes.
       const bytes = new util.TextEncoder().encodeInto(this.options.html || '<!doctype html><html><body></body></html>');
       const html = new util.Base64Helper().encodeToStringSync(bytes);
+
       this.controller.onActive();
-      this.controller.loadData(html, 'text/html', 'base64');
+      this.controller.loadData(html, 'text/html; charset=utf-8', 'base64');
     } catch (error) {
       this.fail(new ExpoModuleError('ERR_PRINT_HTML_LOAD', 'Unable to load HTML for printing.', error as Object));
     }
@@ -176,6 +179,7 @@ export class PrintRenderer {
 
   private async dispose(): Promise<void> {
     if (this.timeout !== undefined) clearTimeout(this.timeout);
+
     if (this.attached) {
       try {
         this.controller.stop();

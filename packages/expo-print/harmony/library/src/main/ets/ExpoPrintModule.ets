@@ -71,11 +71,15 @@ export class ExpoPrintModule extends ExpoModule {
 
     this.printing = true;
     let path: string | undefined;
+
     try {
       path = await outputPath(this.context.cachePath, true);
       this.assertActive(generation);
+
       if (options.html !== undefined) {
-        await writeBytes(path, await this.render(options, generation));
+        const bytes = await this.render(options, generation);
+
+        await writeBytes(path, bytes);
       } else {
         await materializePdf(options.uri!, path, this.requests, (): void => this.assertActive(generation), this.context);
       }
@@ -83,12 +87,13 @@ export class ExpoPrintModule extends ExpoModule {
       this.assertActive(generation);
       await startPrint(path, this.context.uiAbilityContext);
 
-      // Ownership transfers to the system print task's terminal event listeners.
+      // The system job now owns the file until a terminal event.
       path = undefined;
     } catch (error) {
       if (error instanceof ExpoModuleError) {
         throw new ExpoModuleError(error.code, error.message, error.cause, error.path);
       }
+
       throw new ExpoModuleError('ERR_PRINT_FAILED', 'Unable to start printing.', error as Object);
     } finally {
       this.printing = false;
@@ -104,6 +109,7 @@ export class ExpoPrintModule extends ExpoModule {
     }
 
     let path: string | undefined;
+
     try {
       const bytes = await this.render(options, generation);
       this.assertActive(generation);
@@ -117,11 +123,13 @@ export class ExpoPrintModule extends ExpoModule {
 
       this.assertActive(generation);
       path = undefined;
+
       return result;
     } catch (error) {
       if (error instanceof ExpoModuleError) {
         throw new ExpoModuleError(error.code, error.message, error.cause, error.path);
       }
+
       throw new ExpoModuleError('ERR_PRINT_PDF_RENDER', 'Unable to create the PDF file.', error as Object);
     } finally {
       if (path !== undefined) await removeFile(path);
@@ -140,6 +148,7 @@ export class ExpoPrintModule extends ExpoModule {
 
       const renderer = new PrintRenderer(window.getUIContext(), options);
       this.renderers.add(renderer);
+
       try {
         return await renderer.render();
       } finally {

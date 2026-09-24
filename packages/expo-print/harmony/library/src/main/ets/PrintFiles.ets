@@ -11,8 +11,8 @@ const NETWORK_TIMEOUT_MS: number = 60_000;
 const PDF_HEADER_SCAN_BYTES: number = 1024;
 const PDF_HEADER: string = '%PDF-';
 
-export async function outputPath(cacheDir: string, job: boolean = false): Promise<string> {
-  const dir = `${cacheDir}/Print${job ? '/jobs' : ''}`;
+export async function outputPath(cache: string, job: boolean = false): Promise<string> {
+  const dir = `${cache}/Print${job ? '/jobs' : ''}`;
   try {
     await fileIo.mkdir(dir, true);
   } catch (error) {
@@ -32,6 +32,7 @@ export async function removeFile(path: string): Promise<void> {
 
 export async function writeBytes(path: string, bytes: Uint8Array): Promise<void> {
   const file = await fileIo.open(path, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY | fileIo.OpenMode.TRUNC);
+
   try {
     let offset = 0;
     while (offset < bytes.byteLength) {
@@ -54,8 +55,9 @@ export async function materializePdf(
 ): Promise<void> {
   try {
     assertActive();
+
     const parsed = new uri.URI(source);
-    // URI's SDK types say string, but absent components are null at runtime.
+    // Absent URI components are null at runtime despite the SDK's string types.
     const scheme = (parsed.scheme ?? '').toLowerCase();
 
     if (scheme === 'http' || scheme === 'https') {
@@ -69,40 +71,44 @@ export async function materializePdf(
 
       const bytes = await new util.Base64Helper().decode(decodeURIComponent(source.slice(comma + 1)));
       assertActive();
+
       await writeBytes(path, bytes);
     } else {
-      let inputPath = source;
+      let input = source;
       if (scheme === 'file') {
         if (parsed.query || parsed.fragment) throw new Error('File URIs must not contain a query or fragment.');
         if (parsed.path?.includes('\0')) throw new Error('File paths must not contain a NUL character.');
+
         // Keep provider authorities for DocumentPicker grants. URI.path is already percent-decoded;
-        // decoding again changes literal percent escapes in filenames (for example %2520).
+        // decoding again changes literal percent escapes in filenames.
         if (!parsed.authority || parsed.authority.toLowerCase() === 'localhost') {
-          inputPath = parsed.path ?? '';
-          if (!inputPath.startsWith('/')) throw new Error('A local file URI must contain an absolute path.');
+          input = parsed.path ?? '';
+          if (!input.startsWith('/')) throw new Error('A local file URI must contain an absolute path.');
         }
       } else if (scheme.length > 0 || !source.startsWith('/')) {
         throw new Error('Expected an HTTP(S), file, or PDF data URI.');
       }
-      if (inputPath.includes('\0')) throw new Error('File paths must not contain a NUL character.');
+      if (input.includes('\0')) throw new Error('File paths must not contain a NUL character.');
 
-      if (context.services.get(ExpoFileAccessKey) !== undefined) context.filePathForRead(inputPath);
+      if (context.services.get(ExpoFileAccessKey) !== undefined) context.filePathForRead(input);
 
-      const input = await fileIo.open(inputPath, fileIo.OpenMode.READ_ONLY);
+      const file = await fileIo.open(input, fileIo.OpenMode.READ_ONLY);
+
       try {
         assertActive();
-        context.assertFileAccess(input.path);
-        if (!(await fileIo.stat(input.fd)).isFile()) throw new Error('The URI must refer to a file.');
+        context.assertFileAccess(file.path);
+        if (!(await fileIo.stat(file.fd)).isFile()) throw new Error('The URI must refer to a file.');
 
-        await fileIo.copyFile(input.fd, path);
+        await fileIo.copyFile(file.fd, path);
       } finally {
-        await fileIo.close(input);
+        await fileIo.close(file);
       }
     }
 
     await assertPdfFile(path);
   } catch (error) {
     await removeFile(path);
+
     if (error instanceof ExpoModuleError) {
       throw new ExpoModuleError(error.code, error.message, error.cause, error.path);
     }
@@ -116,15 +122,18 @@ export async function materializePdf(
 async function downloadPdf(source: string, path: string, requests: Set<http.HttpRequest>, assertActive: () => void): Promise<void> {
   const file = await fileIo.open(path, fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY | fileIo.OpenMode.TRUNC);
   let client: http.HttpRequest | undefined;
-  let failure: Error | undefined;
+  let failure: string | undefined;
+
   try {
     assertActive();
+
     client = http.createHttp();
     requests.add(client);
     client.on('dataReceive', (buffer: ArrayBuffer): void => {
       if (failure !== undefined) return;
+
       try {
-        // Write synchronously to preserve chunk order without buffering the entire PDF.
+        // Synchronous writes preserve stream order without buffering the entire PDF.
         let offset = 0;
         while (offset < buffer.byteLength) {
           const count = fileIo.writeSync(file.fd, buffer.slice(offset));
@@ -132,7 +141,7 @@ async function downloadPdf(source: string, path: string, requests: Set<http.Http
           offset += count;
         }
       } catch (error) {
-        failure = new Error(`Unable to save downloaded PDF: ${(error as Error).message}`);
+        failure = `Unable to save downloaded PDF: ${(error as Error).message}`;
         client?.destroy();
       }
     });
@@ -143,7 +152,8 @@ async function downloadPdf(source: string, path: string, requests: Set<http.Http
       readTimeout: NETWORK_TIMEOUT_MS,
       usingCache: false,
     });
-    if (failure !== undefined) throw new Error(failure.message);
+
+    if (failure !== undefined) throw new Error(failure);
     if (status < 200 || status >= 300) throw new Error(`PDF request failed with HTTP status ${status}.`);
   } finally {
     if (client !== undefined) requests.delete(client);
@@ -159,6 +169,7 @@ async function downloadPdf(source: string, path: string, requests: Set<http.Http
 
 async function assertPdfFile(path: string): Promise<void> {
   const file = await fileIo.open(path, fileIo.OpenMode.READ_ONLY);
+
   try {
     const buffer = new ArrayBuffer(PDF_HEADER_SCAN_BYTES);
     const count = await fileIo.read(file.fd, buffer);
@@ -183,6 +194,7 @@ async function assertPdfFile(path: string): Promise<void> {
 
 export function pageCount(path: string): number {
   const document = new pdfService.PdfDocument();
+
   try {
     const status = document.loadDocument(path);
     if (status !== pdfService.ParseResult.PARSE_SUCCESS) {
@@ -203,7 +215,6 @@ export function pageCount(path: string): number {
 export async function startPrint(path: string, context: Context): Promise<void> {
   const task = await print.print([fileUri.getUriFromPath(path)], context);
 
-  // A system print job can outlive the RN runtime. This closure owns its cache file independently.
   let finished = false;
   const detach = (): void => {
     try {

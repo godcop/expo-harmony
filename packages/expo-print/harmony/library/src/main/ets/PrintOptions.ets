@@ -62,6 +62,7 @@ export function pdfConfiguration(options: PrintOptions): webview.PdfConfiguratio
     width = options.height;
     height = options.width;
   }
+
   if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
     throw new ExpoModuleError('ERR_PRINT_INVALID_OPTIONS', 'Page width and height must be positive finite numbers.');
   }
@@ -96,7 +97,7 @@ export function pdfConfiguration(options: PrintOptions): webview.PdfConfiguratio
     margins.top >= height / 2 ||
     margins.bottom >= height / 2
   ) {
-    // ArkWeb silently resets out-of-range margins to zero. Reject rather than change the requested layout.
+    // ArkWeb silently resets out-of-range margins to zero.
     throw new ExpoModuleError('ERR_PRINT_INVALID_OPTIONS', 'Each margin must be non-negative and smaller than half its page dimension.');
   }
 

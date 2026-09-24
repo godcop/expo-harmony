@@ -1,6 +1,6 @@
 {
   "name": "@expo-harmony/expo-print",
-  "version": "55.0.15-harmony.3",
+  "version": "55.0.19-harmony.0",
   "description": "HarmonyOS port of expo-print",
   "keywords": [
     "react-native",
@@ -26,7 +26,7 @@
   },
   "peerDependencies": {
     "@expo-harmony/expo-modules-core": "workspace:*",
-    "expo-print": "55.0.15"
+    "expo-print": "55.0.19"
   },
   "devDependencies": {
     "@expo-harmony/expo-module-scripts": "workspace:*",
@@ -34,7 +34,7 @@
     "@react-native-oh/react-native-harmony": "0.84.1",
     "expo": "55.0.26",
     "expo-modules-core": "55.0.25",
-    "expo-print": "55.0.15",
+    "expo-print": "55.0.19",
     "react": "19.2.3",
     "react-native": "0.84.1"
   },

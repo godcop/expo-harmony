@@ -7,7 +7,7 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-print expo-print@55.0.15
+npm install @expo-harmony/expo-print expo-print@55.0.19
 ```
 
 重新生成并编译 HarmonyOS 工程后，业务代码依旧使用官方包：
@@ -22,6 +22,8 @@ const result = await Print.printToFileAsync({
 
 await Print.printAsync({ uri: result.uri });
 ```
+
+HTML 由系统网页组件渲染成 PDF，按 UTF-8 解码，不需要在页面里声明字符集。渲染时不执行 JavaScript，也不能访问本地文件，图片要用内联 Base64 或网络地址引入，HTML 里的相对路径没有可用的基准目录。排版和字体同样由系统网页组件决定，和其他平台的输出可能有差别。库声明了 `ohos.permission.PRINT` 和 `ohos.permission.INTERNET` 两个普通权限，安装后自动生效。
 
 ## API 对照表
 
@@ -39,7 +41,7 @@ await Print.printAsync({ uri: result.uri });
 
 返回 `Promise<void>`，打开系统打印界面后即返回，不等待打印完成，用户关闭界面不算失败。
 
-`options` 见 `PrintOptions`，必须且只能提供 `html` 或 `uri` 之一，否则拒绝。打印空白文档可传 `html: ''`。
+`options` 见 `PrintOptions`，必须提供 `html` 或 `uri` 之一，两者同时非空时拒绝。打印空白文档可传 `html: ''`，此时同时传入的 `uri` 会被忽略。
 
 `html` 会先渲染成 PDF 再交给系统打印，`margins`、`textZoom` 和 `orientation` 在这一步生效。`uri` 支持本地文件、已授权的文件提供者 URI、HTTP(S) 链接和 `data:application/pdf;base64,` 数据 URI，内容不是 PDF 时会直接拒绝。
 
