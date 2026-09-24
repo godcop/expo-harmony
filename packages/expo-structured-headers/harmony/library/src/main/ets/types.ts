@@ -20,14 +20,18 @@ export class Decimal {
     if (!Number.isFinite(value)) throw new TypeError('Decimal must be finite.');
     if (value === 0) return Decimal.fromPermille(0);
 
+    // Decode the IEEE 754 binary64 value so scaling does not introduce a second
+    // floating-point rounding. RFC 8941 section 4.1.5 rounds ties to even.
     const view = new DataView(new ArrayBuffer(8));
     view.setFloat64(0, Math.abs(value), false);
+
     const high = view.getUint32(0, false);
     const low = view.getUint32(4, false);
     const exponent = (high >>> 20) & 0x7ff;
     const fraction = (BigInt(high & 0xfffff) << BigInt(32)) | BigInt(low);
     const significand = exponent === 0 ? fraction : (BigInt(1) << BigInt(52)) | fraction;
     const shift = exponent === 0 ? -1074 : exponent - 1023 - 52;
+
     const scaled = significand * BigInt(1000);
     let rounded: bigint;
     if (shift >= 0) {
@@ -37,6 +41,7 @@ export class Decimal {
       const quotient = scaled / divisor;
       const remainder = scaled % divisor;
       const twice = remainder * BigInt(2);
+
       rounded = quotient + (twice > divisor || (twice === divisor && quotient % BigInt(2) !== BigInt(0)) ? BigInt(1) : BigInt(0));
     }
 
@@ -49,6 +54,7 @@ export class Decimal {
     if (!Number.isInteger(permille) || Math.abs(permille) > 999_999_999_999_999) {
       throw new TypeError('Decimal permille is out of range.');
     }
+
     return new Decimal(permille);
   }
 
@@ -64,6 +70,7 @@ export class ByteSequence {
       this.bytes = value.slice();
       return;
     }
+
     if (typeof value !== 'string') throw new TypeError('Base64 byte sequence must be a string or Uint8Array.');
     if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}(?:==)?|[A-Za-z0-9+/]{3}=?)?$/.test(value)) {
       throw new TypeError('Invalid Base64 byte sequence.');

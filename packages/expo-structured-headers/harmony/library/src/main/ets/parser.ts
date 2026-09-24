@@ -116,38 +116,53 @@ export default class Parser {
 
   constructor(input: string | string[]) {
     this.boundaries = [];
+
     if (Array.isArray(input)) {
+      if (input.length === 0) throw new ParseError(0, 'Empty input');
+
       let joined = '';
-      input.forEach((line, index) => {
+      for (const [index, line] of input.entries()) {
         if (typeof line !== 'string') throw new TypeError('Field lines must be strings.');
+
         if (index > 0) {
           this.boundaries.push(joined.length);
           joined += ',';
         }
         joined += line;
-      });
+      }
+
       this.input = joined;
     } else if (typeof input === 'string') {
       this.input = input;
     } else {
       throw new TypeError('Parser input must be a string or an array of strings.');
     }
+
+    for (let index = 0; index < this.input.length; index++) {
+      if (this.input.charCodeAt(index) > 0x7f) {
+        throw new ParseError(index, 'Field lines must contain only ASCII characters');
+      }
+    }
+
     this.pos = 0;
   }
 
   parseDictionary(): Dictionary {
     this.skipWS();
-    const dictionary = new Map();
+    const dictionary: Dictionary = new Map();
+
     while(!this.eof()) {
       const key = this.parseKey();
-      let member;
+      let member: Item | InnerList;
       if (this.lookChar()==='=') {
         this.pos++;
         member = this.parseItemOrInnerList();
       } else {
         member = [true, this.parseParameters()];
       }
+
       dictionary.set(key, member);
+
       this.skipOWS();
       if (this.eof()) {
         return dictionary;
@@ -195,7 +210,10 @@ export default class Parser {
       this.parseParameters()
     ];
 
-    if (standalone) this.checkTrail();
+    if (standalone) {
+      this.skipWS();
+      this.checkTrail();
+    }
 
     return result;
   }
@@ -257,20 +275,24 @@ export default class Parser {
   }
 
   parseParameters(): Parameters {
-    const parameters = new Map();
+    const parameters: Parameters = new Map();
+
     while(!this.eof()) {
       const char = this.lookChar();
       if (char!==';') {
         break;
       }
+
       this.pos++;
       this.skipWS();
+
       const key = this.parseKey();
       let value: BareItem = true;
       if (this.lookChar() === '=') {
         this.pos++;
         value = this.parseBareItem();
       }
+
       parameters.set(key, value);
     }
 
@@ -365,8 +387,11 @@ export default class Parser {
   }
 
   parseToken(): Token {
-    let value = '';
+    if (!/^[A-Za-z*]$/.test(this.lookChar())) {
+      throw new ParseError(this.pos, 'A token must begin with an asterisk or letter (A-Z or a-z)');
+    }
 
+    let value = '';
     while(!this.eof()) {
       const char = this.lookChar();
       if (!/^[:/!#$%&'*+\-.^_`|~A-Za-z0-9]$/.test(char)) {
@@ -460,8 +485,8 @@ export default class Parser {
       this.pos++;
     }
   }
+
   checkTrail(): void {
-    this.skipWS();
     if (!this.eof()) {
       throw new ParseError(this.pos, 'Unexpected characters at end of input');
     }

@@ -10,7 +10,7 @@
 npm install @expo-harmony/expo-structured-headers
 ```
 
-本包适配 Expo SDK 55 的 `expo-structured-headers`，最低支持 HarmonyOS 5.0.1（API 13）。包内没有 React Native JavaScript 接口，只在原生代码中使用，不需要配置插件。解析和序列化在应用进程内完成，不同系统版本上行为一致。
+本包适配 Expo SDK 55 的 `expo-structured-headers@55.0.2`，最低支持 HarmonyOS 5.0.1（API 13）。包内没有 React Native JavaScript 接口，只在原生代码中使用。解析和序列化在应用进程内完成，不同系统版本上行为一致。
 
 原生模块在自己的 `oh-package.json5` 中声明依赖：
 
@@ -31,7 +31,7 @@ const fields = parseDictionary('keyid="main", enabled');
 const header = serializeDictionary(fields);
 ```
 
-实现改写自 Evert Pot 的 MIT 许可库 `structured-headers`，原许可文件随源码保留。
+实现改写自 Evert Pot 的 MIT 许可库 `structured-headers`，原许可文件随源码保留。在 ArkTS 中标注参数类型时，用 `import { Parameters as HeaderParameters }` 导入，避免和 TypeScript 同名的工具类型混淆。
 
 ## API 对照表
 
@@ -41,7 +41,7 @@ const header = serializeDictionary(fields);
 
 返回 `Dictionary`。没有取值的成员解析为 `[true, 参数]`。
 
-`parseDictionary()`、`parseList()`、`parseItem()` 的输入规则相同：接受单个字符串，也接受字符串数组表示同一个响应头的多行，多行按逗号拼接后解析，字符串字面量不允许跨行。解析失败抛出 `ParseError`，`position` 为出错处的偏移量。
+`parseDictionary()`、`parseList()`、`parseItem()` 的输入规则相同：接受单个字符串，也接受非空字符串数组表示同一个响应头的多行，多行按逗号拼接后解析，字符串字面量不允许跨行。完整字段允许首尾空格，列表和字典的成员之间允许逗号及可选的空格、制表符。输入必须是 ASCII，解析失败抛出 `ParseError`，`position` 为出错处的偏移量。`parseDictionary('')` 和 `parseList('')` 返回空容器，`parseItem('')` 和空的多行数组报错。字典和参数出现重复键时，键的位置保留第一次插入的，取值以最后一次出现为准。
 
 #### `parseList(input)`
 
@@ -53,7 +53,7 @@ const header = serializeDictionary(fields);
 
 #### 其余解析函数
 
-以下函数按给定结构解析一个完整的字段值，只接受单个字符串，解析后不允许有剩余字符，失败时抛出 `ParseError`：
+以下函数按给定结构解析一个完整的字段值，只接受单个字符串，不忽略首尾空格，解析后不允许有剩余字符，失败时抛出 `ParseError`：
 
 - `parseBareItem(input)`：返回 `BareItem`，按首字符识别类型。
 - `parseParameters(input)`：返回 `Parameters`。
@@ -78,15 +78,15 @@ const header = serializeDictionary(fields);
 
 #### `Parser`
 
-解析器的类形式，方法与顶层解析函数同名同义，可以直接实例化使用。
+解析器的类形式。`parseDictionary()`、`parseList()`、`parseItem()` 解析完整字段。其余方法在当前游标处解析一部分并推进游标，不自动验证输入结束。`parseString()`、`parseToken()`、`parseByteSequence()`、`parseBoolean()`、`parseIntegerOrDecimal()` 返回裸值，不读取取值后的参数，例如实例方法 `parseToken()` 直接返回 `Token`。结构方法 `parseInnerList()` 和 `parseItemOrInnerList()` 会读取参数。需要完整输入校验时使用顶层函数，或在完成分步解析后调用 `checkTrail()`。
 
 #### `Decimal`
 
-以千分整数表示 RFC 8941 小数，固定三位小数精度。`Decimal.valueOf(1.0)` 从普通数值构造，四舍五入到三位小数；`Decimal.fromPermille(1000)` 直接按千分值构造。`toNumber()` 返回普通数值。用作取值序列化时按原精度输出，`1.0` 不会写成 `1`。超出 ±999,999,999,999.999 范围抛出 `TypeError`。
+以千分整数表示 RFC 8941 小数，固定三位小数精度。`Decimal.valueOf(1.0)` 从普通数值构造，按 RFC 8941 就近舍入到三位小数，恰好居中时舍入到偶数。`Decimal.fromPermille(1000)` 直接按千分值构造。`toNumber()` 返回普通数值。用作取值序列化时保留小数类型，`1.0` 不会写成 `1`，小数点后的前导零也会保留（如 `0.001`）。超出 ±999,999,999,999.999 范围抛出 `TypeError`。
 
 #### `ByteSequence`
 
-字节序列。构造时接受 Base64 字符串或 `Uint8Array`，内容会复制一份。`toBase64()` 输出标准 Base64，`toBytes()` 返回字节副本。Base64 不合法时抛出 `TypeError`。
+字节序列。构造时接受 Base64 字符串或 `Uint8Array`，内容会复制一份。`toBase64()` 输出标准 Base64，`toBytes()` 返回字节副本。接受省略了全部末尾填充的合法 Base64，输出时补足标准填充；Base64URL 字母表、空白和错误的填充会被拒绝。Base64 不合法时抛出 `TypeError`。
 
 #### `Token`
 
