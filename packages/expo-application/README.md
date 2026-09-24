@@ -7,8 +7,10 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-application expo-application@55.0.15
+npm install @expo-harmony/expo-application expo-application@55.0.19
 ```
+
+本包适配 Expo SDK 55 的 `expo-application`，业务代码继续从官方包导入。原生模块由 Expo Harmony 自动链接。最低支持 HarmonyOS 5.0.1（API 13），宿主应用的 `compatibleSdkVersion` 不能低于这个版本。
 
 ## API 对照表
 
@@ -49,7 +51,7 @@ API 20 起系统在部分查询接口上直接返回用户可见名称，本模�
 - API 18 及以上使用首次安装时间，符合官方不计入后续更新的语义。预置应用返回固定的初始安装时间。
 - API 13–17 没有首次安装时间，使用应用包的安装时间，覆盖安装后怎么取值由系统决定。
 
-设备首次开机时若还没拿到系统时间，安装时间从 Unix 纪元开始计时，返回值会远小于真实安装时间。时间戳不合法时拒绝。
+设备首次开机时若还没拿到系统时间，安装时间从 Unix 纪元开始计时，返回值会远小于真实安装时间。时间戳缺失或不合法时拒绝。
 
 #### `Application.getLastUpdateTimeAsync()`
 
