@@ -190,7 +190,7 @@ export async function materializedAssets(
 }
 
 export function readSortDescriptors(expressions: string[]): AssetSortDescriptor[] {
-  const descriptors: AssetSortDescriptor[] = [];
+  const sorts: AssetSortDescriptor[] = [];
 
   expressions.forEach((expression: string): void => {
     const parts = expression.trim().split(/\s+/);
@@ -199,13 +199,13 @@ export function readSortDescriptors(expressions: string[]): AssetSortDescriptor[
       throw new ExpoModuleError('ERR_MEDIA_LIBRARY_INVALID_SORT', `Invalid Expo media sort expression '${expression}'.`);
     }
 
-    // Expo ignores direction for "default", leaving the platform order in effect.
     if (parts[0] === SORT_DEFAULT) return;
     sortColumn(parts[0]);
-    descriptors.push(new AssetSortDescriptor(parts[0], parts[1] === SORT_ASCENDING));
+
+    sorts.push(new AssetSortDescriptor(parts[0], parts[1] === SORT_ASCENDING));
   });
 
-  return descriptors;
+  return sorts;
 }
 
 export function applyNativeSort(predicates: dataSharePredicates.DataSharePredicates, sorts: AssetSortDescriptor[]): void {
@@ -222,11 +222,9 @@ function compareAssets(left: photoAccessHelper.PhotoAsset, right: photoAccessHel
     const sort = sorts[i];
     const a = assetSortValue(left, sort.key);
     const b = assetSortValue(right, sort.key);
-
     if (a === b) continue;
 
     const order: number = a < b ? -1 : 1;
-
     return sort.ascending ? order : -order;
   }
 
@@ -240,6 +238,7 @@ function assetSortValue(asset: photoAccessHelper.PhotoAsset, key: string): numbe
   if (key === SORT_CREATION_TIME) return effectiveCreationTime(asset);
   if (key === SORT_MODIFICATION_TIME) return memberNumber(asset, photoAccessHelper.PhotoKeys.DATE_MODIFIED_MS);
   if (key === SORT_DURATION) return memberNumber(asset, photoAccessHelper.PhotoKeys.DURATION);
+
   throw new ExpoModuleError('ERR_MEDIA_LIBRARY_INVALID_SORT', `Unsupported Expo media sort key '${key}'.`);
 }
 

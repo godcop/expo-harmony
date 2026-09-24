@@ -7,10 +7,10 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-media-library expo-media-library@55.0.17
+npm install @expo-harmony/expo-media-library expo-media-library@55.0.21
 ```
 
-本包适配 Expo SDK 55 的 `expo-media-library`，原生模块通过 Expo Harmony 自动链接，不需要配置插件。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。
+本包适配 Expo SDK 55 的 `expo-media-library`，原生模块通过 Expo Harmony 自动链接。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。
 
 查询图片、视频和相册需要 `ohos.permission.READ_IMAGEVIDEO`，保存和删除资源需要 `ohos.permission.WRITE_IMAGEVIDEO`。本包默认不声明这两项权限，使用前需按下文申请并配置。
 
@@ -33,7 +33,7 @@ if (permission.granted) {
 
 `ohos.permission.READ_IMAGEVIDEO` 和 `ohos.permission.WRITE_IMAGEVIDEO` 属于受限权限（ACL），需按华为的 [受限权限说明](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/restricted-permissions#ohospermissionread_imagevideo) 申请。
 
-只需让用户选择图片或视频时，可以使用 `expo-image-picker` 的系统选择器，无需申请图库读写权限。
+只需让用户选择图片或视频时，可以使用 `expo-image-picker` 的系统选择器代替图库读写权限。
 
 取得授权后，在 `app.json` 的 `expo.harmony.permissions` 数组中添加以下读取权限声明：
 

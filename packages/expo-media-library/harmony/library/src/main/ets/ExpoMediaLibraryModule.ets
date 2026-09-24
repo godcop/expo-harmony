@@ -47,8 +47,8 @@ const IDENTIFIER = ExpoValueTypes.custom<string>(
 );
 
 interface LocalMediaSource {
-  fileUri: string;
-  mediaType: photoAccessHelper.PhotoType;
+  uri: string;
+  type: photoAccessHelper.PhotoType;
 }
 
 export class ExpoMediaLibraryModule extends ExpoModule {
@@ -106,7 +106,9 @@ export class ExpoMediaLibraryModule extends ExpoModule {
           (write?: boolean): Promise<MediaLibraryPermissionResponse> =>
             this.run(async (): Promise<MediaLibraryPermissionResponse> => {
               const result = await this.permissions.request(write ?? false);
+
               this.startSystemObservation();
+
               return result;
             }),
         ),
@@ -289,6 +291,7 @@ export class ExpoMediaLibraryModule extends ExpoModule {
 
   private async run<T>(operation: () => Promise<T>): Promise<T> {
     this.assertActive();
+
     this.pending++;
 
     try {
@@ -300,6 +303,7 @@ export class ExpoMediaLibraryModule extends ExpoModule {
       if (error instanceof ExpoModuleError) throw new ExpoModuleError(error.code, error.message, error.cause);
 
       const cause = error as BusinessError;
+
       throw new ExpoModuleError('ERR_MEDIA_LIBRARY_OPERATION', `HarmonyOS media library operation failed (${cause.code}): ${cause.message}`, error);
     } finally {
       this.pending--;
@@ -358,20 +362,22 @@ export class ExpoMediaLibraryModule extends ExpoModule {
     const path = this.context.filePathForRead(input);
     const name = path.slice(path.lastIndexOf('/') + 1);
     const dot = name.lastIndexOf('.');
+
     if (dot <= 0 || dot === name.length - 1)
       throw new ExpoModuleError('ERR_MEDIA_LIBRARY_MISSING_EXTENSION', 'The local media file must have a filename extension.');
 
-    const type = uniformTypeDescriptor.getUniformDataTypeByFilenameExtension(name.slice(dot).toLowerCase());
-    const descriptor = uniformTypeDescriptor.getTypeDescriptor(type);
-    let mediaType: photoAccessHelper.PhotoType;
-    if (descriptor.belongsTo(uniformTypeDescriptor.UniformDataType.IMAGE)) mediaType = photoAccessHelper.PhotoType.IMAGE;
-    else if (descriptor.belongsTo(uniformTypeDescriptor.UniformDataType.VIDEO)) mediaType = photoAccessHelper.PhotoType.VIDEO;
+    const id = uniformTypeDescriptor.getUniformDataTypeByFilenameExtension(name.slice(dot).toLowerCase());
+    const descriptor = uniformTypeDescriptor.getTypeDescriptor(id);
+
+    let type: photoAccessHelper.PhotoType;
+    if (descriptor.belongsTo(uniformTypeDescriptor.UniformDataType.IMAGE)) type = photoAccessHelper.PhotoType.IMAGE;
+    else if (descriptor.belongsTo(uniformTypeDescriptor.UniformDataType.VIDEO)) type = photoAccessHelper.PhotoType.VIDEO;
     else throw new ExpoModuleError('ERR_MEDIA_LIBRARY_UNSUPPORTED_MEDIA_TYPE', 'HarmonyOS Media Library Kit imports only images and videos.');
 
     const stat = await fileIo.stat(path);
     if (!stat.isFile()) throw new ExpoModuleError('ERR_MEDIA_LIBRARY_INVALID_URI', 'The local media source must be a regular file.');
 
-    return { fileUri: fileUri.getUriFromPath(path), mediaType };
+    return { uri: fileUri.getUriFromPath(path), type };
   }
 
   private async getAssets(options: AssetQueryOptions): Promise<PagedAssetResult> {
@@ -394,6 +400,7 @@ export class ExpoMediaLibraryModule extends ExpoModule {
 
     try {
       const items = await materializedAssets(fetch, options, sorts, materialize);
+
       const total = items === undefined ? fetch.getCount() : items.length;
       const start = items === undefined ? await cursorStart(fetch, options.after) : cursorStartInAssets(items, options.after);
       const end = Math.min(start + options.first, total);
@@ -421,8 +428,10 @@ export class ExpoMediaLibraryModule extends ExpoModule {
 
   private async getAlbums(options: AlbumQueryOptions): Promise<AlbumRecord[]> {
     const albums = await this.queryAlbums(photoAccessHelper.AlbumType.USER, photoAccessHelper.AlbumSubtype.USER_GENERIC);
+
     if (options.includeSmartAlbums) {
       const smart = await this.queryAlbums(photoAccessHelper.AlbumType.SYSTEM, photoAccessHelper.AlbumSubtype.ANY);
+
       smart.forEach((album: photoAccessHelper.Album): void => {
         albums.push(album);
       });
@@ -441,9 +450,9 @@ export class ExpoMediaLibraryModule extends ExpoModule {
     const source = await this.localMediaSource(input);
 
     const request =
-      source.mediaType === photoAccessHelper.PhotoType.IMAGE
-        ? photoAccessHelper.MediaAssetChangeRequest.createImageAssetRequest(this.context.uiAbilityContext, source.fileUri)
-        : photoAccessHelper.MediaAssetChangeRequest.createVideoAssetRequest(this.context.uiAbilityContext, source.fileUri);
+      source.type === photoAccessHelper.PhotoType.IMAGE
+        ? photoAccessHelper.MediaAssetChangeRequest.createImageAssetRequest(this.context.uiAbilityContext, source.uri)
+        : photoAccessHelper.MediaAssetChangeRequest.createVideoAssetRequest(this.context.uiAbilityContext, source.uri);
 
     await this.helper.applyChanges(request);
 
@@ -482,11 +491,11 @@ export class ExpoMediaLibraryModule extends ExpoModule {
     }
   }
 
-  private async addAssetsToAlbum(identifiers: string[], id: string, _copy: boolean): Promise<boolean> {
-    if (identifiers.length === 0) return true;
+  private async addAssetsToAlbum(ids: string[], id: string, _copy: boolean): Promise<boolean> {
+    if (ids.length === 0) return true;
 
     const album = await this.requireWritableAlbum(id);
-    const assets = await this.requireAssets(identifiers);
+    const assets = await this.requireAssets(ids);
 
     const change = new photoAccessHelper.MediaAlbumChangeRequest(album);
     change.addAssets(assets);
@@ -496,11 +505,11 @@ export class ExpoMediaLibraryModule extends ExpoModule {
     return true;
   }
 
-  private async removeAssetsFromAlbum(identifiers: string[], id: string): Promise<boolean> {
-    if (identifiers.length === 0) return true;
+  private async removeAssetsFromAlbum(ids: string[], id: string): Promise<boolean> {
+    if (ids.length === 0) return true;
 
     const album = await this.requireWritableAlbum(id);
-    const assets = await this.requireAssets(identifiers);
+    const assets = await this.requireAssets(ids);
 
     const change = new photoAccessHelper.MediaAlbumChangeRequest(album);
     change.removeAssets(assets);
@@ -510,23 +519,24 @@ export class ExpoMediaLibraryModule extends ExpoModule {
     return true;
   }
 
-  private async deleteAssets(identifiers: string[]): Promise<boolean> {
-    const ids = uniqueStrings(identifiers);
+  private async deleteAssets(ids: string[]): Promise<boolean> {
+    const unique = uniqueStrings(ids);
 
-    for (let start = 0; start < ids.length; start += DELETE_BATCH_LIMIT) {
+    for (let start = 0; start < unique.length; start += DELETE_BATCH_LIMIT) {
       this.assertActive();
-      await photoAccessHelper.MediaAssetChangeRequest.deleteAssets(this.context.uiAbilityContext, ids.slice(start, start + DELETE_BATCH_LIMIT));
+
+      await photoAccessHelper.MediaAssetChangeRequest.deleteAssets(this.context.uiAbilityContext, unique.slice(start, start + DELETE_BATCH_LIMIT));
     }
 
     return true;
   }
 
-  private async requireAssets(identifiers: string[]): Promise<photoAccessHelper.PhotoAsset[]> {
+  private async requireAssets(ids: string[]): Promise<photoAccessHelper.PhotoAsset[]> {
     const assets: photoAccessHelper.PhotoAsset[] = [];
-    const ids = uniqueStrings(identifiers);
+    const unique = uniqueStrings(ids);
 
-    for (let i = 0; i < ids.length; i += 1) {
-      assets.push(await this.requireAsset(ids[i]));
+    for (let i = 0; i < unique.length; i += 1) {
+      assets.push(await this.requireAsset(unique[i]));
     }
 
     return assets;

@@ -122,6 +122,7 @@ export async function mapAsset(asset: photoAccessHelper.PhotoAsset, details: boo
   let width = memberNumber(asset, photoAccessHelper.PhotoKeys.WIDTH);
   let height = memberNumber(asset, photoAccessHelper.PhotoKeys.HEIGHT);
   const orientation = memberNumber(asset, photoAccessHelper.PhotoKeys.ORIENTATION);
+
   if (Math.abs(orientation) % 180 === 90) {
     const previous = width;
     width = height;
@@ -146,6 +147,7 @@ export async function mapAsset(asset: photoAccessHelper.PhotoAsset, details: boo
 
     if (asset.photoType === photoAccessHelper.PhotoType.IMAGE) {
       const info = await readImageMetadata(asset.uri);
+
       if (info !== undefined) {
         record.exif = info.exif;
         record.location = info.location ?? null;
@@ -174,7 +176,6 @@ async function readImageMetadata(uri: string): Promise<ImageMetadata | undefined
   try {
     file = await fileIo.open(uri, fileIo.OpenMode.READ_ONLY);
     source = image.createImageSource(file.fd);
-
     const props = await source.getImageProperties(EXIF_KEYS);
 
     const exif: Record<string, ESObject> = {};
@@ -243,7 +244,6 @@ function memberBoolean(asset: photoAccessHelper.PhotoAsset, key: photoAccessHelp
 
 export function effectiveCreationTime(asset: photoAccessHelper.PhotoAsset): number {
   const taken = memberNumber(asset, photoAccessHelper.PhotoKeys.DATE_TAKEN_MS);
-
   return taken > 0 ? taken : memberNumber(asset, photoAccessHelper.PhotoKeys.DATE_ADDED_MS);
 }
 
@@ -253,6 +253,7 @@ function rationalNumber(value: string): number | undefined {
   const parts = value.trim().split('/');
   const numerator = Number(parts[0]);
   const denominator = parts.length > 1 ? Number(parts[1]) : 1;
+
   if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator === 0) return undefined;
 
   return numerator / denominator;
@@ -269,6 +270,7 @@ function coordinate(value?: string | null, ref?: string | null): number | undefi
 
   const degrees = (parts[0] ?? 0) + (parts[1] ?? 0) / 60 + (parts[2] ?? 0) / 3600;
   const limit = direction === 'N' || direction === 'S' ? 90 : 180;
+
   if (
     (parts[0] as number) < 0 ||
     (parts[1] as number) < 0 ||

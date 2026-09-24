@@ -86,6 +86,7 @@ export class MediaLibraryPermissions {
     if (this.destroyed) throw new ExpoModuleError('ERR_MEDIA_LIBRARY_DESTROYED', 'The media library module has been destroyed.');
 
     const request = await this.context.requestPermissions(write ? [WRITE_PERMISSION] : MEDIA_PERMISSIONS);
+
     let restricted: boolean = false;
 
     for (const result of request.systemResults) {
@@ -117,6 +118,7 @@ export class MediaLibraryPermissions {
 
         const blocked = reason === RequestReason.CannotRequest || reason === RequestReason.ManualSettings;
         if (!granted && blocked) restricted = true;
+
         if (!blocked && reason !== undefined && reason !== RequestReason.Success) {
           throw new ExpoModuleError('ERR_MEDIA_LIBRARY_PERMISSION_REQUEST', `The system could not request ${permission} (reason ${reason}).`);
         }
@@ -125,8 +127,10 @@ export class MediaLibraryPermissions {
 
     const response = await this.get(write);
 
-    if (this.context.services.get(ExpoRuntimePermissionsKey) !== undefined)
+    if (this.context.services.get(ExpoRuntimePermissionsKey) !== undefined) {
       return restricted && !response.granted ? new MediaLibraryPermissionResponse('denied', false) : response;
+    }
+
     return response.granted ? response : new MediaLibraryPermissionResponse('denied', response.canAskAgain && !restricted);
   }
 
