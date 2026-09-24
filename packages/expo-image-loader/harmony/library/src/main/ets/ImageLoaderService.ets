@@ -7,7 +7,6 @@ import { ImageLoaderInterface, ImageLoaderInterfaceKey, ImageLoaderResultListene
 import { applyImageOrientation } from './ImageLoaderOrientation';
 import { decodeImageDataURL, ImageLoaderSourceType, resolveImageLoaderSource } from './ImageLoaderSource';
 
-// Network Kit HttpRequestOptions.maxLimit has a documented maximum of 100 MiB.
 const MAX_HTTP_RESPONSE_BYTES: number = 100 * 1024 * 1024;
 
 export class ImageLoaderService extends ExpoService implements ImageLoaderInterface {
@@ -47,6 +46,7 @@ export class ImageLoaderService extends ExpoService implements ImageLoaderInterf
     try {
       try {
         this.context.assertActive();
+
         const source = resolveImageLoaderSource(url);
 
         switch (source.type) {
@@ -66,6 +66,7 @@ export class ImageLoaderService extends ExpoService implements ImageLoaderInterf
             file = await fileIo.open(source.value, fileIo.OpenMode.READ_ONLY);
 
             this.context.services.get(ExpoFileAccessKey)?.assertAccess(file.path, 'read');
+
             decoder = image.createImageSource(file.fd);
             break;
         }
@@ -125,6 +126,7 @@ export class ImageLoaderService extends ExpoService implements ImageLoaderInterf
       const response = await new Promise<http.HttpResponse>((resolve, reject): void => {
         // Reject explicitly: destroy() alone does not promise to settle an in-flight request.
         remove = this.context.session?.onClose((): void => reject(new Error('The Expo runtime session is closed.')));
+
         request
           .request(url, {
             method: http.RequestMethod.GET,

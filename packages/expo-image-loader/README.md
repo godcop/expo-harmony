@@ -10,7 +10,7 @@
 npm install @expo-harmony/expo-image-loader expo-image-loader@55.0.1
 ```
 
-本包适配 Expo SDK 55 的 `expo-image-loader`，原生服务通过 Expo Harmony 自动链接，不需要配置插件。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。
+本包适配 Expo SDK 55 的 `expo-image-loader`，原生服务通过 Expo Harmony 自动链接。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。
 
 HAR 已经声明 `ohos.permission.INTERNET`，加载远程图片时应用不必另行申请网络权限。加载本地图片只校验应用已经拿到的访问授权，本包不申请相册或文件权限。
 
@@ -62,6 +62,8 @@ try {
 - `asset://path` 对应 `rawfile/assets/path`；`rawfile://path` 或相对资源名对应 `rawfile/path`。
 
 返回的是原始尺寸的图片，不做降采样。动画图片只取第一帧，系统能读到 EXIF 方向时按方向摆正。
+
+`data:` 地址须使用 `data:image/<subtype>[;参数];base64,<数据>` 形式，协议、媒体类型和 `base64` 标记不区分大小写。缺少图片子类型或未使用 base64 编码的地址会被拒绝。
 
 远程图片走系统的 HTTP 缓存，响应体上限 100 MiB，超过时加载失败，这个上限不作用于本地图片。
 

@@ -34,21 +34,21 @@ export function resolveImageLoaderSource(url: string): ImageLoaderSource {
     .replace(/^(?:asset|rawfile):\/\//i, '')
     .replace(/^\/+/, '')
     .split(/[?#]/, 1)[0];
+
   if (/%(?:00|2f|5c)/i.test(encoded) || encoded.includes('\\')) throw new Error('The packaged image path is invalid.');
 
   const path = decodeURIComponent(encoded);
+
   if (path.split('/').some((part: string): boolean => part.length === 0 || part === '.' || part === '..')) {
     throw new Error('The packaged image path is invalid.');
   }
 
-  // RNOH's Metro asset destination is rawfile/assets; rawfile:// names are relative to rawfile itself.
   return new ImageLoaderSource(ImageLoaderSourceType.RAW_RESOURCE, /^asset:\/\//i.test(url) ? `assets/${path}` : path);
 }
 
 export function decodeImageDataURL(url: string): ArrayBuffer {
   const comma = url.indexOf(',');
-
-  if (comma < 0 || !url.startsWith('data:image') || !url.slice(0, comma).endsWith(';base64')) {
+  if (comma < 0 || !/^data:image\/[a-z0-9!#$%&'*+.^_`{|}~-]+(?:;[^,]*)?;base64$/i.test(url.slice(0, comma))) {
     throw new Error('Expected a base64-encoded image data URI.');
   }
 
