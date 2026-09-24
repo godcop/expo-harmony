@@ -1592,6 +1592,24 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@expo-harmony/expo-age-range@workspace:*, @expo-harmony/expo-age-range@workspace:packages/expo-age-range":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-age-range@workspace:packages/expo-age-range"
+  dependencies:
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    expo: "npm:55.0.26"
+    expo-age-range: "npm:0.2.17"
+    expo-modules-core: "npm:55.0.25"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    expo-age-range: 0.2.17
+  languageName: unknown
+  linkType: soft
+
 "@expo-harmony/expo-app-metrics@workspace:*, @expo-harmony/expo-app-metrics@workspace:packages/expo-app-metrics":
   version: 0.0.0-use.local
   resolution: "@expo-harmony/expo-app-metrics@workspace:packages/expo-app-metrics"
@@ -7828,6 +7846,16 @@ __metadata:
     snapdragon: "npm:^0.8.1"
     to-regex: "npm:^3.0.1"
   checksum: 10c0/3e2fb95d2d7d7231486493fd65db913927b656b6fcdfcce41e139c0991a72204af619ad4acb1be75ed994ca49edb7995ef241dbf8cf44dc3c03d211328428a87
+  languageName: node
+  linkType: hard
+
+"expo-age-range@npm:0.2.17":
+  version: 0.2.17
+  resolution: "expo-age-range@npm:0.2.17"
+  peerDependencies:
+    expo: "*"
+    react-native: "*"
+  checksum: 10c0/b07fcf3b931381aac996e8a2d2e6e7722213cd0665254c6ea6a9b405b81dce39ac832cbdb98ee8eb4e1d7c011c67ce27679df987d00ac17537aeb04264e47d44
   languageName: node
   linkType: hard
 
