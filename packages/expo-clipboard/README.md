@@ -7,10 +7,10 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-clipboard expo-clipboard@55.0.13
+npm install @expo-harmony/expo-clipboard expo-clipboard@55.0.17
 ```
 
-鸿蒙适配会通过 Autolinking 自动接入，无需额外配置。最低支持 HarmonyOS 5.0.2（API 14），宿主的 `compatibleSdkVersion` 也需满足此要求。
+鸿蒙适配会通过 Autolinking 自动接入。最低支持 HarmonyOS 5.0.2（API 14），宿主的 `compatibleSdkVersion` 也需满足此要求。
 
 写入剪贴板、查询内容类型和监听变化不需要读取权限。读取文字、图片或 URL 需要 `ohos.permission.READ_PASTEBOARD`，本包默认不声明该权限，使用前需按下文申请并配置。
 

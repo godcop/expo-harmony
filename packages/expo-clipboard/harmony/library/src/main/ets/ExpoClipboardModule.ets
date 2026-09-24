@@ -43,14 +43,15 @@ export class ExpoClipboardModule extends ExpoModule {
     if (!this.observing || this.destroyed || !this.context.isValid || this.context.appLifecycleState !== ExpoAppLifecycleState.FOREGROUND) return;
 
     try {
-      const contentTypes: ContentType[] = [];
       const html = this.board.hasDataType(pasteboard.MIMETYPE_TEXT_HTML);
-      if (html || this.board.hasDataType(pasteboard.MIMETYPE_TEXT_PLAIN)) contentTypes.push(ContentType.PlainText);
-      if (html) contentTypes.push(ContentType.HTML);
-      if (this.board.hasDataType(pasteboard.MIMETYPE_PIXELMAP)) contentTypes.push(ContentType.Image);
-      if (this.board.hasDataType(pasteboard.MIMETYPE_TEXT_URI)) contentTypes.push(ContentType.URL);
 
-      this.sendEvent(CLIPBOARD_CHANGED_EVENT, { contentTypes });
+      const types: ContentType[] = [];
+      if (html || this.board.hasDataType(pasteboard.MIMETYPE_TEXT_PLAIN)) types.push(ContentType.PlainText);
+      if (html) types.push(ContentType.HTML);
+      if (this.board.hasDataType(pasteboard.MIMETYPE_PIXELMAP)) types.push(ContentType.Image);
+      if (this.board.hasDataType(pasteboard.MIMETYPE_TEXT_URI)) types.push(ContentType.URL);
+
+      this.sendEvent(CLIPBOARD_CHANGED_EVENT, { contentTypes: types });
     } catch (error) {
       this.warn('inspect clipboard changes', error);
     }
@@ -75,9 +76,11 @@ export class ExpoClipboardModule extends ExpoModule {
           (text: string, format: StringFormat): Promise<boolean> =>
             this.perform(async (): Promise<boolean> => {
               const data = pasteboard.createData(format === StringFormat.HTML ? pasteboard.MIMETYPE_TEXT_HTML : pasteboard.MIMETYPE_TEXT_PLAIN, text);
+
               if (format === StringFormat.HTML) {
                 const plain = await plainTextFromHtml(text);
                 const record = data.getRecord(0);
+
                 record.addEntry(pasteboard.MIMETYPE_TEXT_PLAIN, plain);
                 data.replaceRecord(0, record);
               }
@@ -186,6 +189,7 @@ export class ExpoClipboardModule extends ExpoModule {
 
       try {
         this.assertActive();
+
         return await this.encodeImage(bitmap, options);
       } finally {
         await this.cleanup(async (): Promise<void> => bitmap.release(), 'release clipboard PixelMap');
@@ -199,6 +203,7 @@ export class ExpoClipboardModule extends ExpoModule {
 
     const mime = options.format === ImageFormat.PNG ? 'image/png' : 'image/jpeg';
     const quality = options.format === ImageFormat.PNG ? IMAGE_QUALITY_MAX : Math.floor(options.jpegQuality * IMAGE_QUALITY_MAX);
+
     const packer = image.createImagePacker();
     let file: fileIo.File | undefined;
     let path: string | undefined;
@@ -218,13 +223,15 @@ export class ExpoClipboardModule extends ExpoModule {
       return { data: `data:${mime};base64,${base64}`, size: info.size };
     } finally {
       await this.cleanup(async (): Promise<void> => packer.release(), 'release image encoder');
+
       if (file !== undefined) {
         const fd = file.fd;
         await this.cleanup(async (): Promise<void> => fileIo.close(fd), 'close clipboard image file');
       }
+
       if (path !== undefined) {
-        const filename = path;
-        await this.cleanup(async (): Promise<void> => fileIo.unlink(filename), 'remove clipboard image file');
+        const name = path;
+        await this.cleanup(async (): Promise<void> => fileIo.unlink(name), 'remove clipboard image file');
       }
     }
   }
@@ -236,6 +243,7 @@ export class ExpoClipboardModule extends ExpoModule {
     try {
       try {
         const bytes = await new util.Base64Helper().decode(base64);
+
         this.assertActive();
         if (bytes.byteLength === 0) throw new Error('Empty image data.');
 
@@ -243,6 +251,7 @@ export class ExpoClipboardModule extends ExpoModule {
         bitmap = await source.createPixelMap();
       } catch (error) {
         if (error instanceof ExpoModuleError) throw new ExpoModuleError(error.code, error.message, error.cause, error.path);
+
         throw new ExpoModuleError('ERR_INVALID_IMAGE', 'The provided base64 string is not a decodable image.', error);
       }
 
@@ -253,6 +262,7 @@ export class ExpoClipboardModule extends ExpoModule {
         const decoded = bitmap;
         await this.cleanup(async (): Promise<void> => decoded.release(), 'release copied PixelMap');
       }
+
       if (source !== undefined) {
         const decoder = source;
         await this.cleanup(async (): Promise<void> => decoder.release(), 'release image decoder');
@@ -269,6 +279,7 @@ export class ExpoClipboardModule extends ExpoModule {
       }
 
       const result = await this.context.requestPermissions([READ_PERMISSION]);
+
       this.assertActive();
       if (result.authResults[0] !== abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED) {
         throw new ExpoModuleError('ERR_NO_PERMISSION', 'Clipboard read permission was not granted.');
@@ -276,9 +287,11 @@ export class ExpoClipboardModule extends ExpoModule {
     }
 
     const data = await this.board.getData();
+
     try {
       data.pasteStart();
       this.assertActive();
+
       return await read(data);
     } finally {
       await this.cleanup(async (): Promise<void> => data.pasteComplete(), 'complete clipboard paste');
@@ -289,15 +302,17 @@ export class ExpoClipboardModule extends ExpoModule {
   private perform<T>(operation: () => Promise<T>, code: string = 'ERR_CLIPBOARD'): Promise<T> {
     const next = this.pending.then(async (): Promise<T> => {
       this.assertActive();
+
       try {
         const result = await operation();
         this.assertActive();
+
         return result;
       } catch (error) {
         if (error instanceof ExpoModuleError) throw new ExpoModuleError(error.code, error.message, error.cause, error.path);
 
-        // Expo's bridge expects string error codes; retain the system's numeric code in the message.
         const cause = error as BusinessError;
+
         throw new ExpoModuleError(
           cause.code === PERMISSION_DENIED ? 'ERR_NO_PERMISSION' : code,
           `HarmonyOS clipboard operation failed (${cause.code}): ${cause.message}`,
@@ -315,8 +330,9 @@ export class ExpoClipboardModule extends ExpoModule {
   }
 
   private assertActive(): void {
-    if (this.destroyed || !this.context.isValid)
+    if (this.destroyed || !this.context.isValid) {
       throw new ExpoModuleError('ERR_CLIPBOARD_DESTROYED', 'The Expo Clipboard runtime has been destroyed.');
+    }
   }
 
   private startObservation(): void {
@@ -384,12 +400,14 @@ async function readImageFile(fd: number): Promise<Uint8Array> {
 
   const bytes = new Uint8Array(size);
   const chunk = new ArrayBuffer(Math.min(FILE_READ_CHUNK_SIZE, size));
-  fileIo.lseek(fd, 0, fileIo.WhenceType.SEEK_SET);
   let offset = 0;
+
+  fileIo.lseek(fd, 0, fileIo.WhenceType.SEEK_SET);
 
   while (offset < size) {
     const count = await fileIo.read(fd, chunk, { length: Math.min(chunk.byteLength, size - offset) });
     if (count <= 0) throw new ExpoModuleError('ERR_PASTE_FAILURE', 'The encoded clipboard image could not be read completely.');
+
     bytes.set(new Uint8Array(chunk, 0, count), offset);
     offset += count;
   }
