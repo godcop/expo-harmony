@@ -65,6 +65,7 @@ import { SplashScreenDemo } from './modules/splash-screen';
 import { SQLiteDemo } from './modules/sqlite';
 import { StoreReviewDemo } from './modules/store-review';
 import { VideoDemo } from './modules/video';
+import { VideoThumbnailsDemo } from './modules/video-thumbnails';
 import { SystemUIDemo } from './modules/system-ui';
 import { SymbolsDemo } from './modules/symbols';
 import { TemplateDemo } from './modules/template';
@@ -157,6 +158,7 @@ const MODULE_DEMOS = {
   'store-review': StoreReviewDemo,
   'system-ui': SystemUIDemo,
   'video': VideoDemo,
+  'video-thumbnails': VideoThumbnailsDemo,
   'symbols': SymbolsDemo,
   'template': TemplateDemo,
   'tracking-transparency': TrackingTransparencyDemo,
