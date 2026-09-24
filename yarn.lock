@@ -1610,6 +1610,25 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@expo-harmony/expo-app-integrity@workspace:*, @expo-harmony/expo-app-integrity@workspace:packages/expo-app-integrity":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-app-integrity@workspace:packages/expo-app-integrity"
+  dependencies:
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@expo/app-integrity": "npm:55.0.13"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    expo: "npm:55.0.31"
+    expo-modules-core: "npm:55.0.26"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@expo/app-integrity": 55.0.13
+    expo-modules-core: 55.0.26
+  languageName: unknown
+  linkType: soft
+
 "@expo-harmony/expo-app-metrics@workspace:*, @expo-harmony/expo-app-metrics@workspace:packages/expo-app-metrics":
   version: 0.0.0-use.local
   resolution: "@expo-harmony/expo-app-metrics@workspace:packages/expo-app-metrics"
@@ -3061,6 +3080,16 @@ __metadata:
     react-native: "npm:0.84.1"
   languageName: unknown
   linkType: soft
+
+"@expo/app-integrity@npm:55.0.13":
+  version: 55.0.13
+  resolution: "@expo/app-integrity@npm:55.0.13"
+  peerDependencies:
+    expo: "*"
+    react-native: "*"
+  checksum: 10c0/f6142ca20384218cb0ac3074edb4d55bd1a9b7df2e3425f4322b36d687dfb06d6d0837f3b460d605b1662c561374c43fa655c17d4cc3924f8304fef4277a3436
+  languageName: node
+  linkType: hard
 
 "@expo/cli@npm:55.0.32":
   version: 55.0.32

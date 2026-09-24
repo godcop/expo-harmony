@@ -25,6 +25,7 @@
 
 - [expo](./packages/expo/)：提供 Expo 核心包的支持。
 - [expo-age-range](./packages/expo-age-range/)：访问用户的年龄范围信息。
+- [expo-app-integrity](./packages/expo-app-integrity/)：提供对 App Integrity 服务的访问。
 - [expo-app-metrics](./packages/expo-app-metrics/)：采集应用启动耗时、帧率与内存使用等性能指标。
 - [expo-application](./packages/expo-application/)：获取原生应用的 ID、名称和构建版本等信息。
 - [expo-asset](./packages/expo-asset/)：下载资源并在其他库中使用。
