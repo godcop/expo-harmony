@@ -7,12 +7,12 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-speech expo-speech
+npm install @expo-harmony/expo-speech expo-speech@55.0.18
 ```
 
-本包适配 Expo SDK 55，与官方包 `expo-speech` 搭配使用。原生部分由 Expo Harmony 自动链接，不需要额外配置，业务代码照常从 `expo-speech` 导入。最低支持 HarmonyOS 5.1.1（API 19），宿主应用的 `compatibleSdkVersion` 不能低于这个版本。
+本包适配 Expo SDK 55，与官方包 `expo-speech` 搭配使用。原生部分由 Expo Harmony 自动链接，业务代码照常从 `expo-speech` 导入。最低支持 HarmonyOS 5.1.1（API 19），宿主应用的 `compatibleSdkVersion` 不能低于这个版本。
 
-语音合成使用系统 Core Speech Kit 的离线能力，不需要申请权限，也不会自动下载语音模型。设备需要具备语音合成的系统能力，并安装好需要的音色。播报在前台进行，不启用后台播报。
+语音合成使用系统 Core Speech Kit 的离线能力，语音模型不会自动下载。设备需要具备语音合成的系统能力，并安装好需要的音色。播报在前台进行，不启用后台播报。
 
 ## API 对照表
 
@@ -30,7 +30,7 @@ npm install @expo-harmony/expo-speech expo-speech
 
 | 选项 | HarmonyOS 行为 |
 | --- | --- |
-| `language` | 语言标签。优先匹配完整标签，再匹配同一语种的其他变体，都匹配不到时改用系统语言对应的音色，仍没有就用第一个可用音色。 |
+| `language` | 语言标签。优先匹配完整标签，再匹配同一语种的其他变体，标签格式无效或都匹配不到时改用系统语言对应的音色，仍没有就用第一个可用音色。 |
 | `voice` | 音色 ID，取自 `getAvailableVoicesAsync()` 返回的 `identifier`，优先于 `language`。音色无效或未安装时触发 `onError`。 |
 | `rate` / `pitch` | 默认 `1`，允许 `0.5` 到 `2`。超出范围或不是有限数值时触发 `onError`。 |
 | `volume` | 默认 `1`，超出 `0` 到 `1` 的部分会被截断。不是有限数值时触发 `onError`。 |
@@ -39,7 +39,7 @@ npm install @expo-harmony/expo-speech expo-speech
 | `useApplicationAudioSession` | iOS 专用，忽略。 |
 | `onMark` / `onPause` / `onResume` / `_voiceIndex` | 传入后不生效。 |
 
-空文本不会朗读，先完成音色校验，排到它时依次触发 `onStart` 和 `onDone`。数字的读音跟随实际选用的音色。可用的语言和音色取决于设备及已安装的系统语音模型。
+空文本不会朗读，先完成音色校验，排到它时依次触发 `onStart` 和 `onDone`。数字的读音跟随实际选用的音色。设备不具备语音合成的系统能力时，`onError` 收到的 `Error.message` 包含 `ERR_SPEECH_UNAVAILABLE`。其他错误同样在消息中保留错误码，错误对象没有独立的 `code` 属性。
 
 #### `Speech.stop()`
 
@@ -75,7 +75,8 @@ npm install @expo-harmony/expo-speech expo-speech
 > **未实现的内容**
 >
 > - `WebVoice`：Web 专属类型，HarmonyOS 上没有对应概念。
-> - `SpeechEventCallback`、`NativeBoundaryEvent`、`NativeBoundaryEventCallback`：服务于 Web 回调写法和逐词位置回调，HarmonyOS 上没有相应能力。
+> - `SpeechEventCallback`：Web 的回调写法，HarmonyOS 上不生效。
+> - `NativeBoundaryEvent`、`NativeBoundaryEventCallback`：配合 `onBoundary` 的逐词位置回调，系统不提供这类事件。
 
 ### Enums
 

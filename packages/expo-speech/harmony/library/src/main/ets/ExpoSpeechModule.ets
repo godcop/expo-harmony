@@ -101,6 +101,7 @@ export class ExpoSpeechModule extends ExpoModule {
       requestId: createRequestId(),
       online: OFFLINE_MODE,
     });
+
     this.assertActive();
 
     return voices.filter((voice: textToSpeech.VoiceInfo): boolean => voice.status === undefined || voice.status === INSTALLED_VOICE);
@@ -127,12 +128,14 @@ export class ExpoSpeechModule extends ExpoModule {
       validateUtterance(item);
 
       const voices = await this.getNativeVoices();
+
       if (!this.isCurrent(item.request)) return;
 
       const voice = selectVoice(voices, item.options);
       if (item.text.length === 0) {
         this.started(item.request);
         this.finish(item.request, SPEAKING_DONE);
+
         return;
       }
 
@@ -147,6 +150,7 @@ export class ExpoSpeechModule extends ExpoModule {
           online: OFFLINE_MODE,
           extraParams: { style: voice.style },
         });
+
         this.engine = engine;
         if (!this.isCurrent(item.request)) {
           this.releaseEngine();
@@ -157,7 +161,6 @@ export class ExpoSpeechModule extends ExpoModule {
         engine.setListener({
           onStart: (request: string, _response: textToSpeech.StartResponse): void => this.started(request),
           onComplete: (request: string, response: textToSpeech.CompleteResponse): void => {
-            // Synthesis completion precedes audible playback completion.
             if (response.type === PLAYBACK_COMPLETE) this.finish(request, SPEAKING_DONE);
           },
           onStop: (request: string, _response: textToSpeech.StopResponse): void => this.finish(request, SPEAKING_STOPPED),
@@ -169,6 +172,7 @@ export class ExpoSpeechModule extends ExpoModule {
       }
 
       const options = item.options;
+
       this.engine!.speak(item.text, {
         requestId: item.request,
         extraParams: {
@@ -180,7 +184,10 @@ export class ExpoSpeechModule extends ExpoModule {
         },
       });
     } catch (error) {
-      this.finish(item.request, SPEAKING_ERROR, String(error));
+      // Upstream JS wraps this event's error string in Error, so retain our code in its message.
+      const message = error instanceof ExpoModuleError ? `${error.code}: ${error.message}` : String(error);
+
+      this.finish(item.request, SPEAKING_ERROR, message);
     }
   }
 
@@ -248,9 +255,13 @@ export class ExpoSpeechModule extends ExpoModule {
     this.current = undefined;
 
     try {
-      this.releaseEngine();
+      try {
+        this.engine?.stop();
+      } finally {
+        this.releaseEngine();
+      }
     } catch (error) {
-      console.warn(`ExpoSpeech: failed to shut down the speech engine: ${String(error)}`);
+      console.warn(`ExpoSpeech: failed to stop or shut down the speech engine: ${String(error)}`);
     }
   }
 
@@ -275,7 +286,12 @@ function voiceIdentifier(voice: textToSpeech.VoiceInfo): string {
 }
 
 function voiceForLanguage(voices: textToSpeech.VoiceInfo[], language: string): textToSpeech.VoiceInfo | undefined {
-  const locale = new Intl.Locale(language.replace(/_/g, '-'));
+  let locale: Intl.Locale;
+  try {
+    locale = new Intl.Locale(language.replace(/_/g, '-'));
+  } catch {
+    return undefined;
+  }
 
   return (
     voices.find((voice: textToSpeech.VoiceInfo): boolean => normalizeLanguage(voice.language) === locale.baseName) ??
@@ -304,6 +320,7 @@ function validateUtterance(item: Utterance): void {
   }
 
   const options = item.options;
+
   if (!Number.isFinite(options.volume)) throw new ExpoModuleError('ERR_SPEECH_INVALID_OPTIONS', 'volume must be finite.');
   if (
     !Number.isFinite(options.rate) ||
