@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { linkModulesAsync } from '@expo-harmony/expo-modules-autolinking';
+import { linkPreparedModulesAsync, prepareModulesAsync } from '@expo-harmony/expo-modules-autolinking';
+import type { LinkOptions } from '@expo-harmony/expo-modules-autolinking';
 import { normalizeHarmonyConfig, recordManagedFile, stableHarmonyJson, withHarmonyAutolinking } from '@expo-harmony/config-plugins';
 import { getHarmonyConfigPlugins, withCngManifest } from '@expo-harmony/config-plugins/internal';
 
@@ -38,12 +39,26 @@ export function withAutolinkingMods(config, options: HarmonyPrebuildOptions) {
       const build = createHarmonyBuildDescriptor(harmony, mod._internal?.harmonySigningConfig?.name ?? null);
       const platform = resolveHarmonyBuildPath(project, build.harmonyRoot);
 
-      const result = await linkModulesAsync({
+      const moduleBuilds = harmony.moduleBuilds || {};
+      const moduleBuildSettings = {
+        compatibleSdkVersion: harmony.compatibleSdkVersionString,
+        targetSdkVersion: harmony.targetSdkVersionString,
+        abiFilters: harmony.abiFilters,
+      };
+      // Normal CLI/DevEco builds relink without evaluating Expo config; retain these inputs.
+      const inputs = path.join(project, '.expo/harmony/module-build-options.json');
+
+      const linkOptions: LinkOptions = {
+        moduleBuilds,
+        moduleBuildSettings,
         projectRoot: project,
         harmonyProjectPath: platform,
         buildType: mode,
-      });
+      };
+      const prepared = await prepareModulesAsync(linkOptions);
+      const result = await linkPreparedModulesAsync(linkOptions, prepared);
 
+      recordManagedFile(mod, inputs, 'autolinking');
       mod._internal ??= {};
       mod._internal.harmonyAutolinkingModules = result.modules;
 
