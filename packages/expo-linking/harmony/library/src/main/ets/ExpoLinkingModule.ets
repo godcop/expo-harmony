@@ -14,7 +14,7 @@ import {
 } from '@expo-harmony/expo-modules-core';
 
 const URL_EVENT: string = 'onURLReceived';
-const CALL_CAPABILITY: string = 'SystemCapability.Telephony.CallManager';
+const DIALER_CAPABILITY: string = 'SystemCapability.Applications.Contacts';
 const SMS_CAPABILITY: string = 'SystemCapability.Telephony.SmsMms';
 
 class URLReceivedEvent {
@@ -42,6 +42,7 @@ class AbilityLinkingState {
     if (this.destroyed) return;
 
     this.url = url;
+
     this.listeners.forEach((listener: (url: string) => void): void => {
       try {
         listener(url);
@@ -54,6 +55,7 @@ class AbilityLinkingState {
   addListener(listener: (url: string) => void): void {
     this.listeners.add(listener);
   }
+
   removeListener(listener: (url: string) => void): void {
     this.listeners.delete(listener);
   }
@@ -67,6 +69,7 @@ class AbilityLinkingState {
 
     this.destroyed = true;
     this.url = null;
+
     this.listeners.clear();
   }
 }
@@ -84,9 +87,11 @@ export class ExpoLinkingLifecycleSubscriber extends ExpoAbilityLifecycleSubscrib
   override onCreate(want: Want): void {
     this.receive(want);
   }
+
   override onNewWant(want: Want): void {
     this.receive(want);
   }
+
   override onDestroy(): void {
     this.state.destroy();
     states.delete(this.context);
@@ -102,6 +107,7 @@ function linkingState(context: ExpoModuleContext): AbilityLinkingState {
   const session = context.session;
   const owner: Object = session ?? context.uiAbilityContext;
   let state = states.get(owner);
+
   if (state === undefined && session !== undefined) {
     state = new AbilityLinkingState(nonEmptyURL(session.initialWant?.uri));
     states.set(owner, state);
@@ -113,6 +119,7 @@ function linkingState(context: ExpoModuleContext): AbilityLinkingState {
       states.delete(owner);
     });
   }
+
   if (state === undefined) {
     throw new ExpoModuleError('ERR_LINKING_ABILITY_NOT_INITIALIZED', 'Expo Linking requires its autolinked Ability lifecycle subscriber.');
   }
@@ -179,6 +186,7 @@ export class ExpoLinkingModule extends ExpoModule {
       .onDestroy((): void => {
         this.destroyed = true;
         this.observing = false;
+
         this.state?.removeListener(this.onURL);
       });
   }
@@ -198,8 +206,8 @@ export class ExpoLinkingModule extends ExpoModule {
 
     try {
       if (scheme === 'tel') {
-        if (!canIUse(CALL_CAPABILITY)) {
-          throw new ExpoModuleError('ERR_LINKING_UNAVAILABLE', 'This device cannot place phone calls.');
+        if (!canIUse(DIALER_CAPABILITY)) {
+          throw new ExpoModuleError('ERR_LINKING_UNAVAILABLE', 'This device cannot open the phone dialer.');
         }
 
         const number = new uri.URI(url).ssp;
@@ -235,7 +243,7 @@ export class ExpoLinkingModule extends ExpoModule {
   private canOpenURL(url: string): boolean {
     const scheme = schemeForURL(url);
 
-    if (scheme === 'tel') return canIUse(CALL_CAPABILITY);
+    if (scheme === 'tel') return canIUse(DIALER_CAPABILITY);
 
     if (scheme === 'sms') {
       return canIUse(SMS_CAPABILITY) && sms.hasSmsCapability();

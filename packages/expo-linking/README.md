@@ -7,10 +7,10 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-linking expo-linking@55.0.16
+npm install @expo-harmony/expo-linking expo-linking@55.0.17
 ```
 
-鸿蒙适配会通过 Autolinking 自动接入，无需额外配置。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也需满足此要求。
+鸿蒙适配会通过 Autolinking 自动接入。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也需满足此要求。
 
 预构建时会自动把 `http`、`https`、`tel`、`sms` 和应用自身 scheme 加入可查询列表。要用 `canOpenURL` 查询其他 scheme，需要在 `app.json` 的 `expo.harmony.querySchemes` 中声明，没有声明的 scheme 查不到：
 
@@ -24,9 +24,9 @@ npm install @expo-harmony/expo-linking expo-linking@55.0.16
 }
 ```
 
-电话和短信链接需要设备支持对应的系统能力。
+电话和短信链接需要设备支持对应的系统能力。本包不申请任何权限。
 
-本包的原生实现依赖宿主 Ability 的生命周期事件，对应的订阅器已在包内声明，业务代码无需额外处理。CNG 工程由 prebuild 自动生成所需入口；Bare 工程需按 [接入说明](https://github.com/renbaoshuo/expo-harmony/blob/master/docs/BareInstallation.md) 手动接入 AbilityStage 和 ExpoRNAbility。
+本包的原生实现依赖宿主 Ability 的生命周期事件，对应的订阅器已在包内声明。CNG 工程由 prebuild 自动生成所需入口；Bare 工程需按 [接入说明](https://github.com/renbaoshuo/expo-harmony/blob/master/docs/BareInstallation.md) 手动接入 AbilityStage 和 ExpoRNAbility。
 
 业务代码依旧使用官方包：
 
@@ -55,7 +55,7 @@ const initialUrl = await Linking.getInitialURL();
 
 返回 `Promise<boolean>`，判断设备上是否有应用能处理该 URL。
 
-`tel:` 只要设备具备通话能力就返回 `true`；`sms:` 需要设备同时具备短信能力和短信功能；其他 scheme 交给系统查询。自定义 scheme 要先按安装一节声明，未声明的查不到。
+`tel:` 只要设备具备拨号能力就返回 `true`；`sms:` 需要设备同时具备短信能力和短信功能；其他 scheme 交给系统查询。能力检查不代表设备插有可用的 SIM 卡。自定义 scheme 要先按安装一节声明，未声明时抛出 `ERR_LINKING_CAN_OPEN_URL`。
 
 `url` 为空、缺少 scheme 或无法解析时抛出 `ERR_LINKING_INVALID_URL`，系统查询失败时抛出 `ERR_LINKING_CAN_OPEN_URL`。
 
@@ -95,7 +95,7 @@ const initialUrl = await Linking.getInitialURL();
 
 返回 `Promise<true>`，把 URL 交给系统打开。
 
-`tel:` 直接发起拨号，`sms:` 打开短信应用，设备缺少对应能力时抛出 `ERR_LINKING_UNAVAILABLE`；其他 scheme 交给系统处理，没有应用能处理时抛出 `ERR_LINKING_OPEN_URL`。
+`tel:` 打开系统拨号界面并填入号码，`sms:` 打开能处理该链接的应用，设备缺少对应能力时抛出 `ERR_LINKING_UNAVAILABLE`；其他 scheme 交给系统处理，没有应用能处理时抛出 `ERR_LINKING_OPEN_URL`。Promise 成功只表示系统接受了跳转请求，电话和短信的后续操作由用户在系统应用中完成。短信 URI 的收件人和正文能否被识别取决于接收应用。
 
 `url` 为空、缺少 scheme 或无法解析时抛出 `ERR_LINKING_INVALID_URL`。
 
