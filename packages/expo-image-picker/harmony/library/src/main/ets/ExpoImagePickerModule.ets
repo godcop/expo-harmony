@@ -1,4 +1,4 @@
-import { ExpoFunction, ExpoModule, ExpoModuleContext, ExpoModuleDefinition, ExpoValueTypes } from '@expo-harmony/expo-modules-core';
+import { ExpoAppLifecycleState, ExpoFunction, ExpoModule, ExpoModuleContext, ExpoModuleDefinition, ExpoValueTypes } from '@expo-harmony/expo-modules-core';
 import { common } from '@kit.AbilityKit';
 import { dataSharePredicates } from '@kit.ArkData';
 import { camera, cameraPicker } from '@kit.CameraKit';
@@ -11,8 +11,9 @@ import { ImagePickerAsset, CaptureFile, removeAssets, removeCapture, createCaptu
 const PHOTO_PICKER_MAX_SELECTION: number = 500;
 const CAMERA_RESULT_OK: number = 0;
 const CAMERA_RESULT_CANCELLED: number = -1;
+
 // Keep the lock until the system picker settles, including across RN reloads.
-const activePickers: WeakSet<common.UIAbilityContext> = new WeakSet();
+const pickers: WeakSet<common.UIAbilityContext> = new WeakSet();
 
 class ImagePickerResult {
   canceled: boolean;
@@ -77,11 +78,14 @@ export class ExpoImagePickerModule extends ExpoModule {
 
   private async launch(options: ImagePickerOptions, capture: boolean): Promise<ImagePickerResult> {
     this.assertActive();
+
     const ability = this.context.uiAbilityContext;
-    if (activePickers.has(ability)) return new ImagePickerResult();
+    if (pickers.has(ability)) return new ImagePickerResult();
+
+    this.assertActive(true);
     validateEditing(options, capture);
 
-    activePickers.add(ability);
+    pickers.add(ability);
     const assets: ImagePickerAsset[] = [];
     let file: CaptureFile | undefined;
 
@@ -90,20 +94,22 @@ export class ExpoImagePickerModule extends ExpoModule {
         if (!canIUse('SystemCapability.Multimedia.Camera.Core')) {
           throw new ExpoImagePickerError('ERR_IMAGE_PICKER_UNAVAILABLE', 'CameraPicker is unavailable on this device.');
         }
+
         if (!(await this.permissions.requestCamera()).granted) {
           throw new ExpoImagePickerError('ERR_MISSING_PERMISSION', 'Camera permission was denied.');
         }
-        this.assertActive();
+        this.assertActive(true);
 
         const video = selectsVideos(options) && !selectsImages(options);
         file = await createCapture(this.context.cachePath, video ? 'video' : 'image');
-        this.assertActive();
+        this.assertActive(true);
 
         const result = await cameraPicker.pick(ability, [video ? cameraPicker.PickerMediaType.VIDEO : cameraPicker.PickerMediaType.PHOTO], {
           cameraPosition: options.cameraType === 'front' ? camera.CameraPosition.CAMERA_POSITION_FRONT : camera.CameraPosition.CAMERA_POSITION_BACK,
           saveUri: file.uri,
           videoDuration: options.videoMaxDuration,
         });
+
         this.assertActive();
         if (result == null) {
           throw new ExpoImagePickerError('ERR_IMAGE_PICKER_CAMERA', 'CameraPicker did not return a capture result.');
@@ -111,6 +117,7 @@ export class ExpoImagePickerModule extends ExpoModule {
 
         // CameraPicker reports back/cancel and an unsuccessful capture with -1.
         if (result.resultCode === CAMERA_RESULT_CANCELLED) return new ImagePickerResult();
+
         if (
           result.resultCode !== CAMERA_RESULT_OK ||
           !result.resultUri ||
@@ -150,6 +157,7 @@ export class ExpoImagePickerModule extends ExpoModule {
       }
 
       this.assertActive();
+
       return new ImagePickerResult(assets);
     } catch (cause) {
       await removeAssets(assets);
@@ -161,7 +169,7 @@ export class ExpoImagePickerModule extends ExpoModule {
       throw new ExpoImagePickerError('ERR_IMAGE_PICKER', `Unable to ${capture ? 'capture' : 'select'} media: ${String(cause)}`, cause as Object);
     } finally {
       if (file !== undefined) await removeCapture(file);
-      activePickers.delete(ability);
+      pickers.delete(ability);
     }
   }
 
@@ -175,8 +183,10 @@ export class ExpoImagePickerModule extends ExpoModule {
     try {
       const predicates = new dataSharePredicates.DataSharePredicates();
       predicates.equalTo(photoAccessHelper.PhotoKeys.URI, uri);
+
       fetch = await helper.getAssets({ fetchColumns: [photoAccessHelper.PhotoKeys.DISPLAY_NAME], predicates });
       const selected = await fetch.getFirstObject();
+
       source = selected.uri;
       name = selected.displayName;
       type = selected.photoType;
@@ -189,6 +199,7 @@ export class ExpoImagePickerModule extends ExpoModule {
     }
 
     this.assertActive();
+
     let asset: ImagePickerAsset;
     if (type === photoAccessHelper.PhotoType.IMAGE) {
       asset = await exportImage(source, this.context.cachePath, options, name);
@@ -199,12 +210,18 @@ export class ExpoImagePickerModule extends ExpoModule {
     }
 
     asset.assetId = source;
+
     return asset;
   }
 
-  private assertActive(): void {
+  private assertActive(foreground: boolean = false): void {
     if (this.destroyed || !this.context.isValid || this.context.isHeadless) {
       throw new ExpoImagePickerError('ERR_IMAGE_PICKER_CONTEXT', 'ImagePicker requires an active UIAbility and Expo runtime.');
+    }
+
+    // A picker can background its host while delivering a result; only launching needs the foreground.
+    if (foreground && this.context.appLifecycleState !== ExpoAppLifecycleState.FOREGROUND) {
+      throw new ExpoImagePickerError('ERR_IMAGE_PICKER_CONTEXT', 'ImagePicker requires a foreground UIAbility to launch.');
     }
   }
 }

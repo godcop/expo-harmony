@@ -7,10 +7,10 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-image-picker expo-image-picker@55.0.20
+npm install @expo-harmony/expo-image-picker expo-image-picker@55.0.24
 ```
 
-本包适配 Expo SDK 55 的 `expo-image-picker`，原生模块通过 Expo Harmony 自动链接，不需要配置插件。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。
+本包适配 Expo SDK 55 的 `expo-image-picker`，原生模块通过 Expo Harmony 自动链接。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。
 
 HAR 已经声明 `ohos.permission.CAMERA` 并附带默认的权限用途说明，拍摄前会向用户申请；权限的 `usedScene` 默认挂在 `EntryAbility` 的 `inuse` 场景上，宿主的入口 Ability 使用其他名称时要改成实际名称。
 
@@ -68,7 +68,7 @@ const result = await ImagePicker.launchImageLibraryAsync({
 
 用户取消返回 `{ canceled: true, assets: null }`。系统相机用 `-1` 表示取消，拍摄未成功时也返回这个值，两者无法区分。同一个 UIAbility 上已经有选择器或相机界面打开时，再次调用直接返回取消结果。
 
-设备没有相机能力时抛出 `ERR_IMAGE_PICKER_UNAVAILABLE`，拍摄结果不完整时抛出 `ERR_IMAGE_PICKER_CAMERA`。接口需要活跃的 UIAbility，在后台没有窗口的运行时中调用抛出 `ERR_IMAGE_PICKER_CONTEXT`。
+设备没有相机能力时抛出 `ERR_IMAGE_PICKER_UNAVAILABLE`，拍摄结果不完整时抛出 `ERR_IMAGE_PICKER_CAMERA`。启动相机需要处于前台的 UIAbility，在后台或无 UIAbility 的运行时中调用抛出 `ERR_IMAGE_PICKER_CONTEXT`。已经打开的系统界面返回结果时，宿主暂时在后台不影响结果返回。
 
 #### `ImagePicker.launchImageLibraryAsync(options)`
 
@@ -78,7 +78,7 @@ const result = await ImagePicker.launchImageLibraryAsync({
 
 选中的文件复制到应用缓存目录，`uri` 指向副本，处理过程中出错会清掉本次已写入的文件。取消返回 `{ canceled: true, assets: null }`。同一个 UIAbility 上已经有选择器或相机界面打开时，再次调用直接返回取消结果。
 
-设备没有图库选择能力，或者设备缺少读取视频元数据的能力时，抛出 `ERR_IMAGE_PICKER_UNAVAILABLE`。接口需要活跃的 UIAbility，在后台没有窗口的运行时中调用抛出 `ERR_IMAGE_PICKER_CONTEXT`。
+设备没有图库选择能力，或者设备缺少读取视频元数据的能力时，抛出 `ERR_IMAGE_PICKER_UNAVAILABLE`。启动选择器需要处于前台的 UIAbility，在后台或无 UIAbility 的运行时中调用抛出 `ERR_IMAGE_PICKER_CONTEXT`。已经打开的系统界面返回结果时，宿主暂时在后台不影响结果返回。
 
 #### `ImagePicker.requestCameraPermissionsAsync()`
 
@@ -123,7 +123,7 @@ const result = await ImagePicker.launchImageLibraryAsync({
 
 > **未实现的内容**
 >
-> - `pairedVideoAsset`：iOS 专属字段，HarmonyOS 上没有对应能力。
+> - `pairedVideoAsset`：iOS 专属字段，HarmonyOS 上不返回。
 > - `file`：Web 专属字段，HarmonyOS 上不返回。
 
 #### `ImagePickerCanceledResult`
@@ -169,7 +169,7 @@ const result = await ImagePicker.launchImageLibraryAsync({
 
 #### `MediaType`
 
-`'images' | 'videos' | 'livePhotos'`。HarmonyOS 不区分实况照片，`livePhotos` 按图片处理，只请求该类型时打开图片选择。
+`'images' | 'videos' | 'livePhotos'`。过滤规则与上游 Android 一致，`livePhotos` 不单独参与过滤。只请求该类型或传入空数组时默认选择图片，与 `videos` 同时传入但不包含 `images` 时只选择视频。实况照片按普通图片返回，不导出配对视频。
 
 #### `PermissionExpiration`
 
@@ -231,7 +231,7 @@ const result = await ImagePicker.launchImageLibraryAsync({
 
 #### `ERR_IMAGE_PICKER_CONTEXT`
 
-运行时没有活跃的 UIAbility 时抛出。
+运行时已销毁、没有 UIAbility，或尝试从后台启动选择器时抛出。
 
 #### `ERR_IMAGE_PICKER_UNSUPPORTED_EDITING`
 
