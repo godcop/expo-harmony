@@ -35,6 +35,7 @@ import { FontDemo } from './modules/font';
 import { HapticsDemo } from './modules/haptics';
 import { ImageDemo } from './modules/image';
 import { ImageLoaderDemo } from './modules/image-loader';
+import { ImageManipulatorDemo } from './modules/image-manipulator';
 import { ImagePickerDemo } from './modules/image-picker';
 import { IntentLauncherDemo } from './modules/intent-launcher';
 import { KeepAwakeDemo } from './modules/keep-awake';
@@ -117,6 +118,7 @@ const MODULE_DEMOS = {
   'haptics': HapticsDemo,
   'image': ImageDemo,
   'image-loader': ImageLoaderDemo,
+  'image-manipulator': ImageManipulatorDemo,
   'image-picker': ImagePickerDemo,
   'intent-launcher': IntentLauncherDemo,
   'keep-awake': KeepAwakeDemo,
