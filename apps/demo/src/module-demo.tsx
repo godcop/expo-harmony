@@ -62,6 +62,7 @@ import { SharingDemo } from './modules/sharing';
 import { SMSDemo } from './modules/sms';
 import { SpeechDemo } from './modules/speech';
 import { SplashScreenDemo } from './modules/splash-screen';
+import { SQLiteDemo } from './modules/sqlite';
 import { SystemUIDemo } from './modules/system-ui';
 import { SymbolsDemo } from './modules/symbols';
 import { TemplateDemo } from './modules/template';
@@ -149,6 +150,7 @@ const MODULE_DEMOS = {
   'sms': SMSDemo,
   'speech': SpeechDemo,
   'splash-screen': SplashScreenDemo,
+  'sqlite': SQLiteDemo,
   'system-ui': SystemUIDemo,
   'symbols': SymbolsDemo,
   'template': TemplateDemo,

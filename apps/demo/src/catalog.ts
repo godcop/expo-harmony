@@ -26,6 +26,7 @@ export const MODULES = [
 
   { id: 'screen-orientation', title: '屏幕方向', packageName: '@expo-harmony/expo-screen-orientation', category: '应用', summary: '方向查询、横竖屏锁定、默认策略、变化事件与参数边界。' },
   { id: 'screen-capture', title: '截屏保护', packageName: '@expo-harmony/expo-screen-capture', category: '应用', summary: '窗口截屏与录屏保护、独立标签、截图通知与 Hooks。' },
+  { id: 'sqlite', title: 'SQLite 数据库', packageName: '@expo-harmony/expo-sqlite', category: '应用', summary: 'SQL 读写、参数绑定、事务、statement 生命周期、快照、Session 与变更事件。' },
   { id: 'secure-store', title: '安全存储', packageName: '@expo-harmony/expo-secure-store', category: '应用', summary: '加密键值存储、同步与异步读写、服务隔离、容量边界及生物认证。' },
   { id: 'app-integrity', title: '应用完整性', packageName: '@expo-harmony/expo-app-integrity', category: '应用', summary: '硬件证明能力、密钥生成、证书链读取、参数边界与平台限制。' },
   { id: 'local-authentication', title: '本地身份认证', packageName: '@expo-harmony/expo-local-authentication', category: '应用', summary: '生物识别能力、凭据录入、系统认证、密码回退与取消。' },
