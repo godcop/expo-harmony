@@ -7,7 +7,7 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-dev-client expo-dev-client@55.0.35
+npm install @expo-harmony/expo-dev-client expo-dev-client@55.0.40
 ```
 
 本包适配 Expo SDK 55，原生模块通过 Expo Harmony 自动链接。最低支持 HarmonyOS 5.0.1（API 13）。启动器和开发菜单仅在开发构建中启用。
