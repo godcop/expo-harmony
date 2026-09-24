@@ -7,10 +7,12 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-device expo-device@55.0.17
+npm install @expo-harmony/expo-device expo-device@55.0.21
 ```
 
-鸿蒙适配会通过 Autolinking 自动接入，无需额外配置。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也需满足此要求。
+鸿蒙适配会通过 Autolinking 自动接入。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也需满足此要求。
+
+HAR 内声明的设备类型为 `default`（手机）、`tablet`（平板）和 `2in1`（PC），TV、可穿戴和车机不在清单内。下文 `Device.deviceType` 里 `tv` 对应 `TV` 只是类型字符串的转换规则，不代表支持 TV 设备。
 
 业务代码依旧使用官方包：
 
@@ -60,7 +62,7 @@ const uptime = await Device.getUptimeAsync();
 
 类型：`number | null`
 
-设备总内存，单位字节。读取失败或结果不是正安全整数时返回 `null`。
+设备总内存，单位字节。指整台设备的物理内存，不是应用堆或进程的内存上限。读取失败或结果不是正安全整数时返回 `null`。
 
 #### `Device.supportedCpuArchitectures`
 
@@ -92,7 +94,7 @@ const uptime = await Device.getUptimeAsync();
 > - `Device.designName`：Android 专属字段，HarmonyOS 上没有对应值。
 > - `Device.productName`：Android 专属字段，HarmonyOS 上没有对应值。
 > - `Device.deviceYearClass`：设备年份分级，HarmonyOS 上没有该分级。
-> - `Device.deviceName`：用户可编辑的设备名称，HarmonyOS 没有公开接口。
+> - `Device.deviceName`：用户可编辑的设备名称。HarmonyOS 上读取它需要 `ohos.permission.DISTRIBUTED_DATASYNC` 权限，本包不申请，返回 `null`。
 > - `Device.osInternalBuildId`：HarmonyOS 没有与官方语义一致的内部构建 ID。
 > - `Device.osBuildFingerprint`：Android 专属字段，HarmonyOS 上没有构建指纹。
 > - `Device.platformApiLevel`：Android 专属字段，HarmonyOS 的系统 API 版本语义不同。

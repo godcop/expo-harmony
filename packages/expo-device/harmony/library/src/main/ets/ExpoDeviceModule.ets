@@ -21,7 +21,6 @@ export class ExpoDeviceModule extends ExpoModule {
     return (
       new ExpoModuleDefinition()
         .name('ExpoDevice')
-        // HarmonyOS has no public emulator flag.
         .constant('isDevice', true)
         .constant('brand', (): string | null => nonEmptyOrNull(deviceInfo.brand))
         .constant('manufacturer', (): string | null => nonEmptyOrNull(deviceInfo.manufacture))
@@ -54,10 +53,13 @@ export class ExpoDeviceModule extends ExpoModule {
           let uptime: number;
 
           try {
-            // ACTIVE excludes deep sleep, as Android SystemClock.uptimeMillis() does.
             uptime = systemDateTime.getUptime(systemDateTime.TimeType.ACTIVE, false);
           } catch (error) {
-            throw new ExpoModuleError('ERR_DEVICE_UPTIME', `Unable to read the HarmonyOS system uptime: ${String(error)}`, error as Object);
+            throw new ExpoModuleError(
+              'ERR_DEVICE_UPTIME',
+              `Unable to read the HarmonyOS system uptime: ${String(error)}`,
+              error as Object,
+            );
           }
 
           if (!Number.isSafeInteger(uptime) || uptime < 0) {
@@ -71,7 +73,9 @@ export class ExpoDeviceModule extends ExpoModule {
 
   private totalMemory(): number | null {
     try {
-      const bytes = Number(hidebug.getSystemMemInfo().totalMem) * BYTES_PER_KIBIBYTE;
+      const memory = hidebug.getSystemMemInfo();
+
+      const bytes = Number(memory.totalMem) * BYTES_PER_KIBIBYTE;
 
       return Number.isSafeInteger(bytes) && bytes > 0 ? bytes : null;
     } catch (error) {
