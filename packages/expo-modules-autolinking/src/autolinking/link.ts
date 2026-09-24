@@ -1,19 +1,17 @@
 import path from 'node:path';
 
-import type { LinkOptions, LinkResult, VerifyOptions } from '../types';
+import type { LinkOptions, LinkResult } from '../types';
 import { ExpoArtifacts, ManifestArtifact, RnohArtifacts, managedArtifactsForHarmonyRoot } from '../config/constants';
 import { renderArkTsHostProviderSource } from '../harmony/providers/host';
 import { serializeManifest } from '../harmony/manifest/generate';
 import { createNativeModuleContracts } from '../harmony/manifest/runtime';
 import { HarmonyAutolinkingError } from '../errors';
-import { normalizeOptionsAsync } from '../config/options';
 import { linkRnohAsync } from '../harmony/rnoh/link';
 import { cleanupStagingProjectAsync, stageProjectAsync } from '../harmony/transaction/stageProject';
 import { publishArtifactsAsync } from '../harmony/transaction/publish';
 import { readPreviousAutolinkingStateAsync } from '../harmony/transaction/previousState';
-import { assertVerificationSucceeded, verifyModulesAsync } from './verify';
 import { emitLog } from '../utilities/values';
-import { materializeLocalSourcesAsync } from '../harmony/materialize';
+import { prepareModulesAsync } from './prepare';
 
 function buildPublishEntries(staging, hostProviderSource, manifest) {
   return [
@@ -32,38 +30,12 @@ function buildPublishEntries(staging, hostProviderSource, manifest) {
   ];
 }
 
-async function linkModulesAsync(rawOptions: LinkOptions): Promise<LinkResult> {
-  const options = await normalizeOptionsAsync(rawOptions);
-
-  if (typeof rawOptions.harmonyProjectPath !== 'string' || !rawOptions.harmonyProjectPath) {
-    throw new HarmonyAutolinkingError('INVALID_OPTIONS', 'link requires harmonyProjectPath.', { stage: 'link' });
-  }
-
-  const verify = await verifyModulesAsync((rawOptions.modules !== undefined
-    ? { modules: rawOptions.modules }
-    : { ...options, searchResult: rawOptions.searchResult }) as VerifyOptions);
-  assertVerificationSucceeded(verify, 'link');
-
-  const modules = verify.modules;
-  const pendingSource = modules.filter(module => module.artifact.kind === 'local-source');
-  if (pendingSource.length > 0) {
-    if (pendingSource.some(module => module.source !== 'nativeModulesDir')) {
-      throw new HarmonyAutolinkingError(
-        'SOURCE_ARTIFACT_MATERIALIZATION_REQUIRED',
-        'Only nativeModulesDir modules may build a local Harmony HAR.',
-        { stage: 'link', details: pendingSource.map(module => module.packageName).sort() }
-      );
-    }
-    await materializeLocalSourcesAsync(pendingSource, {
-      dependencies: modules,
-      projectRoot: options.projectRoot,
-      timeoutMs: rawOptions.timeoutMs,
-      outputLimit: rawOptions.outputLimit,
-      env: rawOptions.env,
-    });
-  }
-
-  const hostProviderSource = renderArkTsHostProviderSource(modules);
+async function linkPreparedModulesAsync(
+  raw: LinkOptions,
+  prepared: Awaited<ReturnType<typeof prepareModulesAsync>>
+): Promise<LinkResult> {
+  const { options, modules, diagnostics } = prepared;
+  const provider = renderArkTsHostProviderSource(modules);
 
   let staging;
   let failure;
@@ -75,17 +47,17 @@ async function linkModulesAsync(rawOptions: LinkOptions): Promise<LinkResult> {
 
     if (previous.warning) {
       warnings.push(previous.warning);
-      emitLog(rawOptions.logger, 'warn', previous.warning.message, previous.warning);
+      emitLog(raw.logger, 'warn', previous.warning.message, previous.warning);
     }
 
     staging = await stageProjectAsync({
       projectRoot: options.projectRoot,
-      harmonyProjectPath: rawOptions.harmonyProjectPath,
-      nodeModulesPath: rawOptions.nodeModulesPath,
+      harmonyProjectPath: raw.harmonyProjectPath,
+      nodeModulesPath: raw.nodeModulesPath,
       modules,
       buildType: options.buildType,
       previousManagedOhpmPackageNames: previous.managedOhpmPackageNames,
-      rnohCliPackageJsonPath: rawOptions.rnohCliPackageJsonPath,
+      rnohCliPackageJsonPath: raw.rnohCliPackageJsonPath,
     });
 
     staging.rnohArtifacts = await linkRnohAsync({
@@ -94,11 +66,11 @@ async function linkModulesAsync(rawOptions: LinkOptions): Promise<LinkResult> {
       buildType: options.buildType,
       exclude: staging.rnohRuntimePackages,
       commandNodeModulesPath: staging.sourceNodeModulesPath,
-      reactNativeExecutable: rawOptions.reactNativeExecutable,
-      rnohCliPackageJsonPath: rawOptions.rnohCliPackageJsonPath,
-      timeoutMs: rawOptions.timeoutMs,
-      outputLimit: rawOptions.outputLimit,
-      env: rawOptions.env,
+      reactNativeExecutable: raw.reactNativeExecutable,
+      rnohCliPackageJsonPath: raw.rnohCliPackageJsonPath,
+      timeoutMs: raw.timeoutMs,
+      outputLimit: raw.outputLimit,
+      env: raw.env,
     });
 
     const harmonyRoot = path.relative(staging.projectRoot, staging.harmonyProjectPath)
@@ -114,7 +86,19 @@ async function linkModulesAsync(rawOptions: LinkOptions): Promise<LinkResult> {
     const published = await publishArtifactsAsync({
       allowedRoot: staging.projectRoot,
       lockPath: path.join(staging.projectRoot, '.expo/harmony/autolinking.lock'),
-      files: buildPublishEntries(staging, hostProviderSource, manifest),
+      files: [
+        ...buildPublishEntries(staging, provider, manifest),
+        ...(raw.moduleBuilds !== undefined
+          ? [{
+              target: path.join(staging.projectRoot, '.expo/harmony/module-build-options.json'),
+              content: JSON.stringify({
+                schemaVersion: 1,
+                moduleBuilds: raw.moduleBuilds,
+                moduleBuildSettings: raw.moduleBuildSettings,
+              }, null, 2) + '\n',
+            }]
+          : []),
+      ],
       stale: previous.artifacts.filter(artifact => !managed.some((relative) => {
         return artifact === path.join(staging.projectRoot, ...relative.split('/'));
       })),
@@ -127,18 +111,18 @@ async function linkModulesAsync(rawOptions: LinkOptions): Promise<LinkResult> {
       managedArtifacts: [...managed],
       changedArtifacts: published.changed.map(target => path.relative(staging.projectRoot, target).split(path.sep).join('/')),
       unchangedArtifacts: published.unchanged.map(target => path.relative(staging.projectRoot, target).split(path.sep).join('/')),
-      diagnostics: verify.diagnostics,
+      diagnostics,
       warnings,
     };
 
-    emitLog(rawOptions.logger, 'info', 'Harmony autolinking completed.', {
+    emitLog(raw.logger, 'info', 'Harmony autolinking completed.', {
       moduleCount: result.modules.length,
       changedArtifactCount: result.changedArtifacts.length,
     });
     return result;
   } catch (error) {
     failure = error;
-    emitLog(rawOptions.logger, 'error', 'Harmony autolinking failed.', {
+    emitLog(raw.logger, 'error', 'Harmony autolinking failed.', {
       code: error.code || 'ERR_EXPO_HARMONY_UNKNOWN',
       stage: error.stage || 'link',
     });
@@ -149,7 +133,7 @@ async function linkModulesAsync(rawOptions: LinkOptions): Promise<LinkResult> {
         const warning = { ...cleanup };
         delete warning.cause;
         warnings.push(warning);
-        emitLog(rawOptions.logger, 'warn', warning.message, warning);
+        emitLog(raw.logger, 'warn', warning.message, warning);
         if (failure) cleanupWarning = warning;
       }
     }
@@ -170,4 +154,8 @@ async function linkModulesAsync(rawOptions: LinkOptions): Promise<LinkResult> {
   );
 }
 
-export { linkModulesAsync };
+async function linkModulesAsync(raw: LinkOptions): Promise<LinkResult> {
+  return linkPreparedModulesAsync(raw, await prepareModulesAsync(raw));
+}
+
+export { linkModulesAsync, linkPreparedModulesAsync };

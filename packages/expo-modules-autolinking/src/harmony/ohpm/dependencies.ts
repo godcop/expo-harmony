@@ -37,7 +37,10 @@ function resolveOhpmSpecifier(
     const packageRoot = options.nodeModulesPath
       ? path.join(options.nodeModulesPath, ...descriptor.packageName.split('/'))
       : descriptor.packageLinkPath;
-    const target = path.join(packageRoot, ...mapping.harPath.split('/'));
+    const configured = mapping.harPath === descriptor.arkTs?.harPath && descriptor.arkTs.builtHarPath;
+    const target = !options.nodeModulesPath && configured
+      ? descriptor.arkTs.builtHarPath
+      : path.join(packageRoot, ...mapping.harPath.split('/'));
     const relative = normalizeSlashes(path.relative(options.harmonyProjectPath, target));
     return relative.startsWith('.') ? relative : `./${relative}`;
   }

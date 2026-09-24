@@ -1,4 +1,5 @@
-import { linkModulesAsync } from './src/autolinking/link';
+import { linkModulesAsync, linkPreparedModulesAsync } from './src/autolinking/link';
+import { prepareModulesAsync } from './src/autolinking/prepare';
 import { canonicalizeAutolinkingArtifacts } from './src/harmony/persistence/canonicalize';
 import { resolveModulesAsync } from './src/autolinking/resolve';
 import { searchModulesAsync } from './src/autolinking/search';
@@ -8,6 +9,8 @@ import { normalizeHarmonyModuleMetadata } from './src/metadata/schema';
 export {
   canonicalizeAutolinkingArtifacts,
   linkModulesAsync,
+  linkPreparedModulesAsync,
+  prepareModulesAsync,
   normalizeHarmonyModuleMetadata,
   resolveModulesAsync,
   searchModulesAsync,

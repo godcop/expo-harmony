@@ -50,6 +50,7 @@ function validateManifest(manifest: unknown, options: Record<string, any> = {}):
       || (entry.arkTs !== undefined && (
         !isObject(entry.arkTs)
         || entry.arkTs.harPath !== 'harmony/library.har'
+        || (entry.arkTs.builtHarPath !== undefined && (typeof entry.arkTs.builtHarPath !== 'string' || !path.isAbsolute(entry.arkTs.builtHarPath)))
         || !isValidOhpmPackageName(entry.arkTs.ohPackageName)
       ))
       || ((entry.harmony.modules.length > 0 || entry.harmony.services.length > 0) && !isObject(entry.arkTs))

@@ -24,7 +24,6 @@ import { publishArtifactsAsync } from './transaction/publish';
 const DefaultBuildTimeoutMs = 10 * 60_000;
 const DefaultOutputLimit = 64 * 1024;
 const HarmonyProjectPath = 'harmony';
-const HarmonyBuildOutputPath = 'library/build/default/outputs/default/library.har';
 
 interface FixedBuildStep {
   readonly id: 'ohpm-install' | 'hvigor-build';
@@ -45,14 +44,15 @@ interface MaterializeModuleArtifactOptions {
 
 function createFixedHvigorBuildDescriptor(
   projectPath: string,
-  buildType: BuildType
+  buildType: BuildType,
+  moduleName: string
 ): FixedHvigorBuildDescriptor {
   return {
     executable: 'hvigorw',
     cwd: projectPath,
     args: [
       '--mode', 'module',
-      '-p', 'module=library@default',
+      '-p', `module=${moduleName}@default`,
       '-p', 'product=default',
       '-p', `buildMode=${buildType}`,
       '--no-daemon',
@@ -156,7 +156,15 @@ async function materializeModuleArtifactAsync(
     packageName: options.packageName,
     type: 'directory',
   });
-  const outputPath = await resolveInsideAsync(sourceRoot, HarmonyBuildOutputPath, 'Harmony build output', {
+
+  const profile = JSON5.parse(await fs.promises.readFile(path.join(sourceRoot, 'build-profile.json5'), 'utf8'));
+  const library = profile.modules?.find(entry => path.normalize(entry.srcPath) === 'library');
+  if (!library || !/^[A-Za-z][A-Za-z0-9_]*$/u.test(library.name)) {
+    throw new HarmonyAutolinkingError('INVALID_METADATA', 'Harmony source project must declare a library module.', { packageName: options.packageName });
+  }
+
+  const output = `library/build/default/outputs/default/${library.name}.har`;
+  const outputPath = await resolveInsideAsync(sourceRoot, output, 'Harmony build output', {
     packageName: options.packageName,
     mustExist: false,
   });
@@ -165,13 +173,12 @@ async function materializeModuleArtifactAsync(
     kind: 'local-source',
     outputPath,
     materialized: false,
-    build: createFixedHvigorBuildDescriptor(sourceRoot, options.buildType),
+    build: createFixedHvigorBuildDescriptor(sourceRoot, options.buildType, library.name),
   };
 }
 
 function appendBounded(current: string, chunk: Buffer, limit: number): string {
-  if (current.length >= limit) return current;
-  return current + chunk.toString('utf8').slice(0, limit - current.length);
+  return (current + chunk.toString('utf8')).slice(-limit);
 }
 
 function fixedLocalSourceBuildSteps(build: FixedHvigorBuildDescriptor): ReadonlyArray<FixedBuildStep> {
@@ -423,4 +430,7 @@ async function materializeLocalSourcesAsync(
 export {
   materializeLocalSourcesAsync,
   materializeModuleArtifactAsync,
+  runFixedBuildStepAsync,
+  fixedLocalSourceBuildSteps,
+  isNonEmptyRegularHarAsync,
 };

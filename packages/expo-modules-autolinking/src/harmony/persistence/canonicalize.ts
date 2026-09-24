@@ -45,6 +45,12 @@ function canonicalizeAutolinkingManifest(
       ...module,
       packageRoot: rebaseProjectPath(module.packageRoot, generatedProjectRoot, canonicalProjectRoot),
       packageLinkPath: rebaseProjectPath(module.packageLinkPath, generatedProjectRoot, canonicalProjectRoot),
+      ...(module.arkTs?.builtHarPath ? {
+        arkTs: {
+          ...module.arkTs,
+          builtHarPath: rebaseProjectPath(module.arkTs.builtHarPath, generatedProjectRoot, canonicalProjectRoot),
+        },
+      } : {}),
     })),
   } as Manifest;
 

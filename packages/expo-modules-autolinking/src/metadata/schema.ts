@@ -17,15 +17,14 @@ interface MetadataRecord {
 
 type UnknownRecord = Record<string, unknown>;
 
-function metadataError(message: string, record: MetadataRecord): never {
-  throw new HarmonyAutolinkingError('INVALID_METADATA', message, {
-    packageName: record.packageName,
-    stage: 'metadata-normalize',
-  });
-}
-
 function requireObject(value: unknown, message: string, record: MetadataRecord): UnknownRecord {
-  if (!isObject(value)) metadataError(message, record);
+  if (!isObject(value)) {
+    throw new HarmonyAutolinkingError('INVALID_METADATA', message, {
+      packageName: record.packageName,
+      stage: 'metadata-normalize',
+    });
+  }
+
   return value as UnknownRecord;
 }
 
@@ -44,12 +43,18 @@ function normalizeOhPackageName(
   if (value === undefined) return undefined;
   if (typeof value === 'string') {
     if (!isValidOhpmPackageName(value)) {
-      metadataError('package.json#harmony.autolinking.ohPackageName must be a safe OHPM package name.', record);
+      throw new HarmonyAutolinkingError('INVALID_METADATA', 'package.json#harmony.autolinking.ohPackageName must be a safe OHPM package name.', {
+        packageName: record.packageName,
+        stage: 'metadata-normalize',
+      });
     }
     return value;
   }
   if (!Array.isArray(value)) {
-    metadataError('package.json#harmony.autolinking.ohPackageName must be a string or HAR mapping array.', record);
+    throw new HarmonyAutolinkingError('INVALID_METADATA', 'package.json#harmony.autolinking.ohPackageName must be a string or HAR mapping array.', {
+      packageName: record.packageName,
+      stage: 'metadata-normalize',
+    });
   }
 
   const seen = new Set<string>();
@@ -63,12 +68,24 @@ function normalizeOhPackageName(
     if (path.posix.basename(harName) !== harName
       || path.win32.basename(harName) !== harName
       || path.posix.extname(harName).toLowerCase() !== '.har') {
-      metadataError(`${field}.harName must be a HAR filename.`, record);
+      throw new HarmonyAutolinkingError('INVALID_METADATA', `${field}.harName must be a HAR filename.`, {
+        packageName: record.packageName,
+        stage: 'metadata-normalize',
+      });
     }
-    if (seen.has(harName)) metadataError(`${field}.harName is declared more than once.`, record);
+    if (seen.has(harName)) {
+      throw new HarmonyAutolinkingError('INVALID_METADATA', `${field}.harName is declared more than once.`, {
+        packageName: record.packageName,
+        stage: 'metadata-normalize',
+      });
+    }
+
     seen.add(harName);
     if (!isValidOhpmPackageName(mapping.packageName)) {
-      metadataError(`${field}.packageName must be a safe OHPM package name.`, record);
+      throw new HarmonyAutolinkingError('INVALID_METADATA', `${field}.packageName must be a safe OHPM package name.`, {
+        packageName: record.packageName,
+        stage: 'metadata-normalize',
+      });
     }
     const version = mapping.version === undefined
       ? undefined
@@ -113,8 +130,18 @@ function normalizeHarmonyModuleMetadata(
     ? {}
     : requireObject(harmonyValue, 'expo-module.config.json#harmony must be an object.', record);
   const host = normalizeHostMetadata(harmony, record) as unknown as HostMetadata;
+  const buildOptionsFile = harmony.buildOptionsFile;
+  if (buildOptionsFile !== undefined && (typeof buildOptionsFile !== 'string'
+    || !/^[A-Za-z0-9_-]+\.json$/u.test(buildOptionsFile))) {
+    throw new HarmonyAutolinkingError('INVALID_METADATA', 'harmony.buildOptionsFile must name a JSON file in the Harmony source project.', {
+      packageName: record.packageName,
+      stage: 'metadata-normalize',
+    });
+  }
+
   return {
     ...host,
+    ...(buildOptionsFile ? { buildOptionsFile: buildOptionsFile as string } : {}),
     modules: normalizeArkTsDeclarations(harmony.modules, 'modules', record),
     services: normalizeArkTsDeclarations(harmony.services, 'services', record),
   };
@@ -131,11 +158,16 @@ function optionalIdentifier(
     packageName: record.packageName,
     stage: 'metadata-normalize',
   });
-  if (!pattern.test(normalized)) metadataError(`${field} is invalid.`, record);
+  if (!pattern.test(normalized)) {
+    throw new HarmonyAutolinkingError('INVALID_METADATA', `${field} is invalid.`, {
+      packageName: record.packageName,
+      stage: 'metadata-normalize',
+    });
+  }
+
   return normalized;
 }
 
-/** Normalizes current RNOH package metadata, independently of Expo module config. */
 function normalizeRnohPackageMetadata(
   value: unknown,
   record: MetadataRecord
@@ -144,8 +176,12 @@ function normalizeRnohPackageMetadata(
   const rnoh = requireObject(value, 'package.json#harmony.autolinking must be an object.', record);
   const etsPackageImport = rnoh.etsPackageImport;
   if (etsPackageImport !== undefined && etsPackageImport !== 'default' && etsPackageImport !== 'named') {
-    metadataError('package.json#harmony.autolinking.etsPackageImport must be "default" or "named".', record);
+    throw new HarmonyAutolinkingError('INVALID_METADATA', 'package.json#harmony.autolinking.etsPackageImport must be "default" or "named".', {
+      packageName: record.packageName,
+      stage: 'metadata-normalize',
+    });
   }
+
   return {
     ohPackageName: normalizeOhPackageName(rnoh.ohPackageName, record),
     ...(rnoh.mainHarPath === undefined

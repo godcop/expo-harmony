@@ -11,6 +11,7 @@ export type ModuleSource
 export interface ArkTsModulePackage {
   readonly harPath: string;
   readonly ohPackageName: string;
+  readonly builtHarPath?: string;
 }
 
 export interface HostMetadata {
@@ -39,6 +40,7 @@ export interface RnohMetadata {
 }
 
 export interface HarmonyModuleMetadata extends HostMetadata {
+  readonly buildOptionsFile?: string;
   readonly modules: ReadonlyArray<string>;
   readonly services: ReadonlyArray<string>;
 }
@@ -178,6 +180,8 @@ export interface VerifyOptions extends ResolveOptions {
 export interface LinkOptions extends VerifyOptions {
   projectRoot: string;
   harmonyProjectPath: string;
+  moduleBuilds?: Record<string, Record<string, string | number | boolean>>;
+  moduleBuildSettings?: { compatibleSdkVersion: string; targetSdkVersion: string; abiFilters: string[] };
   nodeModulesPath?: string;
   reactNativeExecutable?: string;
   rnohCliPackageJsonPath?: string;

@@ -110,7 +110,9 @@ async function stageCuratedPackageAsync(stage, descriptor) {
   ]);
 
   for (const harPath of harPaths) {
-    const source = await resolveInsideAsync(descriptor.packageRoot, harPath, 'descriptor HAR path', { packageName: descriptor.packageName, type: 'file' });
+    const source = harPath === descriptor.arkTs?.harPath && descriptor.arkTs.builtHarPath
+      ? descriptor.arkTs.builtHarPath
+      : await resolveInsideAsync(descriptor.packageRoot, harPath, 'descriptor HAR path', { packageName: descriptor.packageName, type: 'file' });
     const destination = path.resolve(stage, ...harPath.split('/'));
     if (!isPathInside(stage, destination)) {
       throw new HarmonyAutolinkingError('PATH_OUTSIDE_PACKAGE', 'A curated HAR path escapes its staging package.', {

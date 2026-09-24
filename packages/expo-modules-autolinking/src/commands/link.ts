@@ -1,4 +1,5 @@
-import { linkModulesAsync } from '../autolinking/link';
+import { linkPreparedModulesAsync } from '../autolinking/link';
+import { prepareModulesAsync } from '../autolinking/prepare';
 
 import { addCommonOptions, parsePositiveInt, toApiOptions } from './autolinkingOptions';
 import { writeResult } from './output';
@@ -13,7 +14,7 @@ function registerLinkCommand(program, io) {
     .option('--output-limit <bytes>', 'per-stream output capture limit', parsePositiveInt)
     .option('-j, --json', 'output results in the plain JSON format', false)
     .action(async (searchPaths, options) => {
-      writeResult(io, await linkModulesAsync({
+      const input = {
         ...toApiOptions(options, searchPaths),
         harmonyProjectPath: options.harmonyProjectPath,
         nodeModulesPath: options.nodeModulesPath,
@@ -21,7 +22,9 @@ function registerLinkCommand(program, io) {
         rnohCliPackageJsonPath: options.rnohCliPackageJson,
         timeoutMs: options.timeoutMs,
         outputLimit: options.outputLimit,
-      }), options);
+      };
+      const prepared = await prepareModulesAsync(input);
+      writeResult(io, await linkPreparedModulesAsync(input, prepared), options);
     });
 }
 

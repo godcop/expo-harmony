@@ -246,6 +246,7 @@ function searchRecordFromDescriptor(descriptor, declared) {
       ? {
           platforms: ['harmony'],
           harmony: {
+            ...(descriptor.harmony.buildOptionsFile ? { buildOptionsFile: descriptor.harmony.buildOptionsFile } : {}),
             modules,
             services,
             ...Object.fromEntries(HostMetadataFields.map(field => [
@@ -367,7 +368,6 @@ async function verifyModulesAsync(options: VerifyOptions = {}): Promise<Verifica
       stage: 'verify',
     });
   }
-
 
   if (searchResult) {
     const seen = new Map();

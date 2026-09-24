@@ -39,6 +39,11 @@
     "runtimeBindings": {
       "$ref": "#/$defs/arkTsIdentifiers",
       "description": "Internal RNOH bindings installed before bundle execution and disposed with their runtime. These are separate from ReactNativeHostHandler lifecycle notifications."
+    },
+    "buildOptionsFile": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]+\\.json$",
+      "description": "Opt in to app-configured HAR builds using this JSON file at the root of the published harmony source project."
     }
   },
   "$defs": {
