@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo__fingerprint @expo/fingerprint@0.16.7
+npm install @expo-harmony/expo__fingerprint @expo/fingerprint@0.16.8
 ```
 
 ## Author
