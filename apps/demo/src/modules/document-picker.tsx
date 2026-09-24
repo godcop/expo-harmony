@@ -30,7 +30,7 @@ export function DocumentPickerDemo() {
       throw new Error('所选文件数量与单选 / 多选配置不符。');
     }
     for (const asset of result.assets) {
-      if (!asset.name || !asset.uri || !Number.isSafeInteger(asset.lastModified) || asset.lastModified < 0) {
+      if (!asset.name || !asset.uri || !Number.isSafeInteger(asset.lastModified)) {
         throw new Error(`文件信息无效：${json(asset)}`);
       }
     }
