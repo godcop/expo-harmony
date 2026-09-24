@@ -13,7 +13,8 @@ const pkg = require('../package.json');
 
 const BACKGROUND_PERMISSION = 'ohos.permission.KEEP_BACKGROUND_RUNNING';
 const MICROPHONE_PERMISSION = 'ohos.permission.MICROPHONE';
-const MICROPHONE_REASON = '$string:microphone_permission_reason';
+const MICROPHONE_REASON = '$string:expo_audio_default_microphone_permission_reason';
+const LEGACY_MICROPHONE_REASON = '$string:microphone_permission_reason';
 const CUSTOM_MICROPHONE_REASON = 'expo_audio_microphone_permission_reason';
 const PLAYBACK_MODE = 'audioPlayback';
 const RECORDING_MODE = 'audioRecording';
@@ -34,7 +35,11 @@ function selectedAbilityName(module) {
 function microphoneDeclaration(permission, ability, reason) {
   const current = permission && typeof permission === 'object' ? permission : {};
   const scene = current.usedScene && typeof current.usedScene === 'object' ? current.usedScene : {};
-  const fallback = typeof current.reason === 'string' && current.reason !== `$string:${CUSTOM_MICROPHONE_REASON}`
+
+  const fallback = typeof current.reason === 'string'
+    && !isPermissionReasonText(current.reason)
+    && current.reason !== LEGACY_MICROPHONE_REASON
+    && current.reason !== `$string:${CUSTOM_MICROPHONE_REASON}`
     ? current.reason
     : MICROPHONE_REASON;
 
@@ -150,10 +155,3 @@ function withHarmonyAudio(config, options = {}) {
 }
 
 module.exports = createRunOncePlugin(withHarmonyAudio, pkg.name, pkg.version);
-module.exports.BACKGROUND_PERMISSION = BACKGROUND_PERMISSION;
-module.exports.MICROPHONE_PERMISSION = MICROPHONE_PERMISSION;
-module.exports.PLAYBACK_MODE = PLAYBACK_MODE;
-module.exports.RECORDING_MODE = RECORDING_MODE;
-module.exports.updateHarmonyPermissions = updateHarmonyPermissions;
-module.exports.updateManifest = updateManifest;
-module.exports.withHarmonyAudio = withHarmonyAudio;

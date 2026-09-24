@@ -7,7 +7,7 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-audio expo-audio@55.0.14
+npm install @expo-harmony/expo-audio expo-audio@55.0.18
 ```
 
 使用录音或后台音频能力时，必须在 `app.json` 的 `plugins` 中配置 `@expo-harmony/expo-audio`：
@@ -150,7 +150,7 @@ npm install @expo-harmony/expo-audio expo-audio@55.0.14
 
 类型：`number`，只读
 
-播放倍速，改变倍速请调用 `setPlaybackRate()`。取值 0.1 到 2.0；API 20 之前只支持 0.5、0.75、1、1.25、1.5、1.75、2 这几档，设置其他值会抛出错误，API 20 起支持区间内的任意值。
+播放倍速，改变倍速请调用 `setPlaybackRate()`。取值 0.125 到 2.0；API 20 之前只支持 0.5、0.75、1、1.25、1.5、1.75、2 这几档，设置其他值会抛出错误，API 20 起支持区间内的任意值。与 Android 的最低 0.1 不同，HarmonyOS 不支持低于 0.125 的倍速，设置时会抛出错误。
 
 #### `AudioPlayer.shouldCorrectPitch`
 

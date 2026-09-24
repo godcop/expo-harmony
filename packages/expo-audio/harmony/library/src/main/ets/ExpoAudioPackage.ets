@@ -48,6 +48,7 @@ const BACKGROUND_RECORDING_MODE: string = 'audioRecording';
 const MIN_UPDATE_INTERVAL_MS: number = 16;
 const MIN_PLAYBACK_RATE: number = 0.1;
 const MAX_PLAYBACK_RATE: number = 2.0;
+const MIN_NATIVE_PLAYBACK_RATE: number = 0.125;
 const MAX_TIMER_DELAY_MS: number = 2_147_483_647;
 const SEEK_STEP_MS: number = 10_000;
 const METERING_INTERVAL_MS: number = 100;
@@ -1103,15 +1104,25 @@ abstract class PlaybackController extends OperationQueue {
   }
 
   setPlaybackRate(rate: number): void {
-    const requested: number = bounded(rate, MIN_PLAYBACK_RATE, MAX_PLAYBACK_RATE);
+    const value: number = bounded(rate, MIN_PLAYBACK_RATE, MAX_PLAYBACK_RATE);
+
+    if (value < MIN_NATIVE_PLAYBACK_RATE) {
+      throw new ExpoAudioError(
+        'ERR_AUDIO_PLAYBACK_RATE_UNSUPPORTED',
+        `HarmonyOS cannot represent playback rates below ${MIN_NATIVE_PLAYBACK_RATE}.`,
+      );
+    }
     if (deviceInfo.sdkApiVersion < 20) {
-      const effective: number = legacySpeedValue(nearestLegacySpeed(requested));
-      if (Math.abs(effective - requested) > 0.000001) {
-        throw new ExpoAudioError('ERR_AUDIO_PLAYBACK_RATE_UNSUPPORTED', `HarmonyOS below API 20 cannot represent playback rate ${requested}.`);
+      const speed: number = legacySpeedValue(nearestLegacySpeed(value));
+
+      if (Math.abs(speed - value) > 0.000001) {
+        throw new ExpoAudioError('ERR_AUDIO_PLAYBACK_RATE_UNSUPPORTED', `HarmonyOS below API 20 cannot represent playback rate ${value}.`);
       }
     }
-    this.rateValue = requested;
+
+    this.rateValue = value;
     this.schedule('set playback rate', async (): Promise<void> => this.applyPlaybackRate());
+
     this.emitStatus();
   }
 
@@ -1270,7 +1281,6 @@ abstract class PlaybackController extends OperationQueue {
       label !== 'initialize' &&
       label !== 'replace source' &&
       label !== 'change playlist track' &&
-      label !== 'remove current track' &&
       label !== 'advance after completion' &&
       label !== 'player state' &&
       label !== 'player callback'
@@ -1279,7 +1289,6 @@ abstract class PlaybackController extends OperationQueue {
       return;
     }
 
-    const wasPlaying = this.playing;
     const player = this.player;
     const file = this.sourceFile;
 
@@ -1294,7 +1303,8 @@ abstract class PlaybackController extends OperationQueue {
     this.durationMs = 0;
 
     this.emitStatus();
-    if (wasPlaying !== this.playing) this.delegate.playbackStateChanged(this);
+    // Playlist edits can hide the failed source before this callback.
+    this.delegate.playbackStateChanged(this);
 
     this.enqueue(async (): Promise<void> => this.releasePlayer(player, file)).catch((): void => {});
   }
@@ -1549,6 +1559,26 @@ class PlaylistController extends PlaybackController {
     return this.loopModeValue;
   }
 
+  // List edits precede queued AVPlayer replacement.
+  private get hasCurrentSource(): boolean {
+    return this.tracks.length > 0 && this.source === this.tracks[this.indexValue];
+  }
+  get playing(): boolean {
+    return this.hasCurrentSource && super.playing;
+  }
+  get loaded(): boolean {
+    return this.hasCurrentSource && super.loaded;
+  }
+  get buffering(): boolean {
+    return this.hasCurrentSource && super.buffering;
+  }
+  get currentTimeSeconds(): number {
+    return this.hasCurrentSource ? super.currentTimeSeconds : 0;
+  }
+  get durationSeconds(): number {
+    return this.hasCurrentSource ? super.durationSeconds : 0;
+  }
+
   protected className(): string {
     return PLAYLIST_CLASS_NAME;
   }
@@ -1584,7 +1614,8 @@ class PlaylistController extends PlaybackController {
     if (source === null || source.uri === undefined || source.uri.length === 0) return;
 
     this.tracks.push(source);
-    if (this.tracks.length === 1) this.scheduleTrackChange(0, false);
+    if (this.tracks.length === 1) this.scheduleCurrentTrackLoad(false);
+
     this.emitStatus();
   }
 
@@ -1594,7 +1625,7 @@ class PlaylistController extends PlaybackController {
 
     this.tracks.splice(position, 0, source);
 
-    if (this.tracks.length === 1) this.scheduleTrackChange(0, false);
+    if (this.tracks.length === 1) this.scheduleCurrentTrackLoad(false);
     else if (position <= this.indexValue) this.indexValue += 1;
 
     this.emitStatus();
@@ -1610,6 +1641,7 @@ class PlaylistController extends PlaybackController {
     this.intendedPlaying = false;
 
     this.schedule('clear playlist', async (): Promise<void> => this.replacePlayer(null, false));
+    this.delegate.playbackStateChanged(this);
     this.emitStatus();
   }
 
@@ -1640,11 +1672,17 @@ class PlaylistController extends PlaybackController {
     return previousPlaylistIndex(this.indexValue, this.tracks.length, this.loopModeValue === 'all');
   }
 
-  private scheduleTrackChange(index: number, preservePlayback: boolean = true): void {
+  private scheduleCurrentTrackLoad(resume: boolean): void {
+    this.schedule('change playlist track', async (): Promise<void> =>
+      this.replacePlayer(this.tracks[this.indexValue] ?? null, resume && this.intendedPlaying),
+    );
+  }
+
+  private scheduleTrackChange(index: number): void {
     this.schedule('change playlist track', async (): Promise<void> => {
       if (index < 0 || index >= this.tracks.length || (index === this.indexValue && this.loaded)) return;
 
-      await this.changeTrack(index, preservePlayback && this.intendedPlaying);
+      await this.changeTrack(index, this.intendedPlaying);
     });
   }
 
@@ -1661,9 +1699,11 @@ class PlaylistController extends PlaybackController {
     if (index < 0 || index >= this.tracks.length) return;
 
     const previous = this.indexValue;
+
     this.indexValue = index;
 
     await this.replacePlayer(this.tracks[index], resume);
+
     if (this.destroyed) return;
 
     if (previous !== index && this.observedEvents.has(TRACK_CHANGED_EVENT)) {
@@ -1683,10 +1723,14 @@ class PlaylistController extends PlaybackController {
 
     if (this.tracks.length === 0) {
       this.indexValue = 0;
+      this.intendedPlaying = false;
+
       this.schedule('empty playlist', async (): Promise<void> => this.replacePlayer(null, false));
+      this.delegate.playbackStateChanged(this);
     } else if (current) {
       this.indexValue = Math.min(index, this.tracks.length - 1);
-      this.schedule('remove current track', async (): Promise<void> => this.replacePlayer(this.tracks[this.indexValue], resume));
+
+      this.scheduleCurrentTrackLoad(resume);
     } else if (index < this.indexValue) {
       this.indexValue -= 1;
     }
@@ -1807,8 +1851,6 @@ function recordingProfile(options: RecordingOptionsInput): RecorderProfile {
     });
   }
 
-  // AAC in an M4A container is the broadly supported HarmonyOS recording path
-  // and matches Expo's high-quality preset semantics.
   return new RecorderProfile('.m4a', {
     audioBitrate: bitRate,
     audioChannels: channels,
@@ -2035,14 +2077,6 @@ class AudioRecorderController extends OperationQueue {
       throw new ExpoAudioError('ERR_AUDIO_RECORDER_NOT_PREPARED', 'Call prepareToRecordAsync() before starting an audio recording.');
     }
 
-    this.backgroundSuspended = false;
-    this.interruptionSuspended = false;
-    this.recordingRequested = true;
-    this.recordGeneration += 1;
-    const generation = this.recordGeneration;
-
-    this.clearStartAndStopTimers();
-
     if (options.atTime !== undefined && (!Number.isFinite(options.atTime) || options.atTime < 0)) {
       throw new ExpoAudioError('ERR_AUDIO_INVALID_RECORDING_TIME', 'Recording start time must be a finite non-negative number.');
     }
@@ -2055,6 +2089,15 @@ class AudioRecorderController extends OperationQueue {
     if (options.forDuration !== undefined && (!Number.isFinite(options.forDuration) || options.forDuration < 0)) {
       throw new ExpoAudioError('ERR_AUDIO_INVALID_RECORDING_DURATION', 'Recording duration must be a finite non-negative number.');
     }
+
+    this.backgroundSuspended = false;
+    this.interruptionSuspended = false;
+    this.recordingRequested = true;
+    this.recordGeneration += 1;
+    const generation = this.recordGeneration;
+
+    this.clearStartAndStopTimers();
+
     const delay: number = 0;
     this.pendingDurationMs = options.forDuration === undefined ? -1 : positiveDelayMilliseconds(options.forDuration);
 
@@ -2306,7 +2349,11 @@ class AudioRecorderController extends OperationQueue {
     }
 
     this.enqueue(async (): Promise<void> => {
-      await manager.getSessionManager().selectMediaInputDevice(input);
+      this.requireRecorder('select input');
+
+      if (deviceInfo.sdkApiVersion >= 21) {
+        await manager.getSessionManager().selectMediaInputDevice(input);
+      }
     }).catch((error: Object): void => {
       const message = `Failed to select recording input '${uid}': ${cleanError(error)}`;
 
@@ -2797,60 +2844,62 @@ class ExpoAudioRuntime implements PlaybackDelegate, RecorderDelegate {
   private handleAudioSessionStateChanged(event: audio.AudioSessionStateChangedEvent): void {
     if (this.destroyed || this.deactivatingAudioSession) return;
 
-    const hint = event.stateChangeHint;
+    if (deviceInfo.sdkApiVersion >= 20) {
+      const hint = event.stateChangeHint;
 
-    if (hint === audio.AudioSessionStateChangeHint.AUDIO_SESSION_STATE_CHANGE_HINT_PAUSE) {
-      this.focusInterrupted = true;
+      if (hint === audio.AudioSessionStateChangeHint.AUDIO_SESSION_STATE_CHANGE_HINT_PAUSE) {
+        this.focusInterrupted = true;
 
-      this.players.forEach((player: AudioPlayerController): void => player.suspendForInterruption());
-      this.playlists.forEach((playlist: PlaylistController): void => playlist.suspendForInterruption());
-      this.recorders.forEach((recorder: AudioRecorderController): void => recorder.suspendForInterruption());
+        this.players.forEach((player: AudioPlayerController): void => player.suspendForInterruption());
+        this.playlists.forEach((playlist: PlaylistController): void => playlist.suspendForInterruption());
+        this.recorders.forEach((recorder: AudioRecorderController): void => recorder.suspendForInterruption());
 
-      return;
-    }
-
-    if (hint === audio.AudioSessionStateChangeHint.AUDIO_SESSION_STATE_CHANGE_HINT_DUCK) {
-      this.focusInterrupted = true;
-
-      this.players.forEach((player: AudioPlayerController): void => player.setDucked(true));
-      this.playlists.forEach((playlist: PlaylistController): void => playlist.setDucked(true));
-
-      return;
-    }
-
-    if (
-      hint === audio.AudioSessionStateChangeHint.AUDIO_SESSION_STATE_CHANGE_HINT_RESUME ||
-      hint === audio.AudioSessionStateChangeHint.AUDIO_SESSION_STATE_CHANGE_HINT_UNDUCK
-    ) {
-      this.focusInterrupted = false;
-
-      this.players.forEach((player: AudioPlayerController): void => player.setDucked(false));
-      this.playlists.forEach((playlist: PlaylistController): void => playlist.setDucked(false));
-
-      if (this.active && (!this.inBackground || this.mode.shouldPlayInBackground === true)) {
-        this.resumeInterruptedPlayback();
-      }
-      if (this.active && (!this.inBackground || this.mode.allowsBackgroundRecording === true)) {
-        this.resumeInterruptedRecorders();
+        return;
       }
 
-      return;
-    }
+      if (hint === audio.AudioSessionStateChangeHint.AUDIO_SESSION_STATE_CHANGE_HINT_DUCK) {
+        this.focusInterrupted = true;
 
-    if (
-      hint === audio.AudioSessionStateChangeHint.AUDIO_SESSION_STATE_CHANGE_HINT_STOP ||
-      hint === audio.AudioSessionStateChangeHint.AUDIO_SESSION_STATE_CHANGE_HINT_TIME_OUT_STOP
-    ) {
-      this.focusInterrupted = false;
-      this.audioSessionActivated = false;
+        this.players.forEach((player: AudioPlayerController): void => player.setDucked(true));
+        this.playlists.forEach((playlist: PlaylistController): void => playlist.setDucked(true));
 
-      this.players.forEach((player: AudioPlayerController): void => player.setDucked(false));
-      this.playlists.forEach((playlist: PlaylistController): void => playlist.setDucked(false));
-      this.recorders.forEach((recorder: AudioRecorderController): void => {
-        recorder.suspendForInterruption();
-        recorder.cancelInterruptionSuspension();
-      });
-      this.pauseAllPlayback();
+        return;
+      }
+
+      if (
+        hint === audio.AudioSessionStateChangeHint.AUDIO_SESSION_STATE_CHANGE_HINT_RESUME ||
+        hint === audio.AudioSessionStateChangeHint.AUDIO_SESSION_STATE_CHANGE_HINT_UNDUCK
+      ) {
+        this.focusInterrupted = false;
+
+        this.players.forEach((player: AudioPlayerController): void => player.setDucked(false));
+        this.playlists.forEach((playlist: PlaylistController): void => playlist.setDucked(false));
+
+        if (this.active && (!this.inBackground || this.mode.shouldPlayInBackground === true)) {
+          this.resumeInterruptedPlayback();
+        }
+        if (this.active && (!this.inBackground || this.mode.allowsBackgroundRecording === true)) {
+          this.resumeInterruptedRecorders();
+        }
+
+        return;
+      }
+
+      if (
+        hint === audio.AudioSessionStateChangeHint.AUDIO_SESSION_STATE_CHANGE_HINT_STOP ||
+        hint === audio.AudioSessionStateChangeHint.AUDIO_SESSION_STATE_CHANGE_HINT_TIME_OUT_STOP
+      ) {
+        this.focusInterrupted = false;
+        this.audioSessionActivated = false;
+
+        this.players.forEach((player: AudioPlayerController): void => player.setDucked(false));
+        this.playlists.forEach((playlist: PlaylistController): void => playlist.setDucked(false));
+        this.recorders.forEach((recorder: AudioRecorderController): void => {
+          recorder.suspendForInterruption();
+          recorder.cancelInterruptionSuspension();
+        });
+        this.pauseAllPlayback();
+      }
     }
   }
 

@@ -1,7 +1,7 @@
 {
   "string": [
     {
-      "name": "microphone_permission_reason",
+      "name": "expo_audio_default_microphone_permission_reason",
       "value": "Allow this app to record audio."
     }
   ]
