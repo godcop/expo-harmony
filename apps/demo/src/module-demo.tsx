@@ -2,6 +2,7 @@ import type { ComponentType } from 'react';
 
 import type { ModuleId } from './catalog';
 import { AgeRangeDemo } from './modules/age-range';
+import { AppIntegrityDemo } from './modules/app-integrity';
 import { AppMetricsDemo } from './modules/app-metrics';
 import { ApplicationDemo } from './modules/application';
 import { AssetDemo } from './modules/asset';
@@ -73,6 +74,7 @@ import { LogBoxDemo } from './modules/log-box';
 
 const MODULE_DEMOS = {
   'age-range': AgeRangeDemo,
+  'app-integrity': AppIntegrityDemo,
   'devtools': DevToolsDemo,
   'dev-menu': DevMenuDemo,
   'log-box': LogBoxDemo,
