@@ -18,7 +18,7 @@
   "main": "Index.ets",
   "license": "MIT",
   "dependencies": {
-    "@expo-harmony/expo-modules-core": "55.0.25-harmony.5",
+    "@expo-harmony/expo-modules-core": "55.0.26-harmony.0",
     "@rnoh/react-native-openharmony": "0.84.1"
   }
 }
