@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo__config @expo/config@55.0.17
+npm install @expo-harmony/expo__config @expo/config@55.0.21
 ```
 
 ## Author
