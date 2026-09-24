@@ -1,6 +1,6 @@
 {
   "name": "@expo-harmony/expo-constants",
-  "version": "55.0.17-harmony.7",
+  "version": "55.0.17-harmony.0",
   "description": "HarmonyOS port of expo-constants",
   "keywords": [
     "react-native",
@@ -22,7 +22,8 @@
   "dependencies": {
     "@expo-harmony/config-plugins": "workspace:*",
     "@expo/config": "55.0.17",
-    "@expo/config-plugins": "55.0.10"
+    "@expo/config-plugins": "55.0.10",
+    "@expo/env": "~2.1.3"
   },
   "scripts": {
     "harmony:clean": "expo-harmony-module prepare --clean-only",

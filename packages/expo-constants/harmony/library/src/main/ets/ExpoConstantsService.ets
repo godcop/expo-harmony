@@ -72,34 +72,22 @@ export class ExpoConstantsService extends ExpoService implements ExpoConstantsPr
   }
 
   private readAppConfig(context: ExpoModuleContext): string | null {
-    let rawFiles: string[];
     try {
-      rawFiles = context.uiAbilityContext.resourceManager.getRawFileListSync('');
+      const resources = context.uiAbilityContext.resourceManager;
+      if (!resources.getRawFileListSync('').includes(APP_CONFIG_RAW_FILE)) return null;
+
+      const bytes = resources.getRawFileContentSync(APP_CONFIG_RAW_FILE);
+
+      const value: ESObject = JSON.parse(util.TextDecoder.create('utf-8').decodeToString(bytes));
+      if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+        throw new Error('The embedded Expo app config must be a JSON object.');
+      }
+
+      return JSON.stringify(value);
     } catch (error) {
-      throw new ExpoModuleError('ERR_CONSTANTS_APP_CONFIG_READ_FAILED', 'Unable to enumerate embedded HarmonyOS raw files.', error as Object);
+      context.logger.warn(`Unable to read the embedded Expo app config; returning null: ${String(error)}`);
+      return null;
     }
-
-    if (!rawFiles.includes(APP_CONFIG_RAW_FILE)) return null;
-
-    let bytes: Uint8Array;
-    try {
-      bytes = context.uiAbilityContext.resourceManager.getRawFileContentSync(APP_CONFIG_RAW_FILE);
-    } catch (error) {
-      throw new ExpoModuleError('ERR_CONSTANTS_APP_CONFIG_READ_FAILED', 'Unable to read the embedded Expo app config.', error as Object);
-    }
-
-    let value: ESObject;
-    try {
-      value = JSON.parse(util.TextDecoder.create('utf-8').decodeToString(bytes));
-    } catch (error) {
-      throw new ExpoModuleError('ERR_CONSTANTS_INVALID_APP_CONFIG', 'The embedded Expo app config is invalid JSON.', error as Object);
-    }
-
-    if (value === null || typeof value !== 'object' || Array.isArray(value)) {
-      throw new ExpoModuleError('ERR_CONSTANTS_INVALID_APP_CONFIG', 'The embedded Expo app config must be a JSON object.');
-    }
-
-    return JSON.stringify(value);
   }
 
   private readStatusBarHeight(context: ExpoModuleContext): number {

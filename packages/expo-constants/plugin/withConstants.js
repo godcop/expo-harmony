@@ -1,6 +1,8 @@
 'use strict';
 
 const { getConfig } = require('@expo/config');
+const { load } = require('@expo/env');
+const path = require('node:path');
 const { createRunOncePlugin } = require('@expo/config-plugins');
 const { mergeContents } = require('@expo/config-plugins/build/utils/generateCode');
 const {
@@ -58,10 +60,25 @@ async function writeResourceAsync(root, harmony, config) {
 }
 
 async function refreshExpoConstantsResourceAsync(root, directory) {
-  const config = getConfig(root, {
-    isPublicConfig: true,
-    skipPlugins: false,
-  }).exp;
+  root = path.resolve(root);
+  directory = path.resolve(directory);
+
+  load(root);
+
+  const cwd = process.cwd();
+  let config;
+
+  try {
+    process.chdir(root);
+
+    config = getConfig(root, {
+      isPublicConfig: true,
+      skipSDKVersionRequirement: true,
+      skipPlugins: false,
+    }).exp;
+  } finally {
+    process.chdir(cwd);
+  }
 
   const harmony = normalizeHarmonyConfig(config);
 

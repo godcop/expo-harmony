@@ -25,7 +25,7 @@ npm install @expo-harmony/expo-constants expo-constants@55.0.17
 }
 ```
 
-Constants Config Plugin 会把公开的 Expo 配置写入应用资源（`entry/src/main/resources/rawfile/app.config`），供运行时读取 `expoConfig`、`easConfig` 等配置字段；并在生成的 `harmony/hvigorfile.ts` 中注册构建期刷新，公开配置变更后无需重新 prebuild，下次构建会自动更新。
+Constants Config Plugin 会把公开的 Expo 配置写入应用资源（`entry/src/main/resources/rawfile/app.config`），供运行时读取 `expoConfig`、`easConfig` 等配置字段；并在生成的 `harmony/hvigorfile.ts` 中注册构建期刷新，公开配置变更后无需重新 prebuild，下次构建会自动更新。刷新时会加载项目根目录的 `.env` 文件，`app.config.js` 在构建时可以读取这些环境变量，进程里已有的环境变量优先。`harmony.signingConfigFile` 不会写入公开资源。
 
 业务代码依旧使用官方包：
 
@@ -80,7 +80,7 @@ HarmonyOS 上不使用 EAS，取值与 `expoConfig` 相同；读不到配置时�
 
 类型：`ExpoConfig | null`
 
-内嵌的 Expo 配置对象，由配置插件写入应用资源。读不到时返回 `null`。
+内嵌的 Expo 配置对象，由配置插件写入应用资源。缺失、读取失败或内容无效时返回 `null`。
 
 #### `Constants.expoGoConfig`
 
@@ -133,13 +133,13 @@ HarmonyOS 上不运行 Expo Go，取值与 `expoConfig` 相同；读不到配置
 
 类型：`number`
 
-状态栏高度，单位为 vp，取系统默认区域的上边距。读取失败时返回 `0`。
+状态栏高度，单位为 vp，取主窗口系统避让区域的上边距，受窗口模式和状态栏可见性影响，可能与 Android 上固定的系统默认高度不同。无界面实例、读取失败或高度无效时返回 `0`。
 
 #### `Constants.systemFonts`
 
 类型：`string[]`
 
-系统字体名称列表，去重后按名称排序。读取失败时返回空数组。
+系统字体名称列表，去重后按名称排序。字体枚举使用 ArkUI 的 `getSystemFontList()`，该接口只在 PC 和 2-in-1 设备上生效，手机等设备返回空数组。无界面实例或读取失败时也返回空数组。
 
 #### `Constants.systemVersion`
 
@@ -159,7 +159,7 @@ HarmonyOS 上不运行 Expo Go，取值与 `expoConfig` 相同；读不到配置
 
 #### `Constants.getWebViewUserAgentAsync()`
 
-返回 `Promise<string | null>`，WebView 的默认用户代理字符串。读取失败时返回 `null`。该值与 `fetch` 请求使用的用户代理不一定相同。
+返回 `Promise<string | null>`，WebView 的默认用户代理字符串。首次调用时会初始化系统 WebView 引擎。读取失败时返回 `null`。该值与 `fetch` 请求使用的用户代理不一定相同。
 
 ### Types
 
