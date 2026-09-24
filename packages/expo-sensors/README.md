@@ -7,12 +7,12 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-sensors expo-sensors@55.0.15
+npm install @expo-harmony/expo-sensors expo-sensors@55.0.19
 ```
 
-本包适配 Expo SDK 55 的 `expo-sensors`，原生模块通过 Expo Harmony 自动链接，不需要配置插件。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。
+本包适配 Expo SDK 55 的 `expo-sensors`，原生模块通过 Expo Harmony 自动链接。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。
 
-HAR 声明了 `ohos.permission.ACCELEROMETER`、`ohos.permission.GYROSCOPE` 和 `ohos.permission.ACTIVITY_MOTION`。加速度和陀螺仪属于系统权限，随安装授予，不会弹窗；运动权限用于计步器，订阅前需要申请，权限的 `usedScene` 默认挂在 `EntryAbility` 的 `inuse` 场景上，宿主的入口 Ability 使用其他名称时要改成实际名称。
+HAR 声明了 `ohos.permission.ACCELEROMETER`、`ohos.permission.GYROSCOPE` 和 `ohos.permission.ACTIVITY_MOTION`。加速度和陀螺仪属于 `system_grant` 权限，随安装授予，不会弹窗；运动权限用于计步器，订阅前需要申请，权限的 `usedScene` 默认挂在 `EntryAbility` 的 `inuse` 场景上，宿主的入口 Ability 使用其他名称时要改成实际名称。
 
 业务代码从官方包导入：
 
@@ -36,7 +36,7 @@ Accelerometer.addListener(({ x, y, z }) => console.log(x, y, z));
 
 #### `DeviceMotion`
 
-测量设备的运动状态，同时依赖加速度、线性加速度、重力、陀螺仪和旋转矢量五个传感器。五个传感器全部可用时才有数据，缺任何一个都没有更新；单个字段在对应传感器首次上报前为 `null`。更新间隔默认 `1000 / 60` 毫秒，其他传感器默认 100 毫秒。
+测量设备的运动状态，同时依赖加速度、线性加速度、重力、陀螺仪和旋转矢量五个传感器。`isAvailableAsync()` 要求五个传感器全部存在。订阅任一传感器失败时会停止已启动的订阅。首次样本异步到达，事件可能先包含部分字段，业务端应检查字段是否存在。更新间隔默认 `1000 / 60` 毫秒，其他传感器默认 100 毫秒。
 
 加速度的单位和坐标约定与 Expo Android 一致。`rotation` 的 `alpha`、`beta`、`gamma` 是弧度，`rotationRate` 是度每秒。`orientation` 取屏幕旋转方向，值为 `0`、`90`、`180` 或 `-90`。
 
@@ -70,7 +70,7 @@ Accelerometer.addListener(({ x, y, z }) => console.log(x, y, z));
 
 ##### `setUpdateInterval(intervalMs)`
 
-设置更新间隔，单位毫秒，默认 100。传入负数、非有限数或超出安全整数范围的值时抛出 `ERR_SENSOR_INTERVAL`。实际频率受硬件和系统限制。上报按间隔节流，节流依据设备开机时长，不受系统时间调整影响。
+设置更新间隔，单位毫秒，默认 100。传入负数、非有限数或超出安全整数范围的值时以 `ERR_SENSOR_INTERVAL` 报错。官方 JS 包里该方法返回 `void`，报错不会传给调用方，应先校验输入。实际频率受硬件和系统限制。上报按间隔节流，节流依据设备开机时长，不受系统时间调整影响。
 
 ##### `hasListeners()`
 
@@ -108,7 +108,7 @@ Accelerometer.addListener(({ x, y, z }) => console.log(x, y, z));
 
 返回 `Subscription`，订阅步数更新，需要运动权限。步数更新按默认的 100 毫秒间隔节流，`Pedometer` 上没有调整间隔的方法。没有运动权限或设备没有计步器时订阅静默失败，不抛错。
 
-系统上报的是开机以来的累计步数，模块会减去订阅时刻的基线，所以 `steps` 从订阅那一刻重新计数。设备记录被系统清零时，模块会接续之前的计数。
+系统上报的是累计步数。与 Expo Android 一致，每轮订阅以首次收到的累计值减一作为基线，首次更新为 `steps: 1`，之后返回相对该基线的步数。前后台切换保留基线，移除最后一个监听后重新订阅会重置基线。设备记录被系统清零时，模块会接续之前的计数。暂停期间不会上报，但恢复后的累计值可能包含暂停期间的步数。
 
 #### `Pedometer.isAvailableAsync()`
 
@@ -175,14 +175,14 @@ Accelerometer.addListener(({ x, y, z }) => console.log(x, y, z));
 
 #### `DeviceMotionMeasurement`
 
-| 属性                           | 类型                                        | 说明                          |
-| ------------------------------ | ------------------------------------------- | ----------------------------- |
-| `acceleration`                 | `{ x, y, z, timestamp } \| null`            | 不含重力的加速度，单位 `m/s²` |
-| `accelerationIncludingGravity` | `{ x, y, z, timestamp } \| null`            | 含重力的加速度，单位 `m/s²`   |
-| `rotation`                     | `{ alpha, beta, gamma, timestamp } \| null` | 设备在空间中的姿态，单位弧度  |
-| `rotationRate`                 | `{ alpha, beta, gamma, timestamp } \| null` | 旋转速率，单位度每秒          |
-| `interval`                     | `number`                                    | 更新间隔，单位毫秒            |
-| `orientation`                  | `DeviceMotionOrientation`                   | 屏幕旋转方向                  |
+| 属性                           | 类型                                             | 说明                          |
+| ------------------------------ | ------------------------------------------------ | ----------------------------- |
+| `acceleration`                 | `{ x, y, z, timestamp } \| undefined`            | 不含重力的加速度，单位 `m/s²` |
+| `accelerationIncludingGravity` | `{ x, y, z, timestamp } \| undefined`            | 含重力的加速度，单位 `m/s²`   |
+| `rotation`                     | `{ alpha, beta, gamma, timestamp } \| undefined` | 设备在空间中的姿态，单位弧度  |
+| `rotationRate`                 | `{ alpha, beta, gamma, timestamp } \| undefined` | 旋转速率，单位度每秒          |
+| `interval`                     | `number`                                         | 更新间隔，单位毫秒            |
+| `orientation`                  | `DeviceMotionOrientation`                        | 屏幕旋转方向                  |
 
 #### `PedometerResult`
 

@@ -13,6 +13,7 @@ export class PedometerModule extends SensorModule {
   constructor(context: ExpoModuleContext) {
     super(context, 'ExponentPedometer', 'Exponent.pedometerUpdate', ['ohos.permission.ACTIVITY_MOTION']);
     this.permissions = new PedometerPermissions(context);
+
     this.addSensor<sensor.PedometerResponse>(
       sensor.SensorId.PEDOMETER,
       (callback, options): void => {

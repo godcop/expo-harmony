@@ -119,6 +119,7 @@ export class SensorModule extends ExpoModule {
 
           if (!this.hasPermissions()) {
             this.pause();
+
             return;
           }
 
@@ -136,6 +137,7 @@ export class SensorModule extends ExpoModule {
 
   protected emitMeasurement(value: Object): void {
     if (!this.running || !this.context.isValid || !this.hasPermissions()) return;
+
     const now = systemDateTime.getUptime(systemDateTime.TimeType.STARTUP);
     if (this.emitted >= 0 && now - this.emitted < this.interval) return;
 
@@ -211,6 +213,7 @@ export class SensorModule extends ExpoModule {
     this.subscriptions.forEach((subscription: SensorObserver): void => {
       subscription.stop();
     });
+
     this.clearSamples();
   }
 

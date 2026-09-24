@@ -40,12 +40,14 @@ export class SensorSubscription<T extends sensor.Response> implements SensorObse
 
   start(interval: number): void {
     this.stop();
+
     if (this.callback !== undefined) throw new Error(`Sensor ${this.id} still has a pending unsubscription.`);
 
     const info = sensor.getSingleSensorSync(this.id);
+
     const minimum = Math.max(1, Number.isFinite(info.minSamplePeriod) ? info.minSamplePeriod : 1);
     const maximum = Number.isFinite(info.maxSamplePeriod) && info.maxSamplePeriod >= minimum ? info.maxSamplePeriod : Number.MAX_SAFE_INTEGER;
-    const ns = Math.min(maximum, Math.max(minimum, intervalNanoseconds(interval)));
+    const period = Math.min(maximum, Math.max(minimum, intervalNanoseconds(interval)));
 
     const callback = (value: T): void => {
       if (!this.active || this.callback !== callback) return;
@@ -64,7 +66,7 @@ export class SensorSubscription<T extends sensor.Response> implements SensorObse
     this.attempts = 0;
 
     try {
-      this.subscribe(callback, { interval: ns });
+      this.subscribe(callback, { interval: period });
     } catch (error) {
       this.stop();
 

@@ -39,6 +39,7 @@ export class DeviceMotionModule extends SensorModule {
         this.publish();
       },
     );
+
     this.addSensor<sensor.LinearAccelerometerResponse>(
       sensor.SensorId.LINEAR_ACCELEROMETER,
       (callback, options): void => {
@@ -52,6 +53,7 @@ export class DeviceMotionModule extends SensorModule {
         this.publish();
       },
     );
+
     this.addSensor<sensor.GravityResponse>(
       sensor.SensorId.GRAVITY,
       (callback, options): void => {
@@ -65,6 +67,7 @@ export class DeviceMotionModule extends SensorModule {
         this.publish();
       },
     );
+
     this.addSensor<sensor.GyroscopeResponse>(
       sensor.SensorId.GYROSCOPE,
       (callback, options): void => {
@@ -80,9 +83,11 @@ export class DeviceMotionModule extends SensorModule {
           value.z * DEGREES_PER_RADIAN,
           value.timestamp,
         );
+
         this.publish();
       },
     );
+
     this.addSensor<sensor.RotationVectorResponse>(
       sensor.SensorId.ROTATION_VECTOR,
       (callback, options): void => {

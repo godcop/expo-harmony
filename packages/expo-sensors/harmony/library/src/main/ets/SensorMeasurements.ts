@@ -16,12 +16,12 @@ export function timestampSeconds(timestamp: number): number {
 }
 
 export function intervalNanoseconds(interval: number): number {
-  const ns = Math.round(interval * NANOSECONDS_PER_MILLISECOND);
-  if (!Number.isFinite(interval) || interval < 0 || !Number.isSafeInteger(ns)) {
+  const nanoseconds = Math.round(interval * NANOSECONDS_PER_MILLISECOND);
+  if (!Number.isFinite(interval) || interval < 0 || !Number.isSafeInteger(nanoseconds)) {
     throw new RangeError('Sensor update interval must be a finite, non-negative number of milliseconds within the safe numeric range.');
   }
 
-  return Math.max(1, ns);
+  return Math.max(1, nanoseconds);
 }
 
 export class VectorMeasurement {
@@ -94,7 +94,7 @@ export class DeviceMotionMeasurement {
     rotation: RotationMeasurement | undefined,
     rate: RotationMeasurement | undefined,
     interval: number,
-    orientation: number
+    orientation: number,
   ) {
     this.acceleration = acceleration;
     this.accelerationIncludingGravity = total;

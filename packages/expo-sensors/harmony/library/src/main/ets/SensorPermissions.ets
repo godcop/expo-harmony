@@ -30,7 +30,6 @@ export class SensorPermissionResponse {
   }
 }
 
-// API 13–19 needs persisted history to distinguish first use from denial.
 export class PedometerPermissions {
   private readonly context: ExpoModuleContext;
   private denied?: boolean;
@@ -74,6 +73,7 @@ export class PedometerPermissions {
 
   private async requestOnce(): Promise<SensorPermissionResponse> {
     const request = await this.context.requestPermissions([ACTIVITY_MOTION]);
+
     let blocked = false;
 
     for (const result of request.systemResults) {
@@ -96,6 +96,7 @@ export class PedometerPermissions {
       }
 
       blocked = blocked || reason === RequestReason.CannotRequest || reason === RequestReason.ManualSettings;
+
       if (
         deviceInfo.sdkApiVersion < SELF_PERMISSION_STATUS_API &&
         ((reason === RequestReason.Success &&
