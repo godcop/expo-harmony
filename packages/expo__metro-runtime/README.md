@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo__metro-runtime @expo/metro-runtime@55.0.11
+npm install @expo-harmony/expo__metro-runtime @expo/metro-runtime@55.0.12
 ```
 
 ## Author
