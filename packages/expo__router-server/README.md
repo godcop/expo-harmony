@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo__router-server @expo/router-server@55.0.18
+npm install @expo-harmony/expo__router-server @expo/router-server@55.0.19
 ```
 
 ## Author
