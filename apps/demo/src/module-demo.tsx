@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react';
 
 import type { ModuleId } from './catalog';
+import { AgeRangeDemo } from './modules/age-range';
 import { AppMetricsDemo } from './modules/app-metrics';
 import { ApplicationDemo } from './modules/application';
 import { AssetDemo } from './modules/asset';
@@ -71,6 +72,7 @@ import { DevMenuDemo } from './modules/dev-menu';
 import { LogBoxDemo } from './modules/log-box';
 
 const MODULE_DEMOS = {
+  'age-range': AgeRangeDemo,
   'devtools': DevToolsDemo,
   'dev-menu': DevMenuDemo,
   'log-box': LogBoxDemo,
