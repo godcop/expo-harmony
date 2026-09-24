@@ -1,5 +1,5 @@
 import type { common } from '@kit.AbilityKit';
-import type { RNInstance, RNOHCoreContext } from '@rnoh/react-native-openharmony';
+import type { JSBundleProvider, RNInstance, RNOHCoreContext } from '@rnoh/react-native-openharmony';
 import type { ReactNativeHost } from './ReactNativeHostHandler';
 
 export interface ReactRuntimeContext {
@@ -9,6 +9,8 @@ export interface ReactRuntimeContext {
   readonly owner: Object;
   readonly isHeadless: boolean;
   readonly core: RNOHCoreContext;
+  /** Returns the actual bundle provider, or undefined for an externally loaded instance. */
+  readonly getJSBundleProvider?: () => JSBundleProvider | undefined;
   readonly reload: (reason: string) => Promise<void>;
   /** Returns a development host to its native UI without leaving its app running. */
   readonly suspend: () => Promise<void>;

@@ -421,14 +421,15 @@ void ExpoModulesCoreTurboModule::onMessageReceived(
     const auto encodedPhase = message.payload.getDefault("phase", "");
     const auto encodedComponentName = message.payload.getDefault("componentName", "");
     const auto encodedTag = message.payload.getDefault("tag", 0);
+    const auto decodedTag = readPositiveTransportLong(encodedTag);
     auto props = message.payload.getDefault("props", folly::dynamic::object());
-    if (!encodedPhase.isString() || !encodedComponentName.isString() || !encodedTag.isInt()) {
+    if (!encodedPhase.isString() || !encodedComponentName.isString() || !decodedTag) {
       return;
     }
 
     auto phase = encodedPhase.asString();
     auto componentName = encodedComponentName.asString();
-    auto tag = encodedTag.asInt();
+    auto tag = *decodedTag;
     std::weak_ptr<RuntimeContext> weakContext;
     {
       std::scoped_lock lock(contextsMutex_);

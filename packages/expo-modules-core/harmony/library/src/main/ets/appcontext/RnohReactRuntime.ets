@@ -42,6 +42,7 @@ export class RnohReactRuntime implements ReactNativeRuntime {
   private readonly listeners = new Set<Listener>();
   private current?: RNInstance;
   private provider?: JSBundleProvider;
+  private sourceProvider?: JSBundleProvider;
   private loaded = false;
   private closing = false;
   private replacing = false;
@@ -86,6 +87,9 @@ export class RnohReactRuntime implements ReactNativeRuntime {
   }
   get bundle(): JSBundleProvider | undefined {
     return this.provider;
+  }
+  get sourceBundle(): JSBundleProvider | undefined {
+    return this.current === undefined ? undefined : this.sourceProvider;
   }
 
   subscribe(observer: ReactRuntimeListener): () => void {
@@ -217,6 +221,7 @@ export class RnohReactRuntime implements ReactNativeRuntime {
 
   private async load(): Promise<void> {
     if (this.loaded) return;
+    this.sourceProvider = undefined;
     if (this.current === undefined) {
       if (this.options.options === undefined) throw new ExpoModuleError('ERR_REACT_HOST_OWNER', 'The external runtime is no longer available.');
       // A launcher may select a different runtime between instance creations.
@@ -230,6 +235,7 @@ export class RnohReactRuntime implements ReactNativeRuntime {
 
     if (!hasLoadedRnohBundle(instance)) {
       this.provider = this.options.bundle?.();
+      this.sourceProvider = this.provider;
       if (this.provider !== undefined) await instance.runJSBundle(this.provider);
       await waitForRnohBundle(instance);
     }

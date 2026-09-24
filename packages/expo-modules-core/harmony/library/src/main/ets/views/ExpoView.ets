@@ -208,7 +208,9 @@ struct ExpoView {
       this.contentBuilder().builder(this.contentContext);
     }
     if (this.adapter?.content === undefined || this.adapter?.group === true) {
-      this.ctx.wrappedRNChildrenBuilder.builder(this.ctx, this.tag);
+      // RNOH's C API fallback owns and updates the native children in this slot.
+      // Mount them above adapter content without rebuilding their ArkTS descriptors.
+      ContentSlot(this.ctx.getContentForTag(this.tag));
     }
   }
 

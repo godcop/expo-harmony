@@ -3,6 +3,8 @@ import { ExpoModuleError } from '../modules/ExpoModuleError';
 import { EXPO_MODULES_CORE_VIEW_COMPONENT_NAME, EXPO_MODULE_NAME_PROP, EXPO_VIEW_REVISION_PROP, EXPO_VIEW_NAME_PROP } from '../protocol/Protocol';
 export { EXPO_MODULES_CORE_VIEW_COMPONENT_NAME, EXPO_MODULE_NAME_PROP, EXPO_VIEW_REVISION_PROP, EXPO_VIEW_NAME_PROP } from '../protocol/Protocol';
 
+const VIEW_MOUNT_TIMEOUT_MS: number = 30000;
+
 export interface ExpoViewContentDelegate {
   readonly rnComponentContext: RNComponentContext;
   readonly tag: number;
@@ -94,10 +96,19 @@ interface ScopedExpoViewAdapter {
   adapter: ExpoViewAdapter;
 }
 
+interface ExpoViewMountWaiter {
+  tag: number;
+  runtimeEpoch: string;
+  componentName: string;
+  resolve: () => void;
+  reject: (error: Error) => void;
+}
+
 /** Runtime-scoped registry for ArkUI adapters. */
 export class ExpoViewAdapterRegistry {
   private static readonly scopedAdapters: Map<number, Map<string, ScopedExpoViewAdapter[]>> = new Map();
   private static readonly boundViewsByInstance: Map<number, Map<number, BoundExpoView>> = new Map();
+  private static readonly mountWaiters: Map<number, Set<ExpoViewMountWaiter>> = new Map();
 
   /** @internal Registers one ArkTS ModuleDefinition adapter for one RN instance. */
   static registerForRuntime(instanceId: number, runtimeEpoch: string, adapter: ExpoViewAdapter, aliases: string[] = []): () => void {
@@ -139,6 +150,9 @@ export class ExpoViewAdapterRegistry {
     });
 
     return (): void => {
+      ExpoViewAdapterRegistry.rejectMountWaiters(instanceId, (waiter: ExpoViewMountWaiter): boolean =>
+        waiter.runtimeEpoch === runtimeEpoch && componentNames.includes(waiter.componentName));
+
       const current = ExpoViewAdapterRegistry.scopedAdapters.get(instanceId);
       componentNames.forEach((componentName: string): void => {
         const currentRegistrations = current?.get(componentName);
@@ -189,6 +203,10 @@ export class ExpoViewAdapterRegistry {
       propsFailure: undefined,
       propsWaiters: new Set<ExpoViewPropsWaiter>(),
     });
+
+    ExpoViewAdapterRegistry.mountWaiters.get(instanceId)?.forEach((waiter: ExpoViewMountWaiter): void => {
+      if (waiter.tag === tag) waiter.resolve();
+    });
   }
 
   static markPropsCommitted(instanceId: number, tag: number, componentName: string, revision: number): void {
@@ -235,6 +253,8 @@ export class ExpoViewAdapterRegistry {
   }
 
   static destroyBoundView(instanceId: number, tag: number): boolean {
+    ExpoViewAdapterRegistry.rejectMountWaiters(instanceId, (waiter: ExpoViewMountWaiter): boolean => waiter.tag === tag);
+
     const boundViews = ExpoViewAdapterRegistry.boundViewsByInstance.get(instanceId);
     if (boundViews === undefined) return false;
 
@@ -256,6 +276,8 @@ export class ExpoViewAdapterRegistry {
   }
 
   static destroyInstance(instanceId: number): void {
+    ExpoViewAdapterRegistry.rejectMountWaiters(instanceId, (): boolean => true);
+
     const boundViews = ExpoViewAdapterRegistry.boundViewsByInstance.get(instanceId);
     if (boundViews === undefined) return;
 
@@ -277,6 +299,8 @@ export class ExpoViewAdapterRegistry {
   }
 
   static destroyRuntime(instanceId: number, runtimeEpoch: string): void {
+    ExpoViewAdapterRegistry.rejectMountWaiters(instanceId, (waiter: ExpoViewMountWaiter): boolean => waiter.runtimeEpoch === runtimeEpoch);
+
     const boundViews = ExpoViewAdapterRegistry.boundViewsByInstance.get(instanceId);
     if (boundViews === undefined) return;
 
@@ -299,7 +323,7 @@ export class ExpoViewAdapterRegistry {
     functionName: string,
     args: ESObject[],
   ): Promise<ESObject | void> {
-    const bound = ExpoViewAdapterRegistry.requireBoundView(instanceId, tag, componentName);
+    const bound = await ExpoViewAdapterRegistry.waitForMount(instanceId, runtimeEpoch, tag, componentName);
 
     if (bound.adapter.runtimeEpoch !== undefined && bound.adapter.runtimeEpoch !== runtimeEpoch) {
       throw new Error(`ERR_VIEW_RUNTIME_MISMATCH: Expo view tag ${tag} belongs to runtime ${bound.adapter.runtimeEpoch}, not ${runtimeEpoch}.`);
@@ -357,6 +381,58 @@ export class ExpoViewAdapterRegistry {
     }
 
     return bound;
+  }
+
+  private static async waitForMount(instanceId: number, runtimeEpoch: string, tag: number, componentName: string): Promise<BoundExpoView> {
+    if (ExpoViewAdapterRegistry.boundViewsByInstance.get(instanceId)?.has(tag)) {
+      return ExpoViewAdapterRegistry.requireBoundView(instanceId, tag, componentName);
+    }
+
+    const registrations = ExpoViewAdapterRegistry.scopedAdapters.get(instanceId)?.get(componentName);
+    if (!registrations?.some((entry: ScopedExpoViewAdapter): boolean => entry.runtimeEpoch === runtimeEpoch)) {
+      throw new ExpoModuleError('ERR_VIEW_RUNTIME_MISMATCH', `Expo view '${componentName}' is not registered in runtime ${runtimeEpoch}.`);
+    }
+
+    // React effects may invoke a View before ArkUI's aboutToAppear binds it.
+    const waiters = ExpoViewAdapterRegistry.mountWaiters.get(instanceId) ?? new Set<ExpoViewMountWaiter>();
+    ExpoViewAdapterRegistry.mountWaiters.set(instanceId, waiters);
+
+    await new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
+      let timer: number = 0;
+      let settled: boolean = false;
+      const cleanup = (): boolean => {
+        if (settled) return false;
+
+        settled = true;
+        clearTimeout(timer);
+        waiters.delete(waiter);
+        if (waiters.size === 0) ExpoViewAdapterRegistry.mountWaiters.delete(instanceId);
+
+        return true;
+      };
+      const waiter: ExpoViewMountWaiter = {
+        tag,
+        runtimeEpoch,
+        componentName,
+        resolve: (): void => { if (cleanup()) resolve(); },
+        reject: (error: Error): void => { if (cleanup()) reject(error); },
+      };
+
+      waiters.add(waiter);
+      timer = setTimeout((): void => {
+        waiter.reject(new ExpoModuleError('ERR_VIEW_NOT_MOUNTED', `Timed out waiting for Expo view tag ${tag} to mount in RN instance ${instanceId}.`) as Error);
+      }, VIEW_MOUNT_TIMEOUT_MS);
+    });
+
+    return ExpoViewAdapterRegistry.requireBoundView(instanceId, tag, componentName);
+  }
+
+  private static rejectMountWaiters(instanceId: number, matches: (waiter: ExpoViewMountWaiter) => boolean): void {
+    ExpoViewAdapterRegistry.mountWaiters.get(instanceId)?.forEach((waiter: ExpoViewMountWaiter): void => {
+      if (matches(waiter)) {
+        waiter.reject(new ExpoModuleError('ERR_VIEW_NOT_MOUNTED', `Expo view tag ${waiter.tag} was destroyed before it mounted.`) as Error);
+      }
+    });
   }
 
   private static async waitForProps(bound: BoundExpoView, revision: number, tag: number): Promise<void> {
