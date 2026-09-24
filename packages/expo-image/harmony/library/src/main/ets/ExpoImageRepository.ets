@@ -16,6 +16,7 @@ const CONNECT_TIMEOUT_MS: number = 15_000;
 const READ_TIMEOUT_MS: number = 60_000;
 const IO_CHUNK_BYTES: number = 64 * 1024;
 const MAX_DECODED_BYTES: number = 256 * 1024 * 1024;
+const SVG_MEDIA_TYPE: string = 'image/svg+xml';
 
 export type CachePolicy = 'none' | 'disk' | 'memory' | 'memory-disk';
 export type CacheType = 'none' | 'disk' | 'memory';
@@ -722,17 +723,23 @@ export class ExpoImageRepository {
 
     const policy = normalizedPolicy(cachePolicy);
     const headers = copyHeaders(source.headers);
-    const cacheKey = source.cacheKey;
-    const identity = cacheKey ?? uri;
+    const identity = source.cacheKey ?? uri;
     const key = imageKey(identity, headers, source, options);
 
     if (hasMemory(policy)) {
-      // A full-size memory prefetch can serve a view with different layout bounds.
-      // loadAsync's explicit maximum dimensions still require their own decode.
-      const originalKey = options.contentFit !== undefined && options.tintColor == null ? imageKey(identity, headers, source, {}) : key;
-      const cached = this.memory.get(key) ?? this.memory.get(originalKey);
+      const fallback = options.contentFit !== undefined && options.tintColor == null ? imageKey(identity, headers, source, {}) : key;
+      let cached = this.memory.get(key);
+
+      if (cached === undefined) {
+        const original = this.memory.get(fallback);
+
+        // SVG prefetches contain natural-size pixels, not scalable vector data.
+        if (original?.mediaType !== SVG_MEDIA_TYPE && (options.decodeFormat ?? 'argb') === 'argb') cached = original;
+      }
+
       if (cached !== undefined) {
         cached.lastAccess = Date.now();
+
         return new ExpoImageLease(this, cached, 'memory');
       }
     }
@@ -1176,8 +1183,8 @@ export class ExpoImageRepository {
     key: string,
     uri: string,
     input: DecodeInput,
-    cacheType: CacheType,
-    reportedType: string | undefined,
+    cache: CacheType,
+    reported: string | undefined,
     source: ImageSourceRecord,
     options: ImageLoadOptions,
   ): Promise<ExpoImageResource> {
@@ -1194,22 +1201,26 @@ export class ExpoImageRepository {
 
     try {
       const info = await decoder.getImageInfo();
-      const frameCount = await decoder.getFrameCount();
+      const count = await decoder.getFrameCount();
+
+      if (![info.size.width, info.size.height, count].every((value: number): boolean => Number.isSafeInteger(value) && value > 0)) {
+        throw new ExpoImageError('ERR_IMAGE_DECODE', 'The image dimensions and frame count must be positive integers.');
+      }
+
       const orientation = await readOrientation(decoder);
       const swapped = orientation >= ExifOrientation.Transpose;
       const width = swapped ? info.size.height : info.size.width;
       const height = swapped ? info.size.width : info.size.height;
-      const animated = frameCount > 1;
-      const mediaType = contentType(info.mimeType) ?? reportedType ?? null;
+      const animated = count > 1;
+      const mime = contentType(info.mimeType) ?? reported ?? null;
       const maxWidth = finitePositive(options.maxWidth);
       const maxHeight = finitePositive(options.maxHeight);
-      const orientedSize = this.desiredSize(width, height, maxWidth, maxHeight, options.contentFit);
-      const size: image.Size | undefined =
-        swapped && orientedSize !== undefined ? { width: orientedSize.height, height: orientedSize.width } : orientedSize;
+      const bounds = this.desiredSize(width, height, maxWidth, maxHeight, options.contentFit, mime === SVG_MEDIA_TYPE);
+      const size: image.Size | undefined = swapped && bounds !== undefined ? { width: bounds.height, height: bounds.width } : bounds;
       const tint = options.tintColor == null ? undefined : colorComponents(options.tintColor);
-      const decodeWidth = size?.width ?? info.size.width;
-      const decodeHeight = size?.height ?? info.size.height;
-      if (decodeWidth * decodeHeight * 4 * frameCount > MAX_DECODED_BYTES) {
+      const decoded = size ?? info.size;
+
+      if (decoded.width * decoded.height * 4 * count > MAX_DECODED_BYTES) {
         throw new ExpoImageError('ERR_IMAGE_TOO_LARGE', 'Decoded image frames exceed the 256 MiB memory limit.');
       }
 
@@ -1217,7 +1228,7 @@ export class ExpoImageRepository {
 
       if (animated) {
         const delays = await decoder.getDelayTimeList();
-        const iterations = await animationIterations(decoder, mediaType);
+        const iterations = await animationIterations(decoder, mime);
 
         let frames = await decoder.createPixelMapList({
           editable: orientation !== ExifOrientation.Normal,
@@ -1233,11 +1244,12 @@ export class ExpoImageRepository {
         }
 
         if (tint !== undefined) {
-          const tintedFrames: image.PixelMap[] = [];
+          const tinted: image.PixelMap[] = [];
+
           for (const frame of frames) {
-            const tintedFrame = await tintPixelMap(frame, tint);
-            tintedFrames.push(tintedFrame);
-            transient.push(tintedFrame);
+            const pixel = await tintPixelMap(frame, tint);
+            tinted.push(pixel);
+            transient.push(pixel);
           }
 
           for (const frame of frames) {
@@ -1246,11 +1258,12 @@ export class ExpoImageRepository {
             } catch (_) {}
           }
 
-          frames = tintedFrames;
-          transient = tintedFrames.slice();
+          frames = tinted;
+          transient = tinted.slice();
         }
 
-        const resource = new ExpoImageResource(key, uri, frames, delays, width, height, scale, mediaType, true, cacheType, iterations);
+        const output: image.Size = options.contentFit === undefined ? frames[0].getImageInfoSync().size : { width, height };
+        const resource = new ExpoImageResource(key, uri, frames, delays, output.width, output.height, scale, mime, true, cache, iterations);
 
         transient = [];
 
@@ -1263,24 +1276,30 @@ export class ExpoImageRepository {
         desiredPixelFormat: options.decodeFormat === 'rgb' && tint === undefined ? image.PixelMapFormat.RGB_565 : image.PixelMapFormat.RGBA_8888,
       });
       transient = [pixel];
+
       await orientPixelMap(pixel, orientation);
 
       if (tint !== undefined) {
         const tinted = await tintPixelMap(pixel, tint);
+
         try {
           await pixel.release();
         } catch (_) {}
+
         pixel = tinted;
         transient = [tinted];
       }
 
-      const resource = new ExpoImageResource(key, uri, [pixel], [], width, height, scale, mediaType, false, cacheType);
+      // Only view requests set contentFit; ImageRef needs the decoded layout size.
+      const output: image.Size = options.contentFit === undefined ? pixel.getImageInfoSync().size : { width, height };
+      const resource = new ExpoImageResource(key, uri, [pixel], [], output.width, output.height, scale, mime, false, cache);
 
       transient = [];
 
       return resource;
     } catch (error) {
       console.error(`Expo Image decode failed for '${uri}': ${String(error)}`);
+
       if (error instanceof ExpoImageError) {
         throw new ExpoImageError(error.code, error.message);
       }
@@ -1299,19 +1318,26 @@ export class ExpoImageRepository {
     }
   }
 
-  private desiredSize(width: number, height: number, maxWidth?: number, maxHeight?: number, contentFit?: string): image.Size | undefined {
+  private desiredSize(
+    width: number,
+    height: number,
+    maxWidth?: number,
+    maxHeight?: number,
+    fit?: string,
+    vector: boolean = false,
+  ): image.Size | undefined {
     if (maxWidth === undefined && maxHeight === undefined) return undefined;
 
-    const widthScale = maxWidth === undefined ? undefined : maxWidth / width;
-    const heightScale = maxHeight === undefined ? undefined : maxHeight / height;
+    const horizontal = maxWidth === undefined ? undefined : maxWidth / width;
+    const vertical = maxHeight === undefined ? undefined : maxHeight / height;
     let ratio: number;
 
-    if (widthScale === undefined) ratio = heightScale as number;
-    else if (heightScale === undefined) ratio = widthScale;
-    else ratio = contentFit === 'cover' ? Math.max(widthScale, heightScale) : Math.min(widthScale, heightScale);
+    if (horizontal === undefined) ratio = vertical as number;
+    else if (vertical === undefined) ratio = horizontal;
+    else ratio = fit === 'cover' ? Math.max(horizontal, vertical) : Math.min(horizontal, vertical);
 
-    const scale = Math.min(1, ratio);
-    if (scale >= 1) return undefined;
+    const scale = vector && fit !== 'scale-down' ? ratio : Math.min(1, ratio);
+    if (scale === 1) return undefined;
 
     return { width: Math.max(1, Math.round(width * scale)), height: Math.max(1, Math.round(height * scale)) };
   }

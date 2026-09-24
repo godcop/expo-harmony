@@ -10,7 +10,7 @@
 npm install @expo-harmony/expo-image expo-image@55.0.11
 ```
 
-本包适配 Expo SDK 55 的 `expo-image`，原生模块通过 Expo Harmony 自动链接，不需要配置插件。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。HAR 已声明 `ohos.permission.INTERNET`，应用不需要额外申请网络权限；能解码的图片格式以系统 Image Kit 为准。
+本包适配 Expo SDK 55 的 `expo-image`，原生模块通过 Expo Harmony 自动链接。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。HAR 已声明 `ohos.permission.INTERNET`；能解码的图片格式以系统 Image Kit 为准。
 
 业务代码从官方包导入：
 
@@ -233,6 +233,8 @@ GIF 的循环次数读自文件，没有循环扩展时只播放一次；WebP �
 #### `Image.loadAsync(source, options)`
 
 返回 `Promise<ImageRef>`，把图片加载到内存。`options` 见 `ImageLoadOptions`。结果按 `memory-disk` 策略进入内存和磁盘缓存。
+
+未提供 `maxWidth`、`maxHeight` 时，SVG 按系统解码器返回的自然尺寸栅格化。提供任一项时等比缩放，可以放大到自然尺寸以上，普通位图只缩小。`ImageRef` 的 `width`、`height` 是实际解码尺寸。视图显示 SVG 时按布局所需尺寸重新解码，预取到内存的位图不会被复用。SVG 支持的语法范围以系统 Image Kit 为准。
 
 #### `Image.prefetch(urls, cachePolicy)`
 

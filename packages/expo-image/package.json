@@ -1,6 +1,6 @@
 {
   "name": "@expo-harmony/expo-image",
-  "version": "55.0.11-harmony.3",
+  "version": "55.0.11-harmony.0",
   "description": "HarmonyOS port of expo-image",
   "keywords": [
     "react-native",
