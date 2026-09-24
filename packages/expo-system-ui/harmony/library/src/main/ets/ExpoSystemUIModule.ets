@@ -3,11 +3,11 @@ import deviceInfo from '@ohos.deviceInfo';
 import { Configuration, ConfigurationConstant, common } from '@kit.AbilityKit';
 import { preferences } from '@kit.ArkData';
 import { window } from '@kit.ArkUI';
+import { resourceManager } from '@kit.LocalizationKit';
 import {
   ExpoAbilityLifecycleSubscriber,
   ExpoFunction,
   ExpoModule,
-  ExpoModuleContext,
   ExpoModuleDefinition,
   ExpoModuleError,
   ExpoValueTypes,
@@ -36,12 +36,12 @@ class SystemUIConfiguration {
 }
 
 class ParsedBackgroundColor {
-  windowColor: string;
-  exposedColor: string;
+  argb: string;
+  rgb: string;
 
-  constructor(windowColor: string, exposedColor: string) {
-    this.windowColor = windowColor;
-    this.exposedColor = exposedColor;
+  constructor(argb: string, rgb: string) {
+    this.argb = argb;
+    this.rgb = rgb;
   }
 }
 
@@ -66,8 +66,10 @@ class AbilitySystemUIState {
   private readonly ready: Promise<void>;
   private persisted: ParsedBackgroundColor | null = null;
   private mutation: Promise<void> = Promise.resolve();
-  private windowGeneration: number = 0;
-  private windowAvailable: boolean = false;
+  private generation: number = 0;
+  private available: boolean = false;
+  private windowReady: Promise<void> = Promise.resolve();
+  private resolveWindowReady: (() => void) | null = null;
   private destroyed: boolean = false;
 
   constructor(context: common.UIAbilityContext) {
@@ -86,6 +88,7 @@ class AbilitySystemUIState {
 
     this.store = preferences.getPreferences(context, { name: PREFERENCES_NAME }).catch((error: Object): preferences.Preferences | null => {
       console.warn(`Unable to open Expo System UI preferences: ${String(error)}`);
+
       return null;
     });
     this.ready = this.loadPersistedBackground();
@@ -103,14 +106,23 @@ class AbilitySystemUIState {
       mode = ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET;
     }
 
-    if (deviceInfo.sdkApiVersion >= UI_ABILITY_COLOR_MODE_API) this.context.setColorMode(mode);
-    else this.context.getApplicationContext().setColorMode(mode);
+    try {
+      if (deviceInfo.sdkApiVersion >= UI_ABILITY_COLOR_MODE_API) this.context.setColorMode(mode);
+      else this.context.getApplicationContext().setColorMode(mode);
+    } catch (error) {
+      throw new ExpoSystemUIError('ERR_SYSTEM_UI_STYLE', `Unable to update the application interface style: ${String(error)}`);
+    }
+
+    // setColorMode can replace the resource manager; read the current instance.
+    this.mode = resolvedSystemColorMode(this.context);
   }
 
-  onConfigurationUpdated(_colorMode: ConfigurationConstant.ColorMode | undefined): void {
+  onConfigurationUpdated(mode: ConfigurationConstant.ColorMode | undefined): void {
     if (this.destroyed || this.style !== 'automatic') return;
 
-    this.mode = resolvedSystemColorMode(this.context);
+    this.mode = mode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK || mode === ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT
+      ? mode
+      : resolvedSystemColorMode(this.context);
 
     Array.from(this.windows.values()).forEach((target: window.Window): void => {
       this.initializeWindow(target, true, (): boolean => !this.destroyed).catch((error: Object): void => {
@@ -121,26 +133,27 @@ class AbilitySystemUIState {
     });
   }
 
-  async initializeWindowFrom(resolve: () => Promise<window.Window>, refresh: boolean, canApply: () => boolean): Promise<void> {
-    const generation = this.windowGeneration;
+  async initializeWindowFrom(resolve: () => Promise<window.Window>, refresh: boolean, valid: () => boolean): Promise<void> {
+    const generation = this.generation;
+
     await this.serialize(async (): Promise<void> => {
-      if (generation !== this.windowGeneration || !canApply()) return;
+      if (generation !== this.generation || !valid()) return;
 
       const target: window.Window = await resolve();
 
-      await this.applyWindowState(target, refresh, (): boolean => generation === this.windowGeneration && canApply());
+      await this.applyWindowState(target, refresh, (): boolean => generation === this.generation && valid());
     });
   }
 
-  async initializeWindow(target: window.Window, refresh: boolean, canApply: () => boolean): Promise<void> {
-    await this.initializeWindowFrom(async (): Promise<window.Window> => target, refresh, canApply);
+  async initializeWindow(target: window.Window, refresh: boolean, valid: () => boolean): Promise<void> {
+    await this.initializeWindowFrom(async (): Promise<window.Window> => target, refresh, valid);
   }
 
-  private async applyWindowState(target: window.Window, refresh: boolean, canApply: () => boolean): Promise<void> {
+  private async applyWindowState(target: window.Window, refresh: boolean, valid: () => boolean): Promise<void> {
     await this.ready;
 
     this.assertActive();
-    if (!canApply()) return;
+    if (!valid()) return;
 
     const id: number = inspectWindowId(target);
     let background: WindowBackgroundState | undefined = this.backgrounds.get(id);
@@ -154,33 +167,33 @@ class AbilitySystemUIState {
         background = new WindowBackgroundState(this.systemBackgroundColor(), true);
       }
     } else if (refresh && background.followsSystem) {
-      background.color = this.systemBackgroundColor();
+      background = new WindowBackgroundState(this.systemBackgroundColor(), true);
     }
 
-    if (!canApply()) return;
+    if (!valid()) return;
 
-    applyWindowColor(target, background.color.windowColor);
+    applyWindowColor(target, background.color.argb);
 
     this.windows.set(id, target);
     this.backgrounds.set(id, background);
   }
 
-  async setBackgroundColor(target: window.Window, color: ParsedBackgroundColor | null, canApply: () => boolean): Promise<void> {
+  async setBackgroundColor(target: window.Window, color: ParsedBackgroundColor | null, valid: () => boolean): Promise<void> {
     await this.serialize(async (): Promise<void> => {
       await this.ready;
 
       this.assertActive();
-      if (!canApply()) return;
+      if (!valid()) return;
 
       const id: number = inspectWindowId(target);
 
       if (color === null) {
         const fallback: ParsedBackgroundColor = this.systemBackgroundColor();
 
-        applyWindowColor(target, fallback.windowColor);
+        applyWindowColor(target, fallback.argb);
         await this.removePersistedBackground();
 
-        if (!canApply()) return;
+        if (!valid()) return;
 
         this.windows.set(id, target);
         this.backgrounds.set(id, new WindowBackgroundState(fallback, true));
@@ -188,40 +201,64 @@ class AbilitySystemUIState {
         return;
       }
 
-      applyWindowColor(target, color.windowColor);
+      applyWindowColor(target, color.argb);
       await this.persistBackground(color);
 
-      if (!canApply()) return;
+      if (!valid()) return;
 
       this.windows.set(id, target);
       this.backgrounds.set(id, new WindowBackgroundState(color, false));
     });
   }
 
-  async getBackgroundColor(target: window.Window, canRead: () => boolean): Promise<string | null> {
+  async getBackgroundColor(target: window.Window, valid: () => boolean): Promise<string | null> {
     await this.mutation.catch((): void => {});
 
     this.assertActive();
-    if (!canRead()) return null;
+    if (!valid()) return null;
 
     const background: WindowBackgroundState | undefined = this.backgrounds.get(inspectWindowId(target));
 
-    return background === undefined ? null : background.color.exposedColor;
+    return background === undefined ? null : background.color.rgb;
   }
 
   beginWindow(): void {
     this.forgetWindow();
-    this.windowAvailable = true;
+
+    this.available = true;
+    this.windowReady = new Promise<void>((resolve): void => {
+      this.resolveWindowReady = resolve;
+    });
+  }
+
+  markWindowReady(): void {
+    this.resolveWindowReady?.();
+    this.resolveWindowReady = null;
+  }
+
+  async waitForWindowReady(): Promise<void> {
+    this.assertActive();
+
+    const valid = this.captureWindowGuard();
+    await this.windowReady;
+
+    this.assertActive();
+    if (!valid()) {
+      throw new ExpoSystemUIError('ERR_SYSTEM_UI_WINDOW', 'The React Native window was removed before its content became ready.');
+    }
   }
 
   captureWindowGuard(): () => boolean {
-    const generation = this.windowGeneration;
-    return (): boolean => !this.destroyed && this.windowAvailable && generation === this.windowGeneration;
+    const generation = this.generation;
+    return (): boolean => !this.destroyed && this.available && generation === this.generation;
   }
 
   forgetWindow(): void {
-    this.windowGeneration += 1;
-    this.windowAvailable = false;
+    this.generation += 1;
+    this.available = false;
+
+    // Release calls waiting on the old stage so they can reject instead of hanging.
+    this.markWindowReady();
     this.windows.clear();
     this.backgrounds.clear();
   }
@@ -237,7 +274,6 @@ class AbilitySystemUIState {
     this.assertActive();
 
     const next: Promise<void> = this.mutation.catch((): void => {}).then(operation);
-
     this.mutation = next;
 
     await next;
@@ -265,7 +301,7 @@ class AbilitySystemUIState {
     if (store === null || this.destroyed) return;
 
     try {
-      await store.put(PREFERENCE_KEY, color.windowColor);
+      await store.put(PREFERENCE_KEY, color.argb);
       await store.flush();
     } catch (error) {
       console.warn(`Unable to persist the Expo System UI background: ${String(error)}`);
@@ -288,7 +324,6 @@ class AbilitySystemUIState {
 
   private systemBackgroundColor(): ParsedBackgroundColor {
     if (this.style === 'dark') return parseKnownWindowColor(DARK_WINDOW_BACKGROUND);
-
     if (this.style === 'light') return parseKnownWindowColor(LIGHT_WINDOW_BACKGROUND);
 
     return this.mode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK
@@ -329,10 +364,6 @@ export class ExpoSystemUILifecycleSubscriber extends ExpoAbilityLifecycleSubscri
     abilityStates.set(context, this.state);
   }
 
-  override onCreate(): void {
-    this.state.applyInterfaceStyle();
-  }
-
   override onWindowStageCreate(stage: window.WindowStage): void {
     this.stage = stage;
     this.ready = false;
@@ -344,7 +375,11 @@ export class ExpoSystemUILifecycleSubscriber extends ExpoAbilityLifecycleSubscri
   }
 
   override async onWindowStageReady(stage: window.WindowStage): Promise<void> {
+    if (this.destroyed || this.stage !== stage) return;
+
     this.ready = true;
+    this.state.markWindowReady();
+
     this.state.applyInterfaceStyle();
     await this.state.initializeWindowFrom(
       (): Promise<window.Window> => stage.getMainWindow(),
@@ -354,8 +389,6 @@ export class ExpoSystemUILifecycleSubscriber extends ExpoAbilityLifecycleSubscri
   }
 
   override onForeground(): void {
-    this.state.applyInterfaceStyle();
-
     const stage = this.stage;
     if (stage === undefined || !this.ready) return;
 
@@ -381,6 +414,7 @@ export class ExpoSystemUILifecycleSubscriber extends ExpoAbilityLifecycleSubscri
   override onDestroy(): void {
     this.destroyed = true;
     this.stage = undefined;
+
     this.state.destroy();
     abilityStates.delete(this.context);
   }
@@ -404,22 +438,23 @@ export class ExpoSystemUIModule extends ExpoModule {
           this.assertActive();
           if (color !== null) requireProcessedColor(color);
 
-          const canApply = this.state.captureWindowGuard();
+          const valid = this.state.captureWindowGuard();
           const target: window.Window = await this.currentWindow();
 
           const parsed: ParsedBackgroundColor | null = color === null ? null : parseProcessedColor(color);
 
-          await this.state.setBackgroundColor(target, parsed, (): boolean => this.isActive() && canApply());
+          await this.state.setBackgroundColor(target, parsed, (): boolean => this.isActive() && valid());
+
           this.assertActive();
         }),
       )
       .asyncFunction('getBackgroundColorAsync', async (): Promise<string | null> => {
         this.assertActive();
 
-        const canRead = this.state.captureWindowGuard();
+        const valid = this.state.captureWindowGuard();
         const target: window.Window = await this.currentWindow();
-        const color: string | null = await this.state.getBackgroundColor(target, (): boolean => this.isActive() && canRead());
 
+        const color: string | null = await this.state.getBackgroundColor(target, (): boolean => this.isActive() && valid());
         this.assertActive();
 
         return color;
@@ -430,6 +465,10 @@ export class ExpoSystemUIModule extends ExpoModule {
   }
 
   private async currentWindow(): Promise<window.Window> {
+    this.assertActive();
+
+    // RNOH can return the main window while its page is still loading.
+    await this.state.waitForWindowReady();
     this.assertActive();
 
     try {
@@ -494,7 +533,10 @@ function parseManifestColor(value: string): ParsedBackgroundColor | null {
 
 function resolvedSystemColorMode(context: common.UIAbilityContext): ConfigurationConstant.ColorMode {
   const mode: number = context.resourceManager.getConfigurationSync().colorMode;
-  return mode === 0 ? ConfigurationConstant.ColorMode.COLOR_MODE_DARK : ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT;
+
+  return mode === resourceManager.ColorMode.DARK
+    ? ConfigurationConstant.ColorMode.COLOR_MODE_DARK
+    : ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT;
 }
 
 function readConfiguration(context: common.UIAbilityContext): SystemUIConfiguration {
