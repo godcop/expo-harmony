@@ -38,8 +38,7 @@ const LOCKS: Map<number, window.Orientation> = new Map([
 const ORIENTATION_CONVERSION_API_LEVEL: number = 23;
 const CAPABILITY_NOT_SUPPORTED: number = 801;
 
-// These SDK results are numbers, not window.Orientation values. See
-// Window.convertOrientationAndRotation and RotationChangeInfo.orientation.
+// convertOrientationAndRotation returns these values, not window.Orientation.
 enum WindowDirection {
   PORTRAIT = 0,
   LANDSCAPE_INVERTED = 1,
@@ -47,7 +46,7 @@ enum WindowDirection {
   LANDSCAPE = 3,
 }
 
-// Display.rotation is a numeric quarter-turn value; the SDK has no rotation enum.
+// Display.rotation uses quarter turns, not degrees; the SDK provides no enum.
 enum DisplayRotation {
   ROTATION_0 = 0,
   ROTATION_90 = 1,
@@ -109,7 +108,7 @@ export function readOrientation(win: window.Window): Orientation {
 
   if (rect.width <= 0 || rect.height <= 0) return Orientation.UNKNOWN;
 
-  if (deviceInfo.sdkApiVersion >= ORIENTATION_CONVERSION_API_LEVEL) {
+  if (deviceInfo.sdkApiVersion >= ORIENTATION_CONVERSION_API_LEVEL && canIUse('SystemCapability.Window.SessionManager')) {
     try {
       const direction = win.convertOrientationAndRotation(
         window.RotationInfoType.DISPLAY_ORIENTATION,
@@ -117,14 +116,7 @@ export function readOrientation(win: window.Window): Orientation {
         screen.orientation,
       );
 
-      const orientation = fromWindowDirection(direction);
-      // Floating windows may not share the display's orientation.
-      const portrait = orientation === Orientation.PORTRAIT_UP || orientation === Orientation.PORTRAIT_DOWN;
-      if (orientation === Orientation.UNKNOWN || (rect.width !== rect.height && portrait !== rect.height > rect.width)) {
-        return Orientation.UNKNOWN;
-      }
-
-      return orientation;
+      return matchWindowShape(fromWindowDirection(direction), rect);
     } catch (error) {
       if ((error as BusinessError).code !== CAPABILITY_NOT_SUPPORTED) {
         throw new ExpoModuleError('ERR_SCREEN_ORIENTATION_CONVERSION', `Unable to convert the current screen orientation: ${String(error)}`);
@@ -132,8 +124,19 @@ export function readOrientation(win: window.Window): Orientation {
     }
   }
 
-  // Expo Android's fallback cannot disambiguate every foldable before API 23.
-  return fromRotationAndSize(screen.rotation, rect);
+  if (screen.width <= 0 || screen.height <= 0) return Orientation.UNKNOWN;
+
+  // Window resizing must not change the display's inferred natural orientation.
+  return matchWindowShape(fromRotationAndSize(screen.rotation, screen.width, screen.height), rect);
+}
+
+function matchWindowShape(orientation: Orientation, rect: window.Rect): Orientation {
+  const portrait = orientation === Orientation.PORTRAIT_UP || orientation === Orientation.PORTRAIT_DOWN;
+  if (orientation === Orientation.UNKNOWN || (rect.width !== rect.height && portrait !== (rect.height > rect.width))) {
+    return Orientation.UNKNOWN;
+  }
+
+  return orientation;
 }
 
 function fromWindowDirection(value: number): Orientation {
@@ -151,10 +154,10 @@ function fromWindowDirection(value: number): Orientation {
   }
 }
 
-function fromRotationAndSize(rotation: number, rect: window.Rect): Orientation {
+function fromRotationAndSize(rotation: number, width: number, height: number): Orientation {
   const portrait =
-    ((rotation === DisplayRotation.ROTATION_0 || rotation === DisplayRotation.ROTATION_180) && rect.height > rect.width) ||
-    ((rotation === DisplayRotation.ROTATION_90 || rotation === DisplayRotation.ROTATION_270) && rect.width > rect.height);
+    ((rotation === DisplayRotation.ROTATION_0 || rotation === DisplayRotation.ROTATION_180) && height > width) ||
+    ((rotation === DisplayRotation.ROTATION_90 || rotation === DisplayRotation.ROTATION_270) && width > height);
 
   switch (rotation) {
     case DisplayRotation.ROTATION_0:

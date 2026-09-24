@@ -7,10 +7,10 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-screen-orientation expo-screen-orientation@55.0.16
+npm install @expo-harmony/expo-screen-orientation expo-screen-orientation@55.0.20
 ```
 
-本包适配 Expo SDK 55 的 `expo-screen-orientation`，原生模块通过 Expo Harmony 自动链接，不需要配置插件，也不需要申请权限。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。
+本包适配 Expo SDK 55 的 `expo-screen-orientation`，原生模块通过 Expo Harmony 自动链接。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。
 
 业务代码从官方包导入：
 
@@ -30,13 +30,15 @@ await ScreenOrientation.unlockAsync();
 
 #### `ScreenOrientation.lockAsync(orientationLock)`
 
-返回 `Promise<void>`，把窗口锁定到指定方向。
+返回 `Promise<void>`，把所属 UIAbility 的主窗口锁定到指定方向。
 
 锁定用的策略映射到系统窗口方向：`DEFAULT` 对应系统默认策略，`ALL`、`PORTRAIT`、`LANDSCAPE` 分别对应全方向、竖屏和横屏的自动旋转，`PORTRAIT_UP`、`PORTRAIT_DOWN`、`LANDSCAPE_LEFT`、`LANDSCAPE_RIGHT` 对应固定方向。
 
+自动旋转策略不受控制中心旋转锁定开关的限制，与官方 Android 实现一致。传入 `OTHER` 不会更改当前策略，传入 `UNKNOWN` 会被拒绝。
+
 Promise 完成表示系统接受了策略，不代表旋转动画结束。多窗口、后台运行和没有传感器的设备可能暂不旋转，2-in-1 设备不保证支持方向设置。没有窗口的运行时调用会抛出 `ERR_SCREEN_ORIENTATION_WINDOW`，运行时已销毁后调用抛出 `ERR_SCREEN_ORIENTATION_DESTROYED`。
 
-模块记录每个窗口首次修改前的策略，runtime 释放时恢复。reload 会等待恢复完成，普通销毁时只能尽力恢复。
+模块记录每个主窗口首次修改前的策略，runtime 释放或 WindowStage 替换、销毁时恢复。reload 会等待恢复完成，普通销毁时只能尽力恢复。策略是窗口的共享属性，多个 runtime 或其他原生模块同时修改时需要宿主自行协调。
 
 #### `ScreenOrientation.lockPlatformAsync(options)`
 
@@ -50,7 +52,7 @@ Promise 完成表示系统接受了策略，不代表旋转动画结束。多窗
 
 返回 `Promise<Orientation>`，读取当前窗口方向。
 
-API 23 及以上调用系统接口，由显示器方向和窗口方向换算；更低版本或系统不支持换算时，按显示器旋转角度和窗口尺寸推断，折叠屏与多窗口场景下可能不准。窗口尺寸无效或方向无法确定时返回 `Orientation.UNKNOWN`。系统换算接口失败时抛出 `ERR_SCREEN_ORIENTATION_CONVERSION`。
+API 23 起优先调用系统的方向换算接口，由显示器方向换算出结果，设备不具备对应系统能力时改用推断。推断按显示器旋转角度和显示器自身的尺寸进行，不受分屏、悬浮窗的窗口尺寸影响，折叠屏仍是近似值。窗口尺寸无效，或方向与主窗口实际形状不一致时返回 `Orientation.UNKNOWN`。换算接口的其他错误抛出 `ERR_SCREEN_ORIENTATION_CONVERSION`。
 
 #### `ScreenOrientation.getOrientationLockAsync()`
 
@@ -58,7 +60,7 @@ API 23 及以上调用系统接口，由显示器方向和窗口方向换算；�
 
 #### `ScreenOrientation.getPlatformOrientationLockAsync()`
 
-返回 `Promise<PlatformOrientationInfo>`，HarmonyOS 上没有对应的平台参数，恒为空对象。
+返回 `Promise<PlatformOrientationInfo>`，HarmonyOS 上没有对应的平台参数，读取当前策略成功后返回空对象，窗口不可用时拒绝。
 
 #### `ScreenOrientation.supportsOrientationLockAsync(orientationLock)`
 
@@ -70,9 +72,9 @@ API 23 及以上调用系统接口，由显示器方向和窗口方向换算；�
 
 #### `ScreenOrientation.addOrientationChangeListener(listener)`
 
-返回 `Subscription`，横竖屏之间切换时触发，`OrientationChangeEvent` 里带当前策略和方向。
+返回 `Subscription`，窗口尺寸变化时触发，`OrientationChangeEvent` 里带查询到的当前策略和方向。
 
-监听走 React Native 的 `Dimensions` 事件，180° 旋转可能不触发回调。
+监听基于 React Native 的 `Dimensions` 事件，横竖屏切换和窗口缩放都会触发，180° 旋转因为尺寸不变可能不触发回调。
 
 #### `ScreenOrientation.removeOrientationChangeListeners()`
 

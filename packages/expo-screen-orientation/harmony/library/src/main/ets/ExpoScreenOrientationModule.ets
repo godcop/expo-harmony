@@ -12,15 +12,15 @@ export class ExpoScreenOrientationModule extends ExpoModule {
   private pending: Promise<void> = Promise.resolve();
   private cleanup: Promise<void> | null = null;
   private destroyed: boolean = false;
-  private available: boolean = true;
+  private stage: window.WindowStage | null = null;
   private generation: number = 0;
-  private readonly initials: Map<window.Window, window.Orientation> = new Map();
+  private readonly originals: Map<window.Window, window.Orientation> = new Map();
 
   definition(): ExpoModuleDefinition {
     return (
       new ExpoModuleDefinition()
         .name('ExpoScreenOrientation')
-        // The official JS receives events from RN Dimensions, not this emitter.
+        // Expo JS uses RN Dimensions; registration only keeps native-emitter compatibility.
         .events(['expoDidUpdateDimensions'])
         .asyncFunction(
           'lockAsync',
@@ -51,14 +51,14 @@ export class ExpoScreenOrientationModule extends ExpoModule {
             return supportsOrientationLock(value);
           }),
         )
-        .onWindowStageSetup((): void => {
-          this.available = true;
+        .onWindowStageSetup((stage: window.WindowStage): void => {
+          if (this.destroyed || this.stage === stage) return;
+
+          this.releaseWindow();
+          this.stage = stage;
         })
         .onWindowStageWillDestroy((): void => {
-          this.available = false;
-          this.generation += 1;
-
-          this.initials.clear();
+          this.releaseWindow();
         })
         .onPrepareForReload(async (): Promise<void> => this.destroy())
         .onAbilityDestroy((): void => this.destroyInBackground())
@@ -68,8 +68,8 @@ export class ExpoScreenOrientationModule extends ExpoModule {
 
   private setOrientation(orientation: window.Orientation): Promise<void> {
     return this.useWindow(async (win: window.Window): Promise<void> => {
-      if (!this.initials.has(win)) {
-        this.initials.set(win, win.getPreferredOrientation());
+      if (!this.originals.has(win)) {
+        this.originals.set(win, win.getPreferredOrientation());
       }
 
       await win.setPreferredOrientation(orientation);
@@ -82,10 +82,10 @@ export class ExpoScreenOrientationModule extends ExpoModule {
     return this.serialize(async (): Promise<T> => {
       this.assertWindowAvailable(generation);
 
-      const win = await this.context.getReactNativeWindow();
-      this.assertWindowAvailable(generation);
+      const win = this.stage!.getMainWindowSync();
 
       const result = await task(win);
+
       this.assertWindowAvailable(generation);
 
       return result;
@@ -111,9 +111,19 @@ export class ExpoScreenOrientationModule extends ExpoModule {
   private assertWindowAvailable(generation: number): void {
     this.assertActive();
 
-    if (this.context.isHeadless || !this.available || generation !== this.generation) {
+    if (this.context.isHeadless || this.stage === null || generation !== this.generation) {
       throw new ExpoModuleError('ERR_SCREEN_ORIENTATION_WINDOW', 'Screen orientation requires a current UIAbility window.');
     }
+  }
+
+  private releaseWindow(): void {
+    this.stage = null;
+    this.generation += 1;
+
+    // A replaced stage may stay alive: restore after pending writes, before replacement writes.
+    this.serialize(async (): Promise<void> => this.restoreOrientations()).catch((error: Object): void => {
+      console.warn(`Unable to restore the Expo ScreenOrientation window policy: ${String(error)}`);
+    });
   }
 
   private destroyInBackground(): void {
@@ -126,26 +136,25 @@ export class ExpoScreenOrientationModule extends ExpoModule {
     if (this.cleanup !== null) return this.cleanup;
 
     this.destroyed = true;
-
-    // Restore after in-flight setters; Core awaits this queue during reload.
-    this.cleanup = this.serialize(async (): Promise<void> => {
-      let failure: Object | undefined;
-
-      for (const entry of this.initials) {
-        try {
-          await entry[0].setPreferredOrientation(entry[1]);
-        } catch (error) {
-          failure = error;
-        }
-      }
-
-      this.initials.clear();
-
-      if (failure !== undefined) {
-        throw new ExpoModuleError('ERR_SCREEN_ORIENTATION_RESTORE', `Unable to restore the initial window orientation: ${String(failure)}`);
-      }
-    });
+    this.cleanup = this.serialize(async (): Promise<void> => this.restoreOrientations());
 
     return this.cleanup;
+  }
+
+  private async restoreOrientations(): Promise<void> {
+    let failure: Object | undefined;
+    for (const entry of this.originals) {
+      try {
+        await entry[0].setPreferredOrientation(entry[1]);
+      } catch (error) {
+        failure = error;
+      }
+    }
+
+    this.originals.clear();
+
+    if (failure !== undefined) {
+      throw new ExpoModuleError('ERR_SCREEN_ORIENTATION_RESTORE', `Unable to restore the initial window orientation: ${String(failure)}`);
+    }
   }
 }
