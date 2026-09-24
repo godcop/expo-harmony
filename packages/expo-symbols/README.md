@@ -10,7 +10,7 @@
 npm install @expo-harmony/expo-symbols expo-symbols@55.0.9
 ```
 
-本包适配 Expo SDK 55 的 `expo-symbols`，原生模块通过 Expo Harmony 自动链接，不需要配置插件或申请权限。最低支持 HarmonyOS 6.0.0（API 20），宿主的 `compatibleSdkVersion` 也要满足这一要求。
+本包适配 Expo SDK 55 的 `expo-symbols`，原生模块通过 Expo Harmony 自动链接。最低支持 HarmonyOS 6.0.0（API 20），宿主的 `compatibleSdkVersion` 也要满足这一要求。
 
 业务代码从官方包导入，分别指定各平台的图标名称：
 
@@ -68,7 +68,7 @@ const home: HarmonySymbolName = { harmony: 'house_fill' };
 
 类型：`number`，默认 `24`
 
-图标字号，单位 vp，不随系统字体大小设置变化。接受非负的有限数值，`0` 隐藏图形，负数或非有限数值抛出 `RangeError`。
+图标字号，单位 vp，不随系统字体大小设置变化。接受非负的有限数值，`0` 隐藏图形，负数或非有限数值抛出 `RangeError`。名称缺失或图标不可用时渲染 `fallback`，不校验字号和颜色。
 
 容器默认为 `size × size`，`style` 中的尺寸优先。容器大于图形时字形不会随之放大，在容器内居中显示。
 
@@ -98,7 +98,7 @@ const home: HarmonySymbolName = { harmony: 'house_fill' };
 
 类型：`ColorValue | ColorValue[]`
 
-接受单个颜色或颜色数组，仅在 `type` 为 `palette` 且没有设置 `tintColor` 时生效。与上游 iOS 一致，至少两个颜色才应用调色板，最多使用前三个。
+接受单个颜色或颜色数组，仅在 `type` 为 `palette` 且没有设置 `tintColor` 时生效。与上游 iOS 一致，至少两个颜色才应用调色板，最多使用前三个。未提供颜色或只有一个颜色时保持默认单色渲染，需要系统多色时改用 `type="multicolor"`。
 
 > **未实现的内容**
 >

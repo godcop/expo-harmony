@@ -1,6 +1,6 @@
 {
   "name": "@expo-harmony/expo-symbols",
-  "version": "55.0.9-harmony.2",
+  "version": "55.0.9-harmony.0",
   "description": "HarmonyOS port of expo-symbols",
   "keywords": [
     "react-native",
@@ -37,7 +37,7 @@
   },
   "peerDependencies": {
     "@expo-harmony/expo-modules-core": "workspace:*",
-    "expo-modules-core": "55.0.25",
+    "expo-modules-core": "55.0.26",
     "expo-symbols": "55.0.9",
     "react": "^19.2.0",
     "react-native": "^0.83.6 || ^0.84.1"
@@ -47,9 +47,9 @@
     "@expo-harmony/expo-modules-core": "workspace:*",
     "@react-native-oh/react-native-harmony": "0.84.1",
     "@types/react": "19.2.2",
-    "expo": "55.0.26",
+    "expo": "55.0.31",
     "expo-font": "55.0.8",
-    "expo-modules-core": "55.0.25",
+    "expo-modules-core": "55.0.26",
     "expo-symbols": "55.0.9",
     "react": "19.2.3",
     "react-native": "0.84.1",

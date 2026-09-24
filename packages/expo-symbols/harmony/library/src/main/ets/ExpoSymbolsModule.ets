@@ -45,9 +45,9 @@ function isSymbolAvailable(name: string): boolean {
   try {
     return resourceManager.getSysResourceManager().getSymbolByName(name) > 0;
   } catch (error) {
-    // ResourceManager: invalid name / no resource matching the name.
     const failure = error as BusinessError;
     const code = Number(failure.code);
+
     if (code === 9001003 || code === 9001004) return false;
 
     throw new ExpoModuleError('ERR_SYMBOL_RESOURCE', `ResourceManager (${failure.code}): ${failure.message}`);
@@ -77,13 +77,13 @@ class SymbolView extends ExpoView {
   }
 
   renderingStrategy(): SymbolRenderingStrategy {
-    // Upstream applies an explicit tint to the whole non-hierarchical image.
     if (this.tint !== null && this.type !== SymbolType.Hierarchical) return SymbolRenderingStrategy.SINGLE;
 
     switch (this.type) {
       case SymbolType.Hierarchical:
         return SymbolRenderingStrategy.MULTIPLE_OPACITY;
       case SymbolType.Palette:
+        return this.colors.length > 1 ? SymbolRenderingStrategy.MULTIPLE_COLOR : SymbolRenderingStrategy.SINGLE;
       case SymbolType.Multicolor:
         return SymbolRenderingStrategy.MULTIPLE_COLOR;
       default:
@@ -93,6 +93,7 @@ class SymbolView extends ExpoView {
 
   fontColors(): ResourceColor[] | undefined {
     if (this.tint !== null) return [argbColor(this.tint)];
+
     if (this.type === SymbolType.Palette && this.colors.length > 1) {
       return this.colors.slice(0, 3).map((color: number): ResourceColor => argbColor(color));
     }
