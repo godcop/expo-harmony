@@ -7,12 +7,12 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-screen-capture expo-screen-capture@55.0.14
+npm install @expo-harmony/expo-screen-capture expo-screen-capture@55.0.18
 ```
 
-本包适配 Expo SDK 55 的 `expo-screen-capture`，原生模块通过 Expo Harmony 自动链接，不需要配置插件。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。
+本包适配 Expo SDK 55 的 `expo-screen-capture`，原生模块通过 Expo Harmony 自动链接。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。
 
-HAR 声明 `ohos.permission.PRIVACY_WINDOW`，构建时合并到宿主，不会弹出授权对话框；截图监听不需要相册或存储权限。
+HAR 声明 `ohos.permission.PRIVACY_WINDOW`，构建时合并到宿主。该权限从 API 11 起为 `normal` 等级、`system_grant` 授权，安装后由系统自动授予，不弹出授权对话框。截图监听不需要相册、存储或 `CAPTURE_SCREEN` 权限。
 
 业务代码从官方包导入：
 
@@ -78,6 +78,8 @@ const subscription = ScreenCapture.addScreenshotListener(() => {
 返回 `Subscription`，监听用户截图。只在应用处于前台且存在订阅时触发。
 
 通知只表示系统检测到截图操作，不代表截图文件已经保存成功。
+
+事件对控制中心截屏、hdc 命令截屏和整屏截屏接口生效。回调不携带截图的图片或文件路径，也没有录屏开始、结束事件。
 
 #### `ScreenCapture.removeScreenshotListener(subscription)`
 

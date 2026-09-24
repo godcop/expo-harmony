@@ -43,6 +43,7 @@ export class ExpoScreenCaptureModule extends ExpoModule {
         this.generation += 1;
 
         this.stopObserving();
+
         // The system owns destruction of the stage's windows and their privacy flags.
         this.observer = null;
         this.windows.clear();
@@ -62,7 +63,6 @@ export class ExpoScreenCaptureModule extends ExpoModule {
 
   private async currentWindow(): Promise<window.Window> {
     this.assertActive();
-
     if (this.context.isHeadless || !this.available) {
       throw new ExpoModuleError('ERR_SCREEN_CAPTURE_WINDOW', 'Screen capture requires a UIAbility window.');
     }
@@ -84,6 +84,7 @@ export class ExpoScreenCaptureModule extends ExpoModule {
 
     // Retain the window before awaiting so teardown can release an in-flight successful operation.
     if (enabled) this.windows.set(id, target);
+
     await target.setWindowPrivacyMode(enabled);
 
     this.assertActive();
@@ -102,6 +103,7 @@ export class ExpoScreenCaptureModule extends ExpoModule {
 
     for (const id of this.windows.keys()) {
       if (id === except) continue;
+
       const target: window.Window = this.windows.get(id)!;
 
       try {
@@ -193,6 +195,7 @@ export class ExpoScreenCaptureModule extends ExpoModule {
 
   private serialize(task: () => Promise<void>): Promise<void> {
     const next: Promise<void> = this.pending.then(task);
+
     this.pending = next.then(
       (): void => {},
       (): void => {},
