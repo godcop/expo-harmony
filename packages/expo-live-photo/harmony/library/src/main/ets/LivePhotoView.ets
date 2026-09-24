@@ -24,8 +24,7 @@ export class LivePhotoAsset {
   }
 }
 
-// MovingPhotoView does not support dynamic attributes. Give each native node
-// immutable inputs and its own controller so replaced nodes cannot act on a new load.
+// MovingPhotoView requires a new node and controller when its attributes change.
 class RenderedPhoto {
   readonly id: number;
   readonly photo: photoAccessHelper.MovingPhoto;
@@ -103,6 +102,7 @@ export class LivePhotoView extends ExpoView {
 
     const reload = this.sourceDirty;
     const rerender = this.renderDirty;
+
     this.sourceDirty = false;
     this.renderDirty = false;
 
@@ -110,6 +110,7 @@ export class LivePhotoView extends ExpoView {
       void this.loadSource();
     } else if (rerender && this.items.length > 0) {
       const photo = this.items[0].photo;
+
       this.clearRenderedPhoto();
       this.renderPhoto(photo);
     }
@@ -117,7 +118,7 @@ export class LivePhotoView extends ExpoView {
 
   startPlayback(style: PlaybackStyle): void {
     const item = this.items[0];
-    if (this.destroyed || item === undefined || !item.prepared) return;
+    if (this.destroyed || item === undefined || !item.previewLoaded || !item.prepared) return;
 
     if (style === PlaybackStyle.Hint && !this.hintWarned) {
       console.warn('ExpoLivePhoto: HarmonyOS has no iOS hint playback style; playing the full moving photo.');
@@ -135,6 +136,7 @@ export class LivePhotoView extends ExpoView {
     if (!this.isCurrent(item)) return;
 
     item.previewLoaded = true;
+
     if (!this.previewSent) {
       this.previewSent = true;
       this.sendEvent('onPreviewPhotoLoad');
@@ -176,12 +178,14 @@ export class LivePhotoView extends ExpoView {
     this.destroyed = true;
     this.loadId += 1;
     this.source = null;
+
     this.clearRenderedPhoto();
   }
 
   private async loadSource(): Promise<void> {
     const id = ++this.loadId;
     this.clearRenderedPhoto();
+
     this.previewSent = false;
     this.completeSent = false;
 
@@ -189,11 +193,15 @@ export class LivePhotoView extends ExpoView {
     if (source === null) return;
 
     this.sendEvent('onLoadStart');
+
     try {
+      const image = localFileUri(source.photoUri, 'photoUri');
+      const video = localFileUri(source.pairedVideoUri, 'pairedVideoUri');
+
       const photo = await photoAccessHelper.MediaAssetManager.loadMovingPhoto(
         this.context.rnComponentContext.uiAbilityContext,
-        localFileUri(source.photoUri, 'photoUri'),
-        localFileUri(source.pairedVideoUri, 'pairedVideoUri'),
+        image,
+        video,
       );
 
       if (!this.destroyed && id === this.loadId) this.renderPhoto(photo);
@@ -208,6 +216,7 @@ export class LivePhotoView extends ExpoView {
 
   private clearRenderedPhoto(): void {
     const item = this.items[0];
+
     // Invalidate before stopping: synchronous and late native callbacks are stale.
     this.items = [];
     if (item === undefined) return;
@@ -244,26 +253,27 @@ export class LivePhotoView extends ExpoView {
 
 function localFileUri(value: string | null | undefined, field: string): string {
   if (!value) throw new Error(`Provided source is not a valid LivePhotoAsset: the \`${field}\` has to be provided.`);
+
   if (value.startsWith('/')) return fileUri.getUriFromPath(value);
 
-  let parsed: url.URL;
+  let uri: url.URL;
   try {
-    parsed = url.URL.parseURL(value);
+    uri = url.URL.parseURL(value);
   } catch (error) {
     throw new Error(`Provided source is not a valid LivePhotoAsset: \`${field}\` is not a valid URI: ${(error as Error).message}`);
   }
 
-  if (parsed.protocol !== 'file:') {
+  if (uri.protocol !== 'file:') {
     throw new Error(`Provided source is not a valid LivePhotoAsset: \`${field}\` must be an application sandbox file URI.`);
   }
-  if (parsed.search || parsed.hash) {
+  if (uri.search || uri.hash) {
     throw new Error(`Provided source is not a valid LivePhotoAsset: \`${field}\` must not contain a query or fragment.`);
   }
-  if (parsed.hostname && parsed.hostname !== 'localhost') return value;
 
-  // Expo emits authority-free file:/// URIs. Decode the URL path once, then
-  // let the system supply the application authority and encode its file URI.
-  return fileUri.getUriFromPath(decodeURIComponent(parsed.pathname));
+  if (uri.hostname && uri.hostname !== 'localhost') return value;
+
+  // Decode file:/// paths once before the system adds the app authority and re-encodes them.
+  return fileUri.getUriFromPath(decodeURIComponent(uri.pathname));
 }
 
 @Component

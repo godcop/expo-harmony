@@ -7,10 +7,10 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-live-photo expo-live-photo@55.0.15
+npm install @expo-harmony/expo-live-photo expo-live-photo@55.0.19
 ```
 
-鸿蒙适配会通过 Autolinking 自动接入，无需额外配置插件或申请权限。最低支持 HarmonyOS 6.0.0（API 20），宿主的 `compatibleSdkVersion` 也需满足此要求。业务代码依旧使用官方包：
+鸿蒙适配会通过 Autolinking 自动接入。最低支持 HarmonyOS 6.0.0（API 20），宿主的 `compatibleSdkVersion` 也需满足此要求。业务代码依旧使用官方包：
 
 ```tsx
 import { LivePhotoView } from 'expo-live-photo';
@@ -142,7 +142,7 @@ import { LivePhotoView } from 'expo-live-photo';
 
 #### `PlaybackStyle`
 
-`'hint' | 'full'`。`'hint'` 本意是播放一小段用于提示实况照片，`'full'` 播放完整视频。HarmonyOS 上没有短片段播放模式，两种取值都播放完整视频。
+`'hint' | 'full'`。`'hint'` 本意是播放一小段用于提示实况照片，`'full'` 播放完整视频。HarmonyOS 上没有短片段播放模式，两种取值都播放完整视频。首次用 `'hint'` 播放时会打印一条警告。
 
 ## Author
 
