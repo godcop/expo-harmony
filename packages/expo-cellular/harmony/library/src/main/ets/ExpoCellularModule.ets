@@ -61,11 +61,13 @@ export class ExpoCellularModule extends ExpoModule {
   private async getCellularGeneration(): Promise<CellularGeneration> {
     try {
       if (canIUse(TELEPHONY_CORE_CAPABILITY)) {
-        // Upstream first gates on the default SIM, then reads the data subscription.
+        // Upstream gates on the default SIM before querying the data subscription.
+        // HarmonyOS exposes the default data slot, not Android's active data subscription.
         if ((await this.getReadyDefaultSlot()) === null) return CellularGeneration.UNKNOWN;
 
         if (canIUse(CELLULAR_DATA_CAPABILITY)) {
           const slot = await data.getDefaultCellularDataSlotId();
+
           if (!isValidSlot(slot, sim.getMaxSimCount())) return CellularGeneration.UNKNOWN;
 
           const tech = await radio.getRadioTech(slot);
@@ -95,6 +97,7 @@ export class ExpoCellularModule extends ExpoModule {
       return CellularGeneration.UNKNOWN;
     } catch (error) {
       const code = (error as BusinessError).code;
+
       if (code === PERMISSION_DENIED || code === NO_SIM_CARD) return CellularGeneration.UNKNOWN;
 
       throw new ExpoModuleError('ERR_CELLULAR_GENERATION', 'Unable to query HarmonyOS cellular radio technology.', error as Object);
@@ -105,6 +108,7 @@ export class ExpoCellularModule extends ExpoModule {
     try {
       if (canIUse(TELEPHONY_CORE_CAPABILITY)) {
         const slot = await this.getReadyDefaultSlot();
+
         if (slot === null) return null;
 
         let value: string;
@@ -138,22 +142,24 @@ export class ExpoCellularModule extends ExpoModule {
   }
 
   private async getOperatorSlot(fallback: number): Promise<number> {
-    // AOSP getSimOperatorNumeric prefers data, SMS, voice, then the default subscription.
-    // This differs from getSimOperatorName / getSimCountryIso on a dual-SIM device.
+    // AOSP resolves PLMN through data/SMS/voice defaults, unlike SPN and country code.
     if (canIUse(TELEPHONY_CORE_CAPABILITY)) {
       const count = sim.getMaxSimCount();
 
       if (canIUse(CELLULAR_DATA_CAPABILITY)) {
         const slot = await data.getDefaultCellularDataSlotId();
+
         if (isValidSlot(slot, count)) return slot;
       }
 
       if (canIUse(SMS_CAPABILITY)) {
         const slot = await sms.getDefaultSmsSlotId();
+
         if (isValidSlot(slot, count)) return slot;
       }
 
       const slot = await sim.getDefaultVoiceSlotId();
+
       if (isValidSlot(slot, count)) return slot;
     }
 
@@ -167,7 +173,6 @@ export class ExpoCellularModule extends ExpoModule {
         voice = call.hasVoiceCapability();
       }
 
-      // Android's default subscription uses voice on voice-capable devices, data otherwise.
       let slot: number | null = null;
       if (voice) {
         slot = await sim.getDefaultVoiceSlotId();

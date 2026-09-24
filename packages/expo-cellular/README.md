@@ -7,10 +7,10 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-cellular expo-cellular@55.0.13
+npm install @expo-harmony/expo-cellular expo-cellular@55.0.17
 ```
 
-HAR 已声明 `ohos.permission.GET_NETWORK_INFO`，这是普通级别、安装时授予的权限，应用不需要在 `app.json` 中额外配置。
+最低支持 HarmonyOS 5.0.1（API 13），宿主应用的 `compatibleSdkVersion` 不能低于这个版本。HAR 已声明 `ohos.permission.GET_NETWORK_INFO`，这是普通级别、安装时授予的权限。
 
 ## API 对照表
 
@@ -26,7 +26,7 @@ HAR 已声明 `ohos.permission.GET_NETWORK_INFO`，这是普通级别、安装�
 
 返回 `Promise<CellularGeneration>`，当前蜂窝网络代际。
 
-双卡设备取默认订阅的 SIM 卡。SIM 卡未插入、未就绪或权限被拒时返回 `UNKNOWN`。代际按当前无线接入技术映射到枚举，无法识别的技术（包括 IWLAN）也返回 `UNKNOWN`。
+双卡设备取默认订阅的 SIM 卡。SIM 卡未插入、未就绪或权限被拒时返回 `UNKNOWN`。代际按默认数据卡的无线接入技术映射到枚举，无法识别的技术（包括 IWLAN）也返回 `UNKNOWN`。
 
 `CELLULAR_5G` 只对应系统上报的 NR，系统上报其他技术时按对应代际返回。
 
