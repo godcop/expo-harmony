@@ -1,3 +1,5 @@
+/// <reference path="../UpdatesNative.d.ts" />
+
 import type common from '@ohos.app.ability.common';
 import { crash } from 'libexpo_updates.so';
 import { UpdatesConfiguration } from '../UpdatesConfiguration';

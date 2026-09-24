@@ -1,5 +1,6 @@
 import { EmbeddedManifest, ExpoUpdatesManifest } from '@expo-harmony/expo-manifests';
 import { isRecord } from './UpdatesJson';
+import { isSafeAssetFilename } from './UpdatesAssetPaths';
 import { Decimal, parseDictionary, serializeDictionary } from '@expo-harmony/expo-structured-headers';
 import { matchesFilters as policyMatchesFilters } from './selectionpolicy/Filters';
 
@@ -155,8 +156,8 @@ function asset(value: unknown, headers: Json, launch: boolean): UpdateAsset {
   }
 
   const extension = value.fileExtension ?? '';
-  if (typeof extension !== 'string' || /[/\\\0\r\n]/.test(extension) || extension.includes('..')) {
-    throw new ExpoUpdatesError('ERR_UPDATES_MANIFEST', 'Invalid asset file extension.');
+  if (typeof extension !== 'string' || !isSafeAssetFilename(value.key, extension)) {
+    throw new ExpoUpdatesError('ERR_UPDATES_MANIFEST', 'An asset key and file extension must form a filename without path separators.');
   }
 
   return {
@@ -178,7 +179,7 @@ export function parseEmbeddedUpdate(value: unknown, scope: string, runtime: stri
 
   const assets = [raw.launchAsset, ...(manifest.getAssets() ?? [])].map((asset: unknown, index: number): UpdateAsset => {
     if (!isRecord(asset) || typeof asset.packagerHash !== 'string' || !asset.packagerHash
-      || typeof asset.type !== 'string' || /[/\\\0\r\n]/.test(asset.type) || asset.type.includes('..')
+      || typeof asset.type !== 'string' || !isSafeAssetFilename(asset.packagerHash, asset.type ? '.' + asset.type.replace(/^\./, '') : '')
       || typeof asset.embeddedAssetFilename !== 'string' || !asset.embeddedAssetFilename
       || asset.embeddedAssetFilename.startsWith('/') || /[\\\0]/.test(asset.embeddedAssetFilename)
       || asset.embeddedAssetFilename.split('/').some(part => part === '..')) {
@@ -187,9 +188,11 @@ export function parseEmbeddedUpdate(value: unknown, scope: string, runtime: stri
     if (typeof asset.hash !== 'string' || !/^[A-Za-z0-9_-]{43}=?$/.test(asset.hash)) {
       throw new ExpoUpdatesError('ERR_UPDATES_MANIFEST', 'An embedded asset requires a Base64URL SHA-256 digest.');
     }
+
     return { launch: index === 0, key: asset.packagerHash, url: '', hash: asset.hash, type: 'application/octet-stream',
       extension: asset.type ? '.' + asset.type.replace(/^\./, '') : '', headers: {}, embedded: asset.embeddedAssetFilename };
   });
+
   const unique = assets.filter((asset, index) => assets.findIndex(value => value.key === asset.key) === index);
 
   return { id, scope, runtime, time, manifest: { ...raw, isVerified: true }, assets: unique, url, headers: { ...headers },

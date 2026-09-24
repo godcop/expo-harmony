@@ -7,10 +7,10 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-updates expo-updates@55.0.24
+npm install @expo-harmony/expo-updates expo-updates@55.0.31
 ```
 
-本包适配 Expo SDK 55 的 `expo-updates`，原生模块通过 Expo Harmony 自动链接，不需要配置插件。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。
+本包适配 Expo SDK 55 的 `expo-updates@55.0.31`，原生模块通过 Expo Harmony 自动链接。最低支持 HarmonyOS 5.0.2（API 14），宿主的 `compatibleSdkVersion` 也要满足这一要求。
 
 在应用配置里设置更新服务器和运行时版本：
 
@@ -24,6 +24,10 @@ npm install @expo-harmony/expo-updates expo-updates@55.0.24
   }
 }
 ```
+
+检查和下载更新需要网络，宿主应用要声明 `ohos.permission.INTERNET` 权限；下载的更新和日志都存放在应用私有目录，不需要存储权限。把 `updates.enableBsdiffPatchSupport` 设为 `true` 后，下载更新时启动 bundle 可以用 BSDIFF 差分下载，只传输和当前版本的差异，其余资源仍完整下载；服务器不支持或差分校验失败时回退完整下载。
+
+内置更新的资源在首次启动时从安装包复制到应用私有目录并校验，`localAssets` 返回这些文件的地址，因此首次启动比之后的启动慢。复制中断后下次启动接着完成，已复制并校验过的资源不会重复复制。
 
 业务代码从官方包导入：
 
@@ -127,7 +131,7 @@ if (result.isAvailable) {
 
 #### `Updates.useUpdates()`
 
-返回 `UseUpdatesReturnType`，包含检查和下载的状态与进度，比如 `isChecking`、`isDownloading`、`downloadProgress`、`availableUpdate`、`downloadError`。更新流程每有变化就触发组件重新渲染。
+返回 `UseUpdatesReturnType`，包含检查和下载的状态与进度，比如 `isChecking`、`isDownloading`、`downloadProgress`、`availableUpdate`、`downloadError`。更新流程每有变化就触发组件重新渲染。`isUpdatePending` 表示本地有没有下载好、等待重载的更新。下载到新更新或回滚到内置更新时为 `true`，下载结束但没有新更新时为 `false`。
 
 ### Methods
 
@@ -145,7 +149,7 @@ if (result.isAvailable) {
 
 #### `Updates.readLogEntriesAsync(maxAge?)`
 
-返回 `Promise<UpdatesLogEntry[]>`。读取更新日志。`maxAge` 是日志保留的最长毫秒数，默认一小时。日志持久保存，重启后仍可读取。
+返回 `Promise<UpdatesLogEntry[]>`。读取更新日志。`maxAge` 限定读取的范围，默认最近一小时，最大 24 小时。日志持久保存，重启后仍可读取。
 
 #### `Updates.reloadAsync(options?)`
 

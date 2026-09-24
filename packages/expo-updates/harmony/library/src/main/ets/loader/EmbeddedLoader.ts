@@ -11,8 +11,8 @@ export class EmbeddedLoader {
 
   get update(): UpdateRecord | undefined { return this.loaded; }
 
-  async load(configuration: UpdatesConfiguration): Promise<UpdateRecord | undefined> {
-    if (!configuration.embedded || this.loaded) return this.loaded;
+  async load(config: UpdatesConfiguration): Promise<UpdateRecord | undefined> {
+    if (!config.embedded || this.loaded) return this.loaded;
 
     const manifest = JSON.parse(decode(await this.context.resourceManager.getRawFileContent('expo-updates/manifest.json')));
     const update = parseEmbeddedUpdate(manifest, this.original.scope, this.original.runtime, this.original.url, this.original.headers);
@@ -22,12 +22,12 @@ export class EmbeddedLoader {
       update.successful = stored.successful;
       update.failed = stored.failed;
     }
-    await this.storage.insert(update);
+
     for (let index = 0; index < update.assets.length; index++) {
       update.assets[index] = await this.downloader.asset(update.assets[index], {}, () => {});
-      await this.storage.associate(update.id, update.assets[index], index);
     }
-    await this.storage.setStatus(update.id, update.status);
+
+    await this.storage.finish(update);
     this.loaded = update;
 
     return update;

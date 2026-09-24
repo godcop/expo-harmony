@@ -33,7 +33,7 @@ export function reduceContext(context: Json, event: UpdatesStateEvent): Json {
       break;
     case 'downloadProgress': changes = { downloadProgress: event.progress }; break;
     case 'downloadComplete':
-      changes = { isDownloading: false, downloadError: null, isUpdatePending: true, downloadProgress: 1, downloadStartTime: null, downloadFinishTime: null };
+      changes = { isDownloading: false, downloadError: null, isUpdatePending: false, downloadProgress: 1, downloadStartTime: null, downloadFinishTime: null };
       break;
     case 'downloadCompleteWithRollback':
       changes = { isDownloading: false, downloadError: null, isUpdatePending: true, downloadStartTime: null, downloadFinishTime: null };
@@ -47,5 +47,6 @@ export function reduceContext(context: Json, event: UpdatesStateEvent): Json {
       break;
     case 'restart': changes = { isRestarting: true }; break;
   }
+
   return { ...context, ...changes, sequenceNumber: context.sequenceNumber + 1 };
 }

@@ -1,3 +1,5 @@
+/// <reference path="./UpdatesNative.d.ts" />
+
 import http from '@ohos.net.http';
 import fs from '@ohos.file.fs';
 import util from '@ohos.util';
@@ -5,6 +7,7 @@ import type common from '@ohos.app.ability.common';
 import { applyPatch } from 'libexpo_updates.so';
 import { ExpoUpdatesError, Headers, UpdateAsset, UpdateRecord, normalizeHeaders } from './UpdatesProtocol';
 import { UpdatesStorage, decode, digest, encode, exists, hashFile, write } from './UpdatesStorage';
+import { isAssetPath, isSafeAssetFilename } from './UpdatesAssetPaths';
 
 interface DownloadOptions {
   timeout?: number;
@@ -19,11 +22,13 @@ export class UpdatesDownloader {
 
   async manifest(url: string, headers: Headers, timeout: number): Promise<{ status: number; headers: Headers; body: string }> {
     const request = http.createHttp();
+
     try {
       const result = await request.request(url, {
         method: http.RequestMethod.GET, header: headers, expectDataType: http.HttpDataType.ARRAY_BUFFER,
         usingCache: false, connectTimeout: timeout, readTimeout: timeout,
       });
+
       return { status: result.responseCode, headers: normalizeHeaders(result.header as Record<string, ESObject>),
         body: decode(new Uint8Array(result.result as ArrayBuffer)) };
     } finally {
@@ -65,8 +70,12 @@ export class UpdatesDownloader {
   }
 
   async asset(asset: UpdateAsset, headers: Headers, progress: (received: number, total: number) => void, options: DownloadOptions = {}): Promise<UpdateAsset> {
+    if (!isSafeAssetFilename(asset.key, asset.extension)) {
+      throw new ExpoUpdatesError('ERR_UPDATES_ASSET', 'Refusing to download an asset with an unsafe filename.');
+    }
+
     const cached = await this.storage.asset(asset);
-    if (cached?.path && exists(cached.path)) {
+    if (cached?.path && isAssetPath(this.storage.directory, cached.path) && exists(cached.path)) {
       const actual = hashFile(cached.path);
       if (actual === cached.digest && (!asset.hash || actual === asset.hash.replace(/=+$/, ''))) {
         return { ...asset, id: cached.id, path: cached.path, digest: actual };
@@ -75,36 +84,31 @@ export class UpdatesDownloader {
 
     const name = asset.key === null ? util.generateRandomUUID() : digest(encode(asset.key));
     const path = this.storage.directory + '/' + name + asset.extension;
-    const temporary = this.storage.directory + '/' + util.generateRandomUUID() + '.tmp';
-    const patched = this.storage.directory + '/' + util.generateRandomUUID() + '.tmp';
+    const temporary = this.storage.temporary + '/' + util.generateRandomUUID();
+    const patched = this.storage.temporary + '/' + util.generateRandomUUID();
+    const extracted = this.storage.temporary + '/' + util.generateRandomUUID();
 
     try {
       if (asset.embedded) {
-        if (asset.embedded.startsWith('/') || asset.embedded.split('/').some(part => part === '..')) {
-          throw new ExpoUpdatesError('ERR_UPDATES_ASSET', 'Invalid embedded asset path.');
-        }
-
-        const bytes = await this.context.resourceManager.getRawFileContent(asset.embedded);
-        const file = fs.openSync(temporary, fs.OpenMode.CREATE | fs.OpenMode.WRITE_ONLY | fs.OpenMode.TRUNC);
-
-        try { write(file, bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)); fs.fsyncSync(file.fd); }
-        finally { fs.closeSync(file); }
-        progress(bytes.byteLength, bytes.byteLength);
+        const size = await this.copyEmbeddedAsset(asset.embedded, temporary);
+        progress(size, size);
       } else {
         const extra = { ...asset.headers, ...headers, accept: '*/*', ...options.headers };
         const patch = asset.launch && options.patch === true && options.base !== undefined && options.requested !== undefined && options.base.id !== options.requested;
         if (patch) extra['a-im'] = 'bsdiff';
         else delete extra['a-im'];
+
         const response = await this.stream(asset.url, extra, temporary, options.timeout ?? 10000, progress);
         if (response.status === 226 || response.headers.im?.split(',').some(value => value.trim().toLowerCase() === 'bsdiff')) {
           try {
             const base = options.base?.assets.find(asset => asset.launch);
-            if (!patch || !base?.path || !options.requested || options.requested === options.base?.id
-              || response.headers['expo-base-update-id']?.toLowerCase() !== options.base?.id
-              || !exists(base.path) || hashFile(base.path) !== base.digest) {
+            if (!patch || !base || !options.requested || options.requested === options.base?.id
+              || response.headers['expo-base-update-id']?.toLowerCase() !== options.base?.id) {
               throw new ExpoUpdatesError('ERR_UPDATES_PATCH', 'The patch response has no matching verified base update.');
             }
-            if (await applyPatch(base.path, patched, temporary) !== 0) throw new ExpoUpdatesError('ERR_UPDATES_PATCH', 'Unable to apply BSDIFF update.');
+
+            const source = await this.resolvePatchBase(base, extracted);
+            if (await applyPatch(source, patched, temporary) !== 0) throw new ExpoUpdatesError('ERR_UPDATES_PATCH', 'Unable to apply BSDIFF update.');
             if (asset.hash && hashFile(patched) !== asset.hash.replace(/=+$/, '')) throw new ExpoUpdatesError('ERR_UPDATES_PATCH', 'Patched bundle failed SHA-256 verification.');
 
             fs.renameSync(patched, temporary);
@@ -112,6 +116,7 @@ export class UpdatesDownloader {
           } catch (error) {
             this.storage.logger.log(`Patch failed; downloading the complete asset: ${String(error)}`, 'AssetsFailedToLoad', 'warn', options.requested, asset.key ?? undefined);
             delete extra['a-im'];
+
             const fallback = await this.stream(asset.url, extra, temporary, options.timeout ?? 10000, progress);
             if (fallback.status === 226 || fallback.headers.im?.split(',').some(value => value.trim().toLowerCase() === 'bsdiff')) {
               throw new ExpoUpdatesError('ERR_UPDATES_PATCH', 'The full asset retry returned another patch.');
@@ -129,7 +134,43 @@ export class UpdatesDownloader {
 
       return result;
     } finally {
-      for (const path of [temporary, patched]) if (exists(path)) fs.unlinkSync(path);
+      for (const path of [temporary, patched, extracted]) {
+        try { if (exists(path)) fs.unlinkSync(path); }
+        catch (error) { this.storage.logger.warn(`Unable to remove temporary update asset: ${String(error)}`, 'AssetsFailedToLoad'); }
+      }
     }
+  }
+
+  private async copyEmbeddedAsset(name: string, destination: string): Promise<number> {
+    if (name.startsWith('/') || /[\\\0]/.test(name) || name.split('/').some(part => part === '..')) {
+      throw new ExpoUpdatesError('ERR_UPDATES_ASSET', 'Invalid embedded asset path.');
+    }
+
+    const bytes = await this.context.resourceManager.getRawFileContent(name);
+
+    const file = fs.openSync(destination, fs.OpenMode.CREATE | fs.OpenMode.WRITE_ONLY | fs.OpenMode.TRUNC);
+    try {
+      write(file, bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
+      fs.fsyncSync(file.fd);
+    } finally {
+      fs.closeSync(file);
+    }
+
+    return bytes.byteLength;
+  }
+
+  private async resolvePatchBase(base: UpdateAsset, temporary: string): Promise<string> {
+    const expected = base.hash?.replace(/=+$/, '') ?? base.digest;
+    if (base.path && isAssetPath(this.storage.directory, base.path) && exists(base.path)) {
+      const actual = hashFile(base.path);
+      if (actual === base.digest && actual === expected) return base.path;
+    }
+
+    if (base.embedded && expected) {
+      await this.copyEmbeddedAsset(base.embedded, temporary);
+      if (hashFile(temporary) === expected) return temporary;
+    }
+
+    throw new ExpoUpdatesError('ERR_UPDATES_PATCH', 'The patch base is missing or failed SHA-256 verification.');
   }
 }

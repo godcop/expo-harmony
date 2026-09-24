@@ -124,6 +124,11 @@ export class UpdatesDao {
   failed(): UpdateRecord[] { return this.load('WHERE failed>0 ORDER BY time DESC LIMIT 5'); }
 
   launchable(scope: string): UpdateRecord[] {
+    // Upstream permits development updates without a database launch asset.
+    this.db.executeSync(`UPDATE update_records SET status='pending' WHERE scope=?
+      AND status IN ('ready','embedded') AND NOT EXISTS
+      (SELECT 1 FROM asset_records WHERE asset_id=update_records.launch_asset_id)`, [scope]);
+
     return this.load("WHERE scope=? AND (successful>0 OR failed<1) AND status IN ('ready','embedded','development')", [scope]);
   }
 

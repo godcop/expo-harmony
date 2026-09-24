@@ -6,11 +6,12 @@ import crypto from '@ohos.security.cryptoFramework';
 import util from '@ohos.util';
 import { ExpoUpdatesError, Json, UpdateAsset, UpdateRecord } from './UpdatesProtocol';
 import { assertIntegrity, migrate, DATABASE_VERSION } from './db/DatabaseSchema';
-import { AssetsDao, UpdatesDao, JSONDataDao, DatabaseConnection } from './db/Daos';
+import { AssetsDao, UpdatesDao, JSONDataDao } from './db/Daos';
 import { DatabaseHolder } from './db/DatabaseHolder';
 import { DatabaseIntegrityCheck } from './db/DatabaseIntegrityCheck';
 import { Reaper } from './db/Reaper';
 import { UpdatesLogger } from './logging/UpdatesLogger';
+import { isAssetPath } from './UpdatesAssetPaths';
 
 export function encode(value: string): Uint8Array { return new util.TextEncoder().encode(value); }
 export function decode(value: Uint8Array): string { return new util.TextDecoder('utf-8', { fatal: true }).decodeToString(value); }
@@ -55,12 +56,14 @@ interface Database {
 
 export class UpdatesStorage {
   readonly directory: string;
+  readonly temporary: string;
   readonly logger: UpdatesLogger;
   private database?: Database;
   private opening?: Promise<void>;
 
   constructor(private readonly context: common.ApplicationContext) {
     this.directory = context.filesDir + '/expo-updates';
+    this.temporary = this.directory + '/temporary';
     this.logger = new UpdatesLogger(context);
   }
 
@@ -73,8 +76,10 @@ export class UpdatesStorage {
     try { await this.opening; } finally { this.opening = undefined; }
   }
 
-  private async openInternal(retryAfterArchive: boolean = true): Promise<void> {
+  private async openInternal(retry: boolean = true): Promise<void> {
     if (!exists(this.directory)) fs.mkdirSync(this.directory, true);
+    if (!exists(this.temporary)) fs.mkdirSync(this.temporary, true);
+
     let db: relationalStore.RdbStore | undefined;
 
     try {
@@ -92,23 +97,24 @@ export class UpdatesStorage {
       if (db !== undefined) {
         try { await db.close(); } catch (failure) { console.error(`Unable to close Updates database: ${String(failure)}`); }
       }
-      const databasePath = this.context.databaseDir + '/rdb/expo-updates.db';
-      if (retryAfterArchive && isCorrupt(error) && exists(databasePath)) {
+
+      const path = this.context.databaseDir + '/rdb/expo-updates.db';
+      if (retry && isCorrupt(error) && exists(path)) {
         try {
-          const archive = databasePath + '.corrupt-' + Date.now();
-          fs.renameSync(databasePath, archive);
-          for (const suffix of ['-wal', '-shm']) if (exists(databasePath + suffix)) fs.renameSync(databasePath + suffix, archive + suffix);
+          const archive = path + '.corrupt-' + Date.now();
+          fs.renameSync(path, archive);
+          for (const suffix of ['-wal', '-shm']) if (exists(path + suffix)) fs.renameSync(path + suffix, archive + suffix);
           console.warn(`[ExpoUpdates] Archived unusable database at ${archive}`);
 
           return this.openInternal(false);
-        } catch (archiveError) { console.error(`[ExpoUpdates] Unable to archive unusable database: ${String(archiveError)}`); }
+        } catch (failure) { console.error(`[ExpoUpdates] Unable to archive unusable database: ${String(failure)}`); }
       }
+
       throw new ExpoUpdatesError('ERR_UPDATES_DATABASE', `Unable to open Updates database: ${String(error)}`, error instanceof Error ? error : undefined);
     }
 
-    for (const file of fs.listFileSync(this.directory)) {
-      if (!file.endsWith('.tmp')) continue;
-      try { fs.unlinkSync(this.directory + '/' + file); }
+    for (const file of fs.listFileSync(this.temporary)) {
+      try { fs.unlinkSync(this.temporary + '/' + file); }
       catch (error) { this.logger.log(`Unable to remove temporary file: ${String(error)}`, 'Unknown', 'warn'); }
     }
   }
@@ -134,31 +140,51 @@ export class UpdatesStorage {
   updates(scope?: string): Promise<UpdateRecord[]> { return this.read((_a, updates) => updates.all(scope)); }
   update(id: string): Promise<UpdateRecord | undefined> { return this.read((_a, updates) => updates.get(id)); }
   failed(): Promise<UpdateRecord[]> { return this.read((_a, updates) => updates.failed()); }
-  launchable(scope: string): Promise<UpdateRecord[]> { return this.read((_a, updates) => updates.launchable(scope)); }
+  launchable(scope: string): Promise<UpdateRecord[]> { return this.write((_a, updates) => updates.launchable(scope)); }
 
   async insert(update: UpdateRecord): Promise<void> {
     if (update.assets.filter(asset => asset.launch).length !== 1) throw new ExpoUpdatesError('ERR_UPDATES_DATABASE', 'An update must have exactly one launch asset.');
+
     const ids = await this.write((_a, updates) => {
       const stored = updates.get(update.id);
       if (stored) {
         if (stored.scope !== update.scope) updates.setScope(update.id, update.scope);
+        if (stored.status === 'ready' && !stored.assets.some(asset => asset.launch)) updates.setStatus(update.id, 'pending');
+
         return undefined;
       }
+
       updates.insert(update);
 
       return update.assets.map((asset, ordinal) => updates.associate(update.id, asset, ordinal));
     });
+
     ids?.forEach((id, index) => { update.assets[index].id = id; });
   }
 
-  setStatus(id: string, status: UpdateRecord['status']): Promise<void> { return this.write((_a, updates) => updates.setStatus(id, status)); }
+  async finish(update: UpdateRecord): Promise<void> {
+    if (update.assets.filter(asset => asset.launch).length !== 1 || update.assets.some(asset => !asset.path || !asset.digest)) {
+      throw new ExpoUpdatesError('ERR_UPDATES_DATABASE', 'Cannot finish an update without its downloaded assets and launch asset.');
+    }
+
+    const ids = await this.write((_a, updates) => {
+      const stored = updates.get(update.id);
+      if (!stored) updates.insert(update);
+      else if (stored.scope !== update.scope) updates.setScope(update.id, update.scope);
+
+      const ids = update.assets.map((asset, ordinal) => updates.associate(update.id, asset, ordinal));
+      updates.setStatus(update.id, update.status);
+
+      return ids;
+    });
+
+    ids.forEach((id, index) => { update.assets[index].id = id; });
+  }
+
   markFinished(id: string): Promise<void> { return this.write((_a, updates) => updates.markFinished(id)); }
   markAccessed(id: string, time: number = Date.now()): Promise<void> { return this.write((_a, updates) => updates.markAccessed(id, time)); }
   incrementSuccessful(id: string): Promise<void> { return this.write((_a, updates) => updates.incrementSuccessful(id)); }
   incrementFailed(id: string): Promise<void> { return this.write((_a, updates) => updates.incrementFailed(id)); }
-  async associate(updateId: string, asset: UpdateAsset, ordinal: number): Promise<void> {
-    asset.id = await this.write((_a, updates) => updates.associate(updateId, asset, ordinal));
-  }
 
   async setCommitTime(update: UpdateRecord, time: number): Promise<void> {
     await this.write((_a, updates) => updates.setCommitTime(update.id, time));
@@ -204,7 +230,11 @@ export class UpdatesStorage {
   }
 
   delete(records: UpdateRecord[]): Promise<void> {
-    return new Reaper(this.db.holder, path => { if (exists(path)) fs.unlinkSync(path); },
+    return new Reaper(this.db.holder, path => {
+      if (!isAssetPath(this.directory, path)) throw new ExpoUpdatesError('ERR_UPDATES_ASSET', `Refusing to delete asset at unsafe path ${path}.`);
+
+      if (exists(path)) fs.unlinkSync(path);
+    },
       (message, asset) => this.logger.log(message, 'Unknown', 'warn', undefined, asset)).run(records);
   }
 
