@@ -67,6 +67,7 @@ import { StoreReviewDemo } from './modules/store-review';
 import { SystemUIDemo } from './modules/system-ui';
 import { SymbolsDemo } from './modules/symbols';
 import { TemplateDemo } from './modules/template';
+import { TrackingTransparencyDemo } from './modules/tracking-transparency';
 
 import { UpdatesDemo } from './modules/updates';
 import { ExpoDemo } from './modules/expo';
@@ -156,6 +157,7 @@ const MODULE_DEMOS = {
   'system-ui': SystemUIDemo,
   'symbols': SymbolsDemo,
   'template': TemplateDemo,
+  'tracking-transparency': TrackingTransparencyDemo,
 } satisfies Record<ModuleId, ComponentType>;
 
 export function ModuleDemo({ id }: { id: ModuleId }) {

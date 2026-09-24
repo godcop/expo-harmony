@@ -31,6 +31,7 @@ export const MODULES = [
   { id: 'app-integrity', title: '应用完整性', packageName: '@expo-harmony/expo-app-integrity', category: '应用', summary: '硬件证明能力、密钥生成、证书链读取、参数边界与平台限制。' },
   { id: 'local-authentication', title: '本地身份认证', packageName: '@expo-harmony/expo-local-authentication', category: '应用', summary: '生物识别能力、凭据录入、系统认证、密码回退与取消。' },
   { id: 'age-range', title: '年龄范围', packageName: '@expo-harmony/expo-age-range', category: '应用', summary: '系统年龄段、未知年龄、阈值参数与重复请求。' },
+  { id: 'tracking-transparency', title: '跟踪透明度', packageName: '@expo-harmony/expo-tracking-transparency', category: '应用', summary: '跟踪权限、授权 Hook、广告标识读取、并发请求与同步接口限制。' },
   { id: 'store-review', title: '商店评价', packageName: '@expo-harmony/expo-store-review', category: '应用', summary: '评价能力、商店地址、应用内评价请求与错误恢复。' },
   { id: 'app-metrics', title: '应用指标', packageName: '@expo-harmony/expo-app-metrics', category: '应用', summary: '启动耗时、会话、诊断信息与持久化指标。' },
   { id: 'application', title: '应用信息', packageName: '@expo-harmony/expo-application', category: '应用', summary: '应用包标识、版本号、显示名称与安装时间。' },
