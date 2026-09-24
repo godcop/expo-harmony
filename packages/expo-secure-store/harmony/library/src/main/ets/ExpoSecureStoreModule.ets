@@ -106,18 +106,20 @@ export class ExpoSecureStoreModule extends ExpoModule {
         this.destroy();
         await Promise.all(Array.from(this.pending));
       })
+      .onAbilityDestroy((): void => this.destroy())
       .onDestroy((): void => this.destroy());
   }
 
   private async getValue(alias: Uint8Array, options: SecureStoreOptions): Promise<string | null> {
     const item = await query(alias, asset.ReturnType.ATTRIBUTES);
+
     this.assertActive();
     if (item === undefined) return null;
 
     if (!requiresAuthentication(item)) {
-      const plain = await query(alias, asset.ReturnType.ALL);
+      const stored = await query(alias, asset.ReturnType.ALL);
 
-      return plain === undefined ? null : decodeSecret(plain);
+      return stored === undefined ? null : decodeSecret(stored);
     }
 
     if (!credentialsMatch(item)) {
@@ -127,8 +129,10 @@ export class ExpoSecureStoreModule extends ExpoModule {
     }
 
     const result = await this.queryAuthenticated(alias, options.authenticationPrompt);
+
     this.assertActive();
     if (result === undefined) return null;
+
     if (!credentialsMatch(result)) {
       await remove(alias);
 
@@ -155,15 +159,16 @@ export class ExpoSecureStoreModule extends ExpoModule {
       );
     }
 
-    const plain = querySync(alias, asset.ReturnType.ALL);
+    const stored = querySync(alias, asset.ReturnType.ALL);
 
-    return plain === undefined ? null : decodeSecret(plain);
+    return stored === undefined ? null : decodeSecret(stored);
   }
 
   private async setValue(alias: Uint8Array, value: string, options: SecureStoreOptions): Promise<void> {
     const secret = encodeSecret(value);
 
     const item = await query(alias, asset.ReturnType.ATTRIBUTES);
+
     this.assertActive();
     if (options.requireAuthentication) assertBiometricsAvailable();
 
@@ -176,7 +181,9 @@ export class ExpoSecureStoreModule extends ExpoModule {
 
       if (credentialsMatch(item)) {
         const result = await this.queryAuthenticated(alias, options.authenticationPrompt);
+
         this.assertActive();
+
         if (result !== undefined && credentialsMatch(result)) {
           await asset.update(aliasQuery(alias), valueAttributes(secret));
 
@@ -186,6 +193,7 @@ export class ExpoSecureStoreModule extends ExpoModule {
     }
 
     this.assertActive();
+
     // OVERWRITE encrypts before replacing immutable access controls, avoiding a remove/add gap.
     await asset.add(newAttributes(alias, secret, options));
   }
@@ -194,6 +202,7 @@ export class ExpoSecureStoreModule extends ExpoModule {
     const secret = encodeSecret(value);
 
     const item = querySync(alias, asset.ReturnType.ATTRIBUTES);
+
     if (options.requireAuthentication) assertBiometricsAvailable();
 
     if (item !== undefined && requiresAuthentication(item) === options.requireAuthentication) {
@@ -219,12 +228,14 @@ export class ExpoSecureStoreModule extends ExpoModule {
       challenge = await asset.preQuery(aliasQuery(alias));
     } catch (error) {
       if (isNotFound(error as Object)) return undefined;
+
       throw new ExpoSecureStoreError(error as Object);
     }
 
     let failure: Object | undefined;
     try {
       this.assertActive();
+
       const token = await this.authentication.authenticate(challenge, prompt);
 
       try {
@@ -241,6 +252,7 @@ export class ExpoSecureStoreModule extends ExpoModule {
     } catch (error) {
       failure = error as Object;
       if (isNotFound(failure)) return undefined;
+
       throw new ExpoSecureStoreError(failure);
     } finally {
       const handle: asset.AssetMap = new Map();
@@ -250,6 +262,7 @@ export class ExpoSecureStoreModule extends ExpoModule {
         await asset.postQuery(handle);
       } catch (error) {
         if (failure === undefined || isNotFound(failure)) throw new ExpoSecureStoreError(error as Object);
+
         console.warn(`Unable to finish SecureStore authentication query: ${(error as BusinessError).code}`);
       }
     }
@@ -265,6 +278,7 @@ export class ExpoSecureStoreModule extends ExpoModule {
 
       try {
         const result = await operation();
+
         this.assertActive();
 
         return result;
@@ -364,6 +378,7 @@ async function query(alias: Uint8Array, type: asset.ReturnType): Promise<asset.A
     return singleResult(await asset.query(readQuery(alias, type)));
   } catch (error) {
     if (isNotFound(error as Object)) return undefined;
+
     throw new ExpoSecureStoreError(error as Object);
   }
 }
@@ -373,6 +388,7 @@ function querySync(alias: Uint8Array, type: asset.ReturnType): asset.AssetMap | 
     return singleResult(asset.querySync(readQuery(alias, type)));
   } catch (error) {
     if (isNotFound(error as Object)) return undefined;
+
     throw new ExpoSecureStoreError(error as Object);
   }
 }

@@ -8,7 +8,7 @@ import { encode, sha256 } from './SecureStoreOptions';
 
 const BIOMETRIC_TYPES: userAuth.UserAuthType[] = [userAuth.UserAuthType.FACE, userAuth.UserAuthType.FINGERPRINT];
 const TRUST_LEVEL: userAuth.AuthTrustLevel = userAuth.AuthTrustLevel.ATL3;
-const MAX_PROMPT_LENGTH: number = 500; // User Authentication Kit WidgetParam.title limit.
+const MAX_PROMPT_LENGTH: number = 500;
 
 export function availableBiometrics(): userAuth.UserAuthType[] {
   const available: userAuth.UserAuthType[] = [];
@@ -19,6 +19,7 @@ export function availableBiometrics(): userAuth.UserAuthType[] {
       available.push(type);
     } catch (error) {
       const code = (error as BusinessError).code;
+
       if (
         code !== userAuth.UserAuthResultCode.TYPE_NOT_SUPPORT &&
         code !== userAuth.UserAuthResultCode.TRUST_LEVEL_NOT_SUPPORT &&
@@ -49,6 +50,7 @@ export function credentialSnapshot(): Uint8Array {
       states.push(type, state.credentialDigest, state.credentialCount);
     } catch (error) {
       const code = (error as BusinessError).code;
+
       if (code !== userAuth.UserAuthResultCode.TYPE_NOT_SUPPORT && code !== userAuth.UserAuthResultCode.NOT_ENROLLED)
         throw new ExpoSecureStoreError(error as Object);
 
@@ -73,8 +75,8 @@ export class SecureStoreAuthentication {
   private readonly cancellations: Set<() => void> = new Set();
 
   authenticate(challenge: Uint8Array, prompt: string): Promise<Uint8Array> {
-    if (prompt.length > MAX_PROMPT_LENGTH) {
-      throw new ExpoModuleError('ERR_SECURE_STORE_INVALID_ARGUMENT', `authenticationPrompt must not exceed ${MAX_PROMPT_LENGTH} characters.`);
+    if (prompt.length === 0 || prompt.length > MAX_PROMPT_LENGTH) {
+      throw new ExpoModuleError('ERR_SECURE_STORE_INVALID_ARGUMENT', `authenticationPrompt must contain 1 to ${MAX_PROMPT_LENGTH} characters.`);
     }
 
     const instance = userAuth.getUserAuthInstance(
@@ -116,6 +118,7 @@ export class SecureStoreAuthentication {
       const cancel = (): void => {
         // cancel() may synchronously deliver a result; settle before invoking it.
         finish(undefined, new ExpoModuleError('ERR_SECURE_STORE_DESTROYED', 'SecureStore was destroyed during authentication.'));
+
         try {
           instance.cancel();
         } catch (error) {
@@ -124,6 +127,7 @@ export class SecureStoreAuthentication {
       };
 
       this.cancellations.add(cancel);
+
       try {
         instance.on('result', callback);
         instance.start();
@@ -132,8 +136,8 @@ export class SecureStoreAuthentication {
 
         try {
           instance.cancel();
-        } catch (cancelError) {
-          console.warn(`Unable to cancel failed SecureStore authentication: ${(cancelError as BusinessError).code}`);
+        } catch (failure) {
+          console.warn(`Unable to cancel failed SecureStore authentication: ${(failure as BusinessError).code}`);
         }
       }
     });

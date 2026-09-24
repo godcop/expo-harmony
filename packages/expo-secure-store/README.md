@@ -7,12 +7,12 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-secure-store expo-secure-store@55.0.14
+npm install @expo-harmony/expo-secure-store expo-secure-store@55.0.18
 ```
 
-本包适配 Expo SDK 55 的 `expo-secure-store`，原生模块通过 Expo Harmony 自动链接，不需要配置插件。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。
+本包适配 Expo SDK 55 的 `expo-secure-store`，原生模块通过 Expo Harmony 自动链接。最低支持 HarmonyOS 5.0.1（API 13），宿主的 `compatibleSdkVersion` 也要满足这一要求。
 
-HAR 自带 `ohos.permission.ACCESS_BIOMETRIC` 声明，使用 `requireAuthentication` 功能时才需要。不需要生物认证的应用也可以保留这条声明，系统不会因此弹窗。
+HAR 自带普通权限 `ohos.permission.ACCESS_BIOMETRIC` 声明，查询生物认证能力和使用 `requireAuthentication` 时需要。该权限安装后自动生效，不会弹出运行时授权窗口。本包不声明受限权限 `ohos.permission.STORE_PERSISTENT_DATA`，卸载应用后数据不保留。
 
 业务代码从官方包导入：
 
@@ -62,9 +62,11 @@ await SecureStore.deleteItemAsync('token');
 
 每个值最多 1023 个 UTF-8 字节，超限写入抛出 `ERR_SECURE_STORE_VALUE_TOO_LARGE` 并保留原值。空字符串可以正常保存。
 
-`options.requireAuthentication` 打开时使用强指纹或人脸认证，不回退到锁屏密码。首次创建不弹出认证框，用相同的认证模式更新已有记录时才需要验证，`authenticationPrompt` 作为对话框中的提示文本。系统凭据摘要随记录一起保存，生物凭据变化后读取返回 `null` 并删除该记录。设备不支持人脸或指纹认证、或者没有录入凭据时，`requireAuthentication` 的操作抛出 `ERR_SECURE_STORE_AUTH_UNAVAILABLE`；认证被取消或未通过时，操作以 `ERR_SECURE_STORE_AUTH_FAILED` 拒绝。
+`options.requireAuthentication` 打开时使用强指纹或人脸认证，不回退到锁屏密码。首次创建不弹出认证框，读取或用相同的认证模式更新已有记录时才需要验证，`authenticationPrompt` 作为对话框中的提示文本。系统凭据摘要随记录一起保存，生物凭据变化后读取返回 `null` 并删除该记录。设备不支持人脸或指纹认证、或者没有录入凭据时，`requireAuthentication` 的操作抛出 `ERR_SECURE_STORE_AUTH_UNAVAILABLE`；认证被取消或未通过时，操作以 `ERR_SECURE_STORE_AUTH_FAILED` 拒绝。
 
 同一键上的异步操作按顺序执行。某个键还有未完成的异步操作时对该键发起同步操作，抛出 `ERR_SECURE_STORE_BUSY`，应先等待异步操作结束。
+
+宿主 Ability 销毁、模块销毁或运行时重载时，进行中的认证会取消，操作以 `ERR_SECURE_STORE_DESTROYED` 拒绝。
 
 #### `SecureStore.getItemAsync(key, options)`
 
@@ -82,7 +84,7 @@ await SecureStore.deleteItemAsync('token');
 
 #### `SecureStore.getItem(key, options)`
 
-同步读取，返回 `string | null`。记录使用 `requireAuthentication` 时同样抛出 `ERR_SECURE_STORE_SYNC_AUTH_UNSUPPORTED`。
+同步读取，返回 `string | null`。记录使用 `requireAuthentication` 且凭据未变化时抛出 `ERR_SECURE_STORE_SYNC_AUTH_UNSUPPORTED`。凭据已变化的记录会被删除并返回 `null`。
 
 #### `SecureStore.canUseBiometricAuthentication()`
 
@@ -90,7 +92,7 @@ await SecureStore.deleteItemAsync('token');
 
 #### `SecureStore.isAvailableAsync()`
 
-返回 `Promise<boolean>`，恒为 `true`。
+返回 `Promise<boolean>`，恒为 `true`，不反映设备是否支持生物认证。
 
 ### Types
 
@@ -104,7 +106,7 @@ await SecureStore.deleteItemAsync('token');
 | ----------------------- | ------------------------------- | ------------------------------------------------------------------------------ |
 | `keychainService`       | `string`                        | 服务名，默认 `'app'`。不同服务中的同名键相互独立，读写和删除时需使用相同的服务 |
 | `requireAuthentication` | `boolean`                       | 是否要求用户认证，默认 `false`。见 `setItemAsync()` 的说明                     |
-| `authenticationPrompt`  | `string`                        | 认证对话框中的提示文本，默认 `'Authenticate to access secure data'`，最长 500 个字符，超限抛出 `ERR_SECURE_STORE_INVALID_ARGUMENT`               |
+| `authenticationPrompt`  | `string`                        | 认证对话框中的提示文本，默认 `'Authenticate to access secure data'`。发起认证时要求 1 到 500 个字符，空字符串或超限抛出 `ERR_SECURE_STORE_INVALID_ARGUMENT` |
 | `keychainAccessible`    | `KeychainAccessibilityConstant` | 记录的访问策略，默认 `WHEN_UNLOCKED`                                           |
 
 `keychainAccessible` 只在创建记录时生效。用普通写入覆盖已有记录时保留原有的访问策略，要修改策略需要先删除再重建。
