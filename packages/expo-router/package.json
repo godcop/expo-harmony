@@ -1,6 +1,6 @@
 {
   "name": "@expo-harmony/expo-router",
-  "version": "55.0.16-harmony.6",
+  "version": "55.0.18-harmony.0",
   "description": "HarmonyOS port of expo-router",
   "keywords": [
     "react-native",
@@ -28,7 +28,7 @@
     "@react-native-ohos/react-native-gesture-handler": "2.30.1",
     "@react-native-ohos/react-native-reanimated": "4.0.2-beta.1",
     "@react-native-ohos/react-native-worklets": "1.0.0",
-    "expo-router": "55.0.16"
+    "expo-router": "55.0.18"
   },
   "devDependencies": {
     "@babel/core": "7.29.7",

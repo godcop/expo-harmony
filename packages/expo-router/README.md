@@ -7,7 +7,7 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-router @react-native-ohos/react-native-gesture-handler@2.30.1 @react-native-ohos/react-native-reanimated@4.0.2-beta.1 @react-native-ohos/react-native-worklets@1.0.0 expo-router@55.0.16
+npm install @expo-harmony/expo-router @react-native-ohos/react-native-gesture-handler@2.30.1 @react-native-ohos/react-native-reanimated@4.0.2-beta.1 @react-native-ohos/react-native-worklets@1.0.0 expo-router@55.0.18
 ```
 
 应用入口继续使用官方 `expo-router/entry`，业务代码也应始终从 `expo-router` 导入，不要直接导入 `@expo-harmony/expo-router`：
