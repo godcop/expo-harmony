@@ -1,6 +1,6 @@
 {
   "name": "@expo-harmony/expo__config-types",
-  "version": "55.0.5-harmony.1",
+  "version": "55.0.6-harmony.0",
   "description": "HarmonyOS port of @expo/config-types",
   "keywords": [
     "react-native",
@@ -21,7 +21,7 @@
   "react-native": "src/index.ts",
   "types": "index.d.ts",
   "peerDependencies": {
-    "@expo/config-types": "55.0.5"
+    "@expo/config-types": "55.0.6"
   },
   "engines": {
     "node": ">=20"
