@@ -39,6 +39,7 @@ export const MODULES = [
   { id: 'image', title: '图片', packageName: '@expo-harmony/expo-image', category: '设备与媒体', summary: '图片显示、动画、共享引用、BlurHash / ThumbHash、网络与缓存。' },
   { id: 'image-loader', title: '图片加载服务', packageName: '@expo-harmony/expo-image-loader', category: '设备与媒体', summary: '原生图片加载、Promise 与回调、独立编辑副本及错误边界。' },
   { id: 'image-manipulator', title: '图片处理', packageName: '@expo-harmony/expo-image-manipulator', category: '设备与媒体', summary: '缩放、旋转、翻转、裁剪、共享引用、格式编码与 Base64。' },
+  { id: 'video', title: '视频', packageName: '@expo-harmony/expo-video', category: '设备与媒体', summary: '播放、跳转、循环、全屏、原生缩略图与错误恢复。' },
   { id: 'image-picker', title: '图片选择器', packageName: '@expo-harmony/expo-image-picker', category: '设备与媒体', summary: '系统图库与相机、图片和视频、多选、压缩、Base64、EXIF 与取消结果。' },
   { id: 'blob', title: '二进制数据', packageName: '@expo-harmony/expo-blob', category: '应用', summary: 'Blob 构造、文本与字节读取、切片、编码边界与流式读取。' },
   { id: 'constants', title: '常量', packageName: '@expo-harmony/expo-constants', category: '应用', summary: '内嵌的应用配置、设备信息与运行时标识。' },

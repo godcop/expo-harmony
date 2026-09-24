@@ -64,6 +64,7 @@ import { SpeechDemo } from './modules/speech';
 import { SplashScreenDemo } from './modules/splash-screen';
 import { SQLiteDemo } from './modules/sqlite';
 import { StoreReviewDemo } from './modules/store-review';
+import { VideoDemo } from './modules/video';
 import { SystemUIDemo } from './modules/system-ui';
 import { SymbolsDemo } from './modules/symbols';
 import { TemplateDemo } from './modules/template';
@@ -155,6 +156,7 @@ const MODULE_DEMOS = {
   'sqlite': SQLiteDemo,
   'store-review': StoreReviewDemo,
   'system-ui': SystemUIDemo,
+  'video': VideoDemo,
   'symbols': SymbolsDemo,
   'template': TemplateDemo,
   'tracking-transparency': TrackingTransparencyDemo,
