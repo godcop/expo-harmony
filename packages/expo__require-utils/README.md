@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo__require-utils @expo/require-utils@55.0.5
+npm install @expo-harmony/expo__require-utils @expo/require-utils@55.0.8
 ```
 
 ## Author
