@@ -73,6 +73,7 @@ export const MODULES = [
   { id: 'mesh-gradient', title: '网格渐变', packageName: '@expo-harmony/expo-mesh-gradient', category: '设备与媒体', summary: '网格顶点、颜色插值、透明度、动态尺寸与子视图交互。' },
   { id: 'symbols', title: '系统图标', packageName: '@expo-harmony/expo-symbols', category: '设备与媒体', summary: '鸿蒙系统图标、名称回退、尺寸字重与多色渲染。' },
   { id: 'linking', title: '链接', packageName: '@expo-harmony/expo-linking', category: '设备与媒体', summary: 'URL 构造、解析、初始状态与前台链接。' },
+  { id: 'web-browser', title: '网页浏览器', packageName: '@expo-harmony/expo-web-browser', category: '设备与媒体', summary: '系统浏览器、认证回跳、会话结束、并发保护与错误恢复。' },
   { id: 'live-photo', title: '实况照片', packageName: '@expo-harmony/expo-live-photo', category: '设备与媒体', summary: '图片与配对视频加载、播放控制、显示属性、生命周期事件及错误恢复。' },
   { id: 'location', title: '定位', packageName: '@expo-harmony/expo-location', category: '设备与媒体', summary: '定位权限、当前位置、位置与方向订阅、地理编码及参数边界。' },
   { id: 'media-library', title: '媒体库', packageName: '@expo-harmony/expo-media-library', category: '设备与媒体', summary: '图库权限、图片视频分页、元数据、保存与删除、相册成员和变更事件。' },
