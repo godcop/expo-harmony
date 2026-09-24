@@ -160,7 +160,7 @@ export class ExpoBlurModule extends ExpoModule {
   }
 
   override definition(): ExpoModuleDefinition {
-    const blurView = new ExpoViewDefinition<ExpoBlurView>(
+    const view = new ExpoViewDefinition<ExpoBlurView>(
       'ExpoBlurView',
       (context: ExpoViewContext): ExpoBlurView => new ExpoBlurView(context),
       wrapBuilder(buildExpoBlurView),
@@ -173,6 +173,7 @@ export class ExpoBlurModule extends ExpoModule {
             console.warn('ExpoBlur ignored a non-finite intensity update.');
             return;
           }
+
           view.intensity = Math.min(100, Math.max(0, intensity));
         },
         DEFAULT_INTENSITY,
@@ -185,13 +186,10 @@ export class ExpoBlurModule extends ExpoModule {
         },
         ExpoBlurTint.DEFAULT,
       )
-      // These props are Android-specific in upstream expo-blur. Harmony accepts
-      // them so the shared JS facade remains portable, but native blur does not
-      // use an Android BlurTarget or blur implementation selector.
-      .prop('blurTargetId', ExpoValueTypes.number().nullable(), (_view: ExpoBlurView, _blurTargetId: number | null): void => {}, null)
-      .prop('blurReductionFactor', ExpoValueTypes.number(), (_view: ExpoBlurView, _blurReductionFactor: number): void => {}, 4)
-      .prop('blurMethod', ExpoValueTypes.string(), (_view: ExpoBlurView, _blurMethod: string): void => {}, 'none');
+      .prop('blurTargetId', ExpoValueTypes.number().nullable(), (_view: ExpoBlurView, _target: number | null): void => {}, null)
+      .prop('blurReductionFactor', ExpoValueTypes.number(), (_view: ExpoBlurView, _factor: number): void => {}, 4)
+      .prop('blurMethod', ExpoValueTypes.string(), (_view: ExpoBlurView, _method: string): void => {}, 'none');
 
-    return new ExpoModuleDefinition().name('ExpoBlur').view(blurView);
+    return new ExpoModuleDefinition().name('ExpoBlur').view(view);
   }
 }

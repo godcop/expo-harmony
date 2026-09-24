@@ -7,8 +7,10 @@
 ## 安装
 
 ```bash
-npm install @expo-harmony/expo-blur expo-blur@55.0.14
+npm install @expo-harmony/expo-blur expo-blur@55.0.18
 ```
+
+最低支持 HarmonyOS 5.0.1（API 13），宿主应用的 `compatibleSdkVersion` 不能低于这个版本。
 
 ## API 对照表
 
@@ -22,7 +24,7 @@ npm install @expo-harmony/expo-blur expo-blur@55.0.14
 
 类型：`BlurTint`，默认 `'default'`
 
-模糊色调。HarmonyOS 的材质分五档厚度，多个 `tint` 取值对应同一档材质，`Light`、`Dark` 变体只切换明暗模式，不改变厚度。
+模糊色调。HarmonyOS 的材质分五档厚度，多个 `tint` 取值对应同一档材质，`Light`、`Dark` 变体只切换明暗模式，不改变厚度。各档材质的颜色、饱和度和模糊半径由系统决定，同一 `tint` 的观感与 iOS / Android 不一致。
 
 | 材质档位 | `tint` 取值                                                                                          |
 | -------- | ---------------------------------------------------------------------------------------------------- |
