@@ -2850,6 +2850,24 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@expo-harmony/expo-store-review@workspace:*, @expo-harmony/expo-store-review@workspace:packages/expo-store-review":
+  version: 0.0.0-use.local
+  resolution: "@expo-harmony/expo-store-review@workspace:packages/expo-store-review"
+  dependencies:
+    "@expo-harmony/expo-module-scripts": "workspace:*"
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    "@react-native-oh/react-native-harmony": "npm:0.84.1"
+    expo: "npm:55.0.31"
+    expo-modules-core: "npm:55.0.26"
+    expo-store-review: "npm:55.0.18"
+    react: "npm:19.2.3"
+    react-native: "npm:0.84.1"
+  peerDependencies:
+    "@expo-harmony/expo-modules-core": "workspace:*"
+    expo-store-review: 55.0.18
+  languageName: unknown
+  linkType: soft
+
 "@expo-harmony/expo-structured-headers@workspace:*, @expo-harmony/expo-structured-headers@workspace:packages/expo-structured-headers":
   version: 0.0.0-use.local
   resolution: "@expo-harmony/expo-structured-headers@workspace:packages/expo-structured-headers"
@@ -8839,6 +8857,16 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: 10c0/3138d63c78287bb14bfb6ac2fe1709768d7cec5019c533c3aff074a53d10fb0db7842897c2b741ecabe2946d1b3e4cec06f47f219c238bd7f1df6bb16b8ef2ad
+  languageName: node
+  linkType: hard
+
+"expo-store-review@npm:55.0.18":
+  version: 55.0.18
+  resolution: "expo-store-review@npm:55.0.18"
+  peerDependencies:
+    expo: "*"
+    react-native: "*"
+  checksum: 10c0/5b96d2b636350db31fe7cb137db20b878a93fbbdc32acd71589070abaed5e9b0992f42f319ede9f235935e37c9a5ca4435acfaf831cd28b4d65ad7b601d493b5
   languageName: node
   linkType: hard
 

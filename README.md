@@ -110,6 +110,7 @@
 - [expo-sqlite](./packages/expo-sqlite/)：提供对可通过 SQLite API 查询的数据库的访问。
 - [expo-standard-web-crypto](./packages/expo-standard-web-crypto/)：W3C Crypto API 的部分实现。
 - [expo-status-bar](./packages/expo-status-bar/)：提供与 React Native StatusBar 一致的接口，但其默认值更适合 Expo 环境。
+- [expo-store-review](./packages/expo-store-review/)：访问用于应用内评价的原生 API。
 - [expo-structured-headers](./packages/expo-structured-headers/)：解析和序列化 Structured Fields（RFC 8941）响应头。
 - [expo-symbols](./packages/expo-symbols/)：显示系统 Symbol 图标。
 - [expo-system-ui](./packages/expo-system-ui/)：与系统 UI 元素进行交互。
