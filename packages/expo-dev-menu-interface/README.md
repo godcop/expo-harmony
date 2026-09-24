@@ -20,9 +20,11 @@ npm install @expo-harmony/expo-dev-menu-interface expo-dev-menu-interface@55.0.2
 
 定义菜单的可见状态和开关操作，成员有 `isVisible`、`openMenu(screen?)`、`closeMenu()`、`hideMenu()` 和 `toggleMenu()`。方法同步返回是否接受这次状态变更，界面随后异步完成。`screen` 省略或传入 `null` 时打开默认页面。
 
+官方接口里 `closeMenu()` 用来发起收起，`hideMenu()` 用来完成隐藏。鸿蒙端的菜单由 ArkUI 原生对话框承载，两个方法走同一个异步关闭流程。
+
 #### `DevMenuBridgeProtocol`
 
-三个成员都是可选的。`module(name)` 按名称查找原生模块，`modulesConforming(conforms)` 返回通过检查函数的全部模块，`requestReload()` 请求重载。
+三个成员都是可选的。`module(name)` 按名称查找原生模块，不存在时返回 `null`，`modulesConforming(conforms)` 返回通过检查函数的全部模块，`requestReload()` 请求重载。
 
 > **未实现的内容**
 >
@@ -30,7 +32,7 @@ npm install @expo-harmony/expo-dev-menu-interface expo-dev-menu-interface@55.0.2
 
 #### `DevMenuHostDelegate`
 
-宿主通过可选成员介入菜单行为。`devMenuNavigateHome()` 返回启动器，`devMenuTogglePerformanceMonitor()` 和 `devMenuToggleElementInspector()` 接管对应工具，`devMenuShouldShowReactNativeDevMenu()` 控制是否显示 React Native 菜单入口。菜单检查到对应成员时使用宿主实现，否则执行默认行为。代理随 React Native 实例注册和解绑。
+宿主通过可选成员介入菜单行为。`devMenuNavigateHome()` 返回宿主首页，`devMenuTogglePerformanceMonitor()` 和 `devMenuToggleElementInspector()` 接管对应工具，`devMenuShouldShowReactNativeDevMenu()` 控制是否显示 React Native 菜单入口，省略时默认 `true`。菜单检查到对应成员时使用宿主实现，否则执行默认行为。代理随 React Native 实例注册和解绑。
 
 #### `DevMenuUIResponderExtensionProtocol`
 
