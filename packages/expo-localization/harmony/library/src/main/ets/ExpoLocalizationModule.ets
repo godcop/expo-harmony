@@ -1,6 +1,6 @@
 import { ExpoModule, ExpoModuleDefinition } from '@expo-harmony/expo-modules-core';
 import { BusinessError, commonEventManager, deviceInfo } from '@kit.BasicServicesKit';
-import { i18n, intl } from '@kit.LocalizationKit';
+import { i18n } from '@kit.LocalizationKit';
 import localization, { NumericInfo } from 'libexpo_localization.so';
 
 const LOCALE_EVENT = 'onLocaleSettingsChanged';
@@ -76,19 +76,17 @@ export class ExpoLocalizationModule extends ExpoModule {
   private systemLocale(): string {
     const tag = deviceInfo.sdkApiVersion >= LOCALE_INSTANCE_API ? i18n.System.getSystemLocaleInstance().toString() : i18n.System.getSystemLocale();
 
-    // The system locale can omit its independently configured region.
     return new Intl.Locale(tag || FALLBACK_LOCALE, {
       region: i18n.System.getSystemRegion() || undefined,
     }).toString();
   }
 
   private getLocales(): Locale[] {
-    const current = this.systemLocale();
+    const fallback = this.systemLocale();
     const region = i18n.System.getSystemRegion() || null;
-    const system = localization.getNumericInfo(current);
+    const system = localization.getNumericInfo(fallback);
     const temperature = this.temperatureUnit(region);
     const languages = i18n.System.getPreferredLanguageList();
-    const fallback = i18n.System.getSystemLanguage() || FALLBACK_LOCALE;
 
     const tags = languages.length > 0 ? languages : [fallback];
     const locales: Locale[] = [];
@@ -109,7 +107,12 @@ export class ExpoLocalizationModule extends ExpoModule {
   }
 
   private locale(tag: string, region: string | null, system: NumericInfo, temperature: string | null): Locale {
-    const language = new intl.Locale(tag);
+    const preferred = new Intl.Locale(tag);
+
+    const language = new Intl.Locale(preferred, {
+      region: preferred.region || region || undefined,
+    });
+
     const numeric = localization.getNumericInfo(language.toString());
 
     return {
@@ -121,8 +124,8 @@ export class ExpoLocalizationModule extends ExpoModule {
       textDirection: i18n.isRTL(language.toString()) ? 'rtl' : 'ltr',
       decimalSeparator: system.decimalSeparator,
       digitGroupingSeparator: system.digitGroupingSeparator,
-      currencyCode: system.currencyCode,
-      currencySymbol: system.currencySymbol,
+      currencyCode: region === null ? null : system.currencyCode,
+      currencySymbol: region === null ? null : system.currencySymbol,
       languageCurrencyCode: numeric.currencyCode,
       languageCurrencySymbol: numeric.currencySymbol,
       measurementSystem: region === null ? null : region === 'GB' ? 'uk' : US_MEASUREMENT_REGIONS.includes(region) ? 'us' : 'metric',
@@ -132,10 +135,11 @@ export class ExpoLocalizationModule extends ExpoModule {
 
   private temperatureUnit(region: string | null): string | null {
     if (deviceInfo.sdkApiVersion >= USER_PREFERENCES_API) {
-      const temperature = i18n.System.getTemperatureType();
+      const unit = i18n.System.getTemperatureType();
 
-      if (temperature === i18n.TemperatureType.CELSIUS) return 'celsius';
-      if (temperature === i18n.TemperatureType.FAHRENHEIT) return 'fahrenheit';
+      if (unit === i18n.TemperatureType.CELSIUS) return 'celsius';
+      if (unit === i18n.TemperatureType.FAHRENHEIT) return 'fahrenheit';
+
       // Expo's public type has no Kelvin value.
       return null;
     }
@@ -148,14 +152,14 @@ export class ExpoLocalizationModule extends ExpoModule {
     const calendar = i18n.getCalendar(tag);
 
     // i18n.Calendar and Expo both use Sunday=1. System.WeekDay uses Monday=1.
-    const firstWeekday = deviceInfo.sdkApiVersion >= USER_PREFERENCES_API ? (i18n.System.getFirstDayOfWeek() % 7) + 1 : calendar.getFirstDayOfWeek();
+    const weekday = deviceInfo.sdkApiVersion >= USER_PREFERENCES_API ? (i18n.System.getFirstDayOfWeek() % 7) + 1 : calendar.getFirstDayOfWeek();
 
     return [
       {
         calendar: localization.getCalendarType(tag),
         timeZone: i18n.getTimeZone().getID() || null,
         uses24hourClock: i18n.System.is24HourClock(),
-        firstWeekday,
+        firstWeekday: weekday,
       },
     ];
   }
@@ -222,6 +226,7 @@ export class ExpoLocalizationModule extends ExpoModule {
     this.recovering = true;
     this.stopObserving().then((): void => {
       this.recovering = false;
+
       if (this.destroyed) return;
 
       this.startObserving();
@@ -269,6 +274,7 @@ export class ExpoLocalizationModule extends ExpoModule {
 
     // Keep a failed handle to avoid accumulating duplicate native subscriptions.
     this.failed = true;
+
     return false;
   }
 
