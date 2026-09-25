@@ -103,9 +103,7 @@ function resolveApplicationName(context: ExpoModuleContext, info: bundleManager.
   try {
     // Cross-module IDs need their Resource scope. The recommended replacement,
     // application.createModuleContext, is async and cannot serve a sync constant.
-    const name = local
-      ? ability.resourceManager.getStringSync(resource.id)
-      : ability.resourceManager.getStringSync(resource);
+    const name = local ? ability.resourceManager.getStringSync(resource.id) : ability.resourceManager.getStringSync(resource);
 
     if (name.length > 0) return name;
   } catch (error) {
