@@ -328,6 +328,5 @@ function networkType(bearers: connection.NetBearType[]): NetworkStateType {
 
 function isUsableIpv4Address(address: connection.NetAddress): boolean {
   const value = address.address;
-  return (address.family ?? IPV4_FAMILY) === IPV4_FAMILY &&
-    value.length > 0 && value !== FALLBACK_IP && !value.startsWith('127.');
+  return (address.family ?? IPV4_FAMILY) === IPV4_FAMILY && value.length > 0 && value !== FALLBACK_IP && !value.startsWith('127.');
 }
