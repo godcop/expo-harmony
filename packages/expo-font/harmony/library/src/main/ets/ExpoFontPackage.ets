@@ -362,11 +362,17 @@ export class ExpoFontUtilsModule extends ExpoModule {
     const lineHeight = options.lineHeight === undefined ? undefined : options.lineHeight * scale;
     const ratio = options.lineHeight === undefined ? 1 : options.lineHeight / options.size;
     if (
-      !Number.isFinite(size) || size <= 0 || size > MAX_RENDER_SIDE_PIXELS ||
-      !Number.isFinite(ratio) || ratio <= 0 ||
+      !Number.isFinite(size) ||
+      size <= 0 ||
+      size > MAX_RENDER_SIDE_PIXELS ||
+      !Number.isFinite(ratio) ||
+      ratio <= 0 ||
       (lineHeight !== undefined && (!Number.isFinite(lineHeight) || lineHeight <= 0 || lineHeight > MAX_RENDER_SIDE_PIXELS))
     ) {
-      throw new ExpoFontError('ERR_FONT_RENDER_TOO_LARGE', `Scaled font size and lineHeight must be positive and cannot exceed ${MAX_RENDER_SIDE_PIXELS}px.`);
+      throw new ExpoFontError(
+        'ERR_FONT_RENDER_TOO_LARGE',
+        `Scaled font size and lineHeight must be positive and cannot exceed ${MAX_RENDER_SIDE_PIXELS}px.`,
+      );
     }
 
     const color = normalizedArgb(options.color);
@@ -589,9 +595,7 @@ function assertNoSymlinkSegments(root: string, path: string): void {
 
 function rawFontPath(uri: string): string {
   const asset = uri.startsWith('asset://');
-  let path = uri
-    .replace(/^(?:asset|rawfile):\/\//, '')
-    .replace(/^\/+/, '');
+  let path = uri.replace(/^(?:asset|rawfile):\/\//, '').replace(/^\/+/, '');
 
   // RNOH asset:// names are literal; only rawfile:// uses URL encoding, queries and fragments.
   if (!asset) {
@@ -609,7 +613,8 @@ function rawFontPath(uri: string): string {
 
   const segments = path.split('/');
   if (
-    path.includes('\\') || path.includes('\0') ||
+    path.includes('\\') ||
+    path.includes('\0') ||
     segments.length === 0 ||
     segments.some((segment: string): boolean => {
       return segment.length === 0 || segment === '.' || segment === '..';
