@@ -46,7 +46,11 @@ export class ExpoUpdatesAdapter implements UpdatesInterface {
   }
   subscribeToUpdatesStateChanges(listener: UpdatesStateChangeListener): UpdatesStateChangeSubscription {
     const controller = this.controller;
-    if (!controller.active) return { remove: (): void => {}, getContext: (): null => null };
+    if (!controller.active)
+      return new CallbackSubscription(
+        (): void => {},
+        (): UpdatesNativeInterfaceStateContext | null => null,
+      );
 
     const subscription = controller.state.subscribe((event: Record<string, ESObject>): void => {
       if (this.controller === controller && controller.active) listener.updatesStateDidChange(event);
@@ -55,9 +59,9 @@ export class ExpoUpdatesAdapter implements UpdatesInterface {
       if (this.controller !== controller) subscription.remove();
     });
 
-    return {
-      remove: (): void => subscription.remove(),
-      getContext: (): UpdatesNativeInterfaceStateContext | null => {
+    return new CallbackSubscription(
+      (): void => subscription.remove(),
+      (): UpdatesNativeInterfaceStateContext | null => {
         if (this.controller !== controller || !controller.active) return null;
         const value = subscription.getContext();
         return {
@@ -79,7 +83,25 @@ export class ExpoUpdatesAdapter implements UpdatesInterface {
           downloadFinishTime: value.downloadFinishTime == null ? null : new Date(value.downloadFinishTime),
         };
       },
-    };
+    );
+  }
+}
+
+class CallbackSubscription implements UpdatesStateChangeSubscription {
+  private readonly onRemove: () => void;
+  private readonly onContext: () => UpdatesNativeInterfaceStateContext | null;
+
+  constructor(onRemove: () => void, onContext: () => UpdatesNativeInterfaceStateContext | null) {
+    this.onRemove = onRemove;
+    this.onContext = onContext;
+  }
+
+  remove(): void {
+    this.onRemove();
+  }
+
+  getContext(): UpdatesNativeInterfaceStateContext | null {
+    return this.onContext();
   }
 }
 

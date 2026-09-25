@@ -88,7 +88,8 @@ export class ExpoUpdatesModule extends ExpoModule {
       .onStartObserving(event, (): void => {
         this.subscription?.remove();
         this.subscription = this.controller.state.subscribeContext((value: Json): void => this.sendEvent(event, value));
-        this.sendEvent(event, { context: this.subscription.getContext() });
+        const initial: Record<string, ESObject> = { 'context': this.subscription.getContext() };
+        this.sendEvent(event, initial);
       })
       .onStopObserving(event, (): void => {
         this.subscription?.remove();
