@@ -57,7 +57,10 @@ export class TrackingPermissions {
 
   async request(): Promise<TrackingPermissionResponse> {
     const result = this.queue.then((): Promise<TrackingPermissionResponse> => this.requestOnce());
-    this.queue = result.then((): void => {}, (): void => {});
+    this.queue = result.then(
+      (): void => {},
+      (): void => {},
+    );
 
     return await result;
   }
@@ -72,10 +75,15 @@ export class TrackingPermissions {
       const granted = result.authResults[index] === ExpoPermissionStatus.GRANTED;
 
       if (
-        index < 0 || (!granted && result.authResults[index] !== ExpoPermissionStatus.DENIED) ||
-        reason === RequestReason.InvalidPermission || reason === RequestReason.NotDeclared
+        index < 0 ||
+        (!granted && result.authResults[index] !== ExpoPermissionStatus.DENIED) ||
+        reason === RequestReason.InvalidPermission ||
+        reason === RequestReason.NotDeclared
       ) {
-        throw new ExpoModuleError('ERR_TRACKING_TRANSPARENCY_PERMISSION', 'Invalid tracking permission result. Check APP_TRACKING_CONSENT in the application module.json5.');
+        throw new ExpoModuleError(
+          'ERR_TRACKING_TRANSPARENCY_PERMISSION',
+          'Invalid tracking permission result. Check APP_TRACKING_CONSENT in the application module.json5.',
+        );
       }
 
       const blocked = reason === RequestReason.CannotRequest || reason === RequestReason.ManualSettings;

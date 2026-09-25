@@ -16,7 +16,10 @@ export class ExpoTrackingTransparencyModule extends ExpoModule {
     return new ExpoModuleDefinition()
       .name('ExpoTrackingTransparency')
       .syncFunction('getAdvertisingId', (): string | null => {
-        throw new ExpoModuleError('ERR_UNAVAILABLE', 'HarmonyOS only provides asynchronous OAID access. Use getAdvertisingIdAsync() from @expo-harmony/expo-tracking-transparency.');
+        throw new ExpoModuleError(
+          'ERR_UNAVAILABLE',
+          'HarmonyOS only provides asynchronous OAID access. Use getAdvertisingIdAsync() from @expo-harmony/expo-tracking-transparency.',
+        );
       })
       .asyncFunction('getAdvertisingIdAsync', async (): Promise<string | null> => this.getAdvertisingIdAsync())
       .asyncFunction('getPermissionsAsync', async (): Promise<TrackingPermissionResponse> => this.permissions.get())
