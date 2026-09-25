@@ -63,7 +63,7 @@ function appName(manifest: Manifest, fallback: string): string {
 export class DevLauncherManifestLoader {
   private readonly clientID: string;
   private readonly context: common.ApplicationContext;
-  private readonly appKeys: string[];
+  readonly appKeys: string[];
 
   constructor(context: common.ApplicationContext, appKeys: string[]) {
     this.context = context;
@@ -172,7 +172,7 @@ export class DevLauncherManifestLoader {
     }
   }
 
-  private async developmentSelection(url: string, manifest: Manifest, json: JsonObject): Promise<LaunchSelection> {
+  async developmentSelection(url: string, manifest: Manifest, json: JsonObject): Promise<LaunchSelection> {
     const client = await readClientRuntime(this.context.resourceManager);
     validateDevelopmentManifest(client, json, url);
 
@@ -215,68 +215,100 @@ export class DevLauncherManifestLoader {
     progress: (value: number) => void,
   ): Promise<LaunchSelection> {
     return await new Promise<LaunchSelection>((resolve, reject): void => {
-      let settled = false;
-      let developmentManifest: JsonObject | undefined;
-      const callback: UpdatesDevLauncherCallback = {
-        onFailure: (error: Error | null): void => {
-          if (settled) return;
-          settled = true;
-          reject(error ?? new DevLauncherError('ERR_DEV_LAUNCHER_UPDATE', 'Expo Updates failed without an error.'));
-        },
-        onSuccess: (update: UpdatesDevLauncherResult | null): void => {
-          if (settled) return;
-          try {
-            if (update === null) {
-              if (developmentManifest === undefined) {
-                settled = true;
-                reject(new DevLauncherError('ERR_DEV_LAUNCHER_UPDATE', 'Expo Updates returned no launchable update.'));
-                return;
-              }
-
-              const parsed = Manifest.fromManifestJson(developmentManifest);
-              this.developmentSelection(url, parsed, developmentManifest).then(
-                (selection: LaunchSelection): void => {
-                  if (settled) return;
-                  settled = true;
-                  resolve(selection);
-                },
-                (error: Error): void => {
-                  if (settled) return;
-                  settled = true;
-                  reject(error);
-                },
-              );
-
-              return;
-            }
-
-            const manifest = object(update.manifest);
-            if (manifest === undefined) {
-              settled = true;
-              reject(new DevLauncherError('ERR_DEV_LAUNCHER_MANIFEST', 'Expo Updates returned an invalid manifest.'));
-              return;
-            }
-
-            const parsed = Manifest.fromManifestJson(manifest);
-            settled = true;
-            resolve(new LaunchSelection(new FileJSBundleProvider(update.launchAssetPath, this.appKeys), manifest, url, appName(parsed, url), false));
-          } catch (error) {
-            if (settled) return;
-            settled = true;
-            reject(error);
-          }
-        },
-        onProgress: (successful: number, failed: number, total: number): void => {
-          if (!settled && total > 0) progress(Math.max(0, Math.min(1, (successful + failed) / total)));
-        },
-        onManifestLoaded: (value: JsonObject): boolean => {
-          const parsed = Manifest.fromManifestJson(value);
-          if (!parsed.isUsingDeveloperTool()) return true;
-          developmentManifest = value;
-          return false;
-        },
-      };
-      controller.fetchUpdateWithConfiguration(configuration, callback);
+      controller.fetchUpdateWithConfiguration(configuration, new UpdatesFetchCallbacks(this, url, progress, resolve, reject));
     });
+  }
+}
+
+class UpdatesFetchCallbacks implements UpdatesDevLauncherCallback {
+  private readonly loader: DevLauncherManifestLoader;
+  private readonly url: string;
+  private readonly progress: (value: number) => void;
+  private readonly resolve: (selection: LaunchSelection) => void;
+  private readonly reject: (reason: ESObject) => void;
+  private settled: boolean = false;
+  private developmentManifest: JsonObject | undefined;
+
+  constructor(
+    loader: DevLauncherManifestLoader,
+    url: string,
+    progress: (value: number) => void,
+    resolve: (selection: LaunchSelection) => void,
+    reject: (reason: ESObject) => void,
+  ) {
+    this.loader = loader;
+    this.url = url;
+    this.progress = progress;
+    this.resolve = resolve;
+    this.reject = reject;
+  }
+
+  onFailure(error: Error | null): void {
+    if (this.settled) return;
+    this.settled = true;
+    this.reject(error ?? new DevLauncherError('ERR_DEV_LAUNCHER_UPDATE', 'Expo Updates failed without an error.'));
+  }
+
+  onSuccess(update: UpdatesDevLauncherResult | null): void {
+    if (this.settled) return;
+    try {
+      if (update === null) {
+        if (this.developmentManifest === undefined) {
+          this.settled = true;
+          this.reject(new DevLauncherError('ERR_DEV_LAUNCHER_UPDATE', 'Expo Updates returned no launchable update.'));
+          return;
+        }
+
+        const parsed = Manifest.fromManifestJson(this.developmentManifest);
+        this.loader.developmentSelection(this.url, parsed, this.developmentManifest).then(
+          (selection: LaunchSelection): void => {
+            if (this.settled) return;
+            this.settled = true;
+            this.resolve(selection);
+          },
+          (error: Error): void => {
+            if (this.settled) return;
+            this.settled = true;
+            this.reject(error);
+          },
+        );
+
+        return;
+      }
+
+      const manifest = object(update.manifest);
+      if (manifest === undefined) {
+        this.settled = true;
+        this.reject(new DevLauncherError('ERR_DEV_LAUNCHER_MANIFEST', 'Expo Updates returned an invalid manifest.'));
+        return;
+      }
+
+      const parsed = Manifest.fromManifestJson(manifest);
+      this.settled = true;
+      this.resolve(
+        new LaunchSelection(
+          new FileJSBundleProvider(update.launchAssetPath, this.loader.appKeys),
+          manifest,
+          this.url,
+          appName(parsed, this.url),
+          false,
+        ),
+      );
+    } catch (error) {
+      if (this.settled) return;
+      this.settled = true;
+      this.reject(error);
+    }
+  }
+
+  onProgress(successful: number, failed: number, total: number): void {
+    if (!this.settled && total > 0) this.progress(Math.max(0, Math.min(1, (successful + failed) / total)));
+  }
+
+  onManifestLoaded(value: JsonObject): boolean {
+    const parsed = Manifest.fromManifestJson(value);
+    if (!parsed.isUsingDeveloperTool()) return true;
+    this.developmentManifest = value;
+    return false;
   }
 }

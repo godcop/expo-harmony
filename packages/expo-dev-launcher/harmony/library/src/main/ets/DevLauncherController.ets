@@ -200,9 +200,7 @@ export class DevLauncherController {
     const updates = UpdatesControllerRegistry.controller as UpdatesDevLauncherInterface | undefined;
     if (updates !== undefined && typeof updates.fetchUpdateWithConfiguration === 'function') {
       if (this.updatesCallbacks === undefined) {
-        this.updatesCallbacks = {
-          onRequestRelaunch: (): void => this.manager?.reload('Expo Updates requested a development-client reload.'),
-        };
+        this.updatesCallbacks = new UpdatesRelaunchCallbacks(this.manager);
       }
       updates.updatesInterfaceCallbacks = this.updatesCallbacks;
     }
@@ -418,5 +416,17 @@ export class DevLauncherController {
   private publish(): void {
     const state = this.state();
     this.listeners.forEach((listener: StateListener): void => listener(state));
+  }
+}
+
+class UpdatesRelaunchCallbacks implements UpdatesInterfaceCallbacks {
+  private readonly manager: DevToolsController | undefined;
+
+  constructor(manager: DevToolsController | undefined) {
+    this.manager = manager;
+  }
+
+  onRequestRelaunch(): void {
+    this.manager?.reload('Expo Updates requested a development-client reload.');
   }
 }
