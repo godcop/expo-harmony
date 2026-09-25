@@ -87,7 +87,7 @@ export class DomWebView extends ExpoView {
       this.pending.delete(response.requestId);
       clearTimeout(pending.timer);
 
-      pending.result.handlePromptConfirm(response.error === undefined ? response.result ?? '' : JSON.stringify({ error: response.error }));
+      pending.result.handlePromptConfirm(response.error === undefined ? (response.result ?? '') : JSON.stringify({ error: response.error }));
     });
   }
 
@@ -202,10 +202,12 @@ export class DomWebView extends ExpoView {
         throw new Error('Invalid Expo DOM WebView evaluation parameters.');
       }
 
-      const source = NATIVE_EVAL_WRAPPER_SCRIPT
-        .split('"%%DEFERRED_ID%%"').join(String(args.deferredId))
-        .split('"%%WEBVIEW_ID%%"').join(String(this.document))
-        .split('"%%SOURCE%%"').join(args.source);
+      const source = NATIVE_EVAL_WRAPPER_SCRIPT.split('"%%DEFERRED_ID%%"')
+        .join(String(args.deferredId))
+        .split('"%%WEBVIEW_ID%%"')
+        .join(String(this.document))
+        .split('"%%SOURCE%%"')
+        .join(args.source);
 
       const id = `${this.id}:${this.sequence++}`;
       request = id;
@@ -245,7 +247,9 @@ export class DomWebView extends ExpoView {
     requests.forEach((pending: PendingEval): void => {
       clearTimeout(pending.timer);
       // A navigation or ArkUI detach may already have invalidated JsResult.
-      try { pending.result.handleCancel(); } catch (_) {}
+      try {
+        pending.result.handleCancel();
+      } catch (_) {}
     });
   }
 
@@ -274,9 +278,15 @@ export class DomWebView extends ExpoView {
 
     if (!this.attached) return;
     // The ArkUI node may already have detached before Expo's destroy callback.
-    try { this.controller.deleteJavaScriptRegister(MESSAGE_BRIDGE_NAME); } catch (_) {}
-    try { this.controller.stop(); } catch (_) {}
-    try { this.controller.onInactive(); } catch (_) {}
+    try {
+      this.controller.deleteJavaScriptRegister(MESSAGE_BRIDGE_NAME);
+    } catch (_) {}
+    try {
+      this.controller.stop();
+    } catch (_) {}
+    try {
+      this.controller.onInactive();
+    } catch (_) {}
     this.attached = false;
   }
 }
@@ -309,9 +319,11 @@ struct DomWebViewContent {
 
       // Apply ArkUI's document-start scripts before starting a new navigation.
       const revision = ++this.revision;
-      this.getUIContext().postFrameCallback(new AfterRender((): void => {
-        if (this.revision === revision) this.view.loadSource();
-      }));
+      this.getUIContext().postFrameCallback(
+        new AfterRender((): void => {
+          if (this.revision === revision) this.view.loadSource();
+        }),
+      );
     });
   }
 
@@ -347,7 +359,6 @@ struct DomWebViewContent {
       .onRenderExited((): void => this.view.renderExited());
   }
 }
-
 @Builder
 export function buildDomWebView(context: ExpoViewContentContext): void {
   DomWebViewContent({ view: context.nativeView as DomWebView });
