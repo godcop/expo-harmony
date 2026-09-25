@@ -41,10 +41,13 @@ export class ExpoLocalAuthenticationModule extends ExpoModule {
 
         return SecurityLevel.NONE;
       })
-      .asyncFunction('authenticateAsync', ExpoFunction.typed1(
-        LOCAL_AUTHENTICATION_OPTIONS,
-        (options: LocalAuthenticationOptions): Promise<LocalAuthenticationResult> => this.authenticate(options),
-      ))
+      .asyncFunction(
+        'authenticateAsync',
+        ExpoFunction.typed1(
+          LOCAL_AUTHENTICATION_OPTIONS,
+          (options: LocalAuthenticationOptions): Promise<LocalAuthenticationResult> => this.authenticate(options),
+        ),
+      )
       .asyncFunction('cancelAuthenticate', async (): Promise<void> => {
         this.cancel?.('user_cancel');
       })
@@ -84,7 +87,10 @@ export class ExpoLocalAuthenticationModule extends ExpoModule {
     // At API 13 the custom navigation button only supports a single biometric.
     if (types.length === 1 && types[0] !== userAuth.UserAuthType.PIN) {
       if (options.cancelLabel.length > MAX_NAVIGATION_LABEL_LENGTH) {
-        throw new ExpoModuleError('ERR_LOCAL_AUTHENTICATION_INVALID_ARGUMENT', `cancelLabel must not exceed ${MAX_NAVIGATION_LABEL_LENGTH} characters.`);
+        throw new ExpoModuleError(
+          'ERR_LOCAL_AUTHENTICATION_INVALID_ARGUMENT',
+          `cancelLabel must not exceed ${MAX_NAVIGATION_LABEL_LENGTH} characters.`,
+        );
       }
 
       widget.navigationButtonText = options.cancelLabel;
@@ -93,11 +99,14 @@ export class ExpoLocalAuthenticationModule extends ExpoModule {
     let auth: userAuth.UserAuthInstance;
 
     try {
-      auth = userAuth.getUserAuthInstance({
-        challenge: cryptoFramework.createRandom().generateRandomSync(CHALLENGE_BYTES).data,
-        authType: types,
-        authTrustLevel: level,
-      }, widget);
+      auth = userAuth.getUserAuthInstance(
+        {
+          challenge: cryptoFramework.createRandom().generateRandomSync(CHALLENGE_BYTES).data,
+          authType: types,
+          authTrustLevel: level,
+        },
+        widget,
+      );
     } catch (error) {
       return authenticationResult((error as BusinessError).code);
     }

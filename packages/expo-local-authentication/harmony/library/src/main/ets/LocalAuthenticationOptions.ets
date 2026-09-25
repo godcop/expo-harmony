@@ -12,16 +12,21 @@ export class LocalAuthenticationOptions {
   biometricsSecurityLevel: BiometricsSecurityLevel = BiometricsSecurityLevel.WEAK;
 }
 
+const BIOMETRICS_SECURITY_LEVEL_VALUES: Record<string, BiometricsSecurityLevel> = {
+  'weak': BiometricsSecurityLevel.WEAK,
+  'strong': BiometricsSecurityLevel.STRONG,
+};
+
 export const LOCAL_AUTHENTICATION_OPTIONS = ExpoValueTypes.shapedRecord<LocalAuthenticationOptions>(
   'LocalAuthenticationOptions',
   new ExpoRecordShape()
     .field('promptMessage', ExpoValueTypes.string().optional())
     .field('cancelLabel', ExpoValueTypes.string().optional())
     .field('disableDeviceFallback', ExpoValueTypes.boolean().optional())
-    .field('biometricsSecurityLevel', ExpoValueTypes.enumerable<BiometricsSecurityLevel>('BiometricsSecurityLevel', {
-      weak: BiometricsSecurityLevel.WEAK,
-      strong: BiometricsSecurityLevel.STRONG,
-    }).optional()),
+    .field(
+      'biometricsSecurityLevel',
+      ExpoValueTypes.enumerable<BiometricsSecurityLevel>('BiometricsSecurityLevel', BIOMETRICS_SECURITY_LEVEL_VALUES).optional(),
+    ),
   (fields: Record<string, ESObject>): LocalAuthenticationOptions => {
     const options = new LocalAuthenticationOptions();
 
