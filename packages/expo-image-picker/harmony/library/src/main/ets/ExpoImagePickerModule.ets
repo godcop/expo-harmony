@@ -1,4 +1,11 @@
-import { ExpoAppLifecycleState, ExpoFunction, ExpoModule, ExpoModuleContext, ExpoModuleDefinition, ExpoValueTypes } from '@expo-harmony/expo-modules-core';
+import {
+  ExpoAppLifecycleState,
+  ExpoFunction,
+  ExpoModule,
+  ExpoModuleContext,
+  ExpoModuleDefinition,
+  ExpoValueTypes,
+} from '@expo-harmony/expo-modules-core';
 import { common } from '@kit.AbilityKit';
 import { dataSharePredicates } from '@kit.ArkData';
 import { camera, cameraPicker } from '@kit.CameraKit';
