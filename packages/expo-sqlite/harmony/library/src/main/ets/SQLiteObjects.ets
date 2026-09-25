@@ -32,20 +32,31 @@ export class NativeDatabase extends ExpoSharedObject {
   }
 
   matches(path: string, options: OpenOptions): boolean {
-    return !this.closed && this.refs > 0 && !options.useNewConnection && !this.options.useNewConnection &&
-      this.path === path && this.options.enableChangeListener === options.enableChangeListener &&
+    return (
+      !this.closed &&
+      this.refs > 0 &&
+      !options.useNewConnection &&
+      !this.options.useNewConnection &&
+      this.path === path &&
+      this.options.enableChangeListener === options.enableChangeListener &&
       this.options.finalizeUnusedStatementsBeforeClosing === options.finalizeUnusedStatementsBeforeClosing &&
-      this.options.libSQLUrl === options.libSQLUrl && this.options.libSQLAuthToken === options.libSQLAuthToken &&
-      this.options.libSQLRemoteOnly === options.libSQLRemoteOnly;
+      this.options.libSQLUrl === options.libSQLUrl &&
+      this.options.libSQLAuthToken === options.libSQLAuthToken &&
+      this.options.libSQLRemoteOnly === options.libSQLRemoteOnly
+    );
   }
 
-  retain(): void { this.refs++; }
+  retain(): void {
+    this.refs++;
+  }
 
   observe(listening: boolean, callback: (event: DatabaseChangeEvent) => void): void {
     if (!this.closed) sqlite.observe(this.native, callback, listening);
   }
 
-  get isCached(): boolean { return this.refs > 0; }
+  get isCached(): boolean {
+    return this.refs > 0;
+  }
 
   closeSync(): void {
     const handle = this.handle;
@@ -93,14 +104,20 @@ export class NativeStatement extends ExpoSharedObject {
 
   prepareSync(db: NativeDatabase, source: string): void {
     this.beginPrepare();
-    try { this.native = db.host.complete(sqlite.prepareSync(db.handle, source)) as Object; }
-    finally { this.preparing = false; }
+    try {
+      this.native = db.host.complete(sqlite.prepareSync(db.handle, source)) as Object;
+    } finally {
+      this.preparing = false;
+    }
   }
 
   async prepareAsync(db: NativeDatabase, source: string): Promise<void> {
     this.beginPrepare();
-    try { this.native = db.host.complete(await sqlite.prepareAsync(db.handle, source)) as Object; }
-    finally { this.preparing = false; }
+    try {
+      this.native = db.host.complete(await sqlite.prepareAsync(db.handle, source)) as Object;
+    } finally {
+      this.preparing = false;
+    }
   }
 
   private beginPrepare(): void {
@@ -127,14 +144,20 @@ export class NativeSession extends ExpoSharedObject {
 
   createSync(db: NativeDatabase, schema: string): void {
     this.beginCreate();
-    try { this.native = db.host.complete(sqlite.createSessionSync(db.handle, schema)) as Object; }
-    finally { this.creating = false; }
+    try {
+      this.native = db.host.complete(sqlite.createSessionSync(db.handle, schema)) as Object;
+    } finally {
+      this.creating = false;
+    }
   }
 
   async createAsync(db: NativeDatabase, schema: string): Promise<void> {
     this.beginCreate();
-    try { this.native = db.host.complete(await sqlite.createSessionAsync(db.handle, schema)) as Object; }
-    finally { this.creating = false; }
+    try {
+      this.native = db.host.complete(await sqlite.createSessionAsync(db.handle, schema)) as Object;
+    } finally {
+      this.creating = false;
+    }
   }
 
   private beginCreate(): void {
@@ -143,5 +166,7 @@ export class NativeSession extends ExpoSharedObject {
     this.creating = true;
   }
 
-  override sharedObjectWillRelease(): void { this.native = null; }
+  override sharedObjectWillRelease(): void {
+    this.native = null;
+  }
 }
