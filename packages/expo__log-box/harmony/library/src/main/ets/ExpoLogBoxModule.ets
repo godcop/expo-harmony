@@ -121,9 +121,10 @@ export class ExpoLogBoxModule extends ExpoModule {
       .onDidUpdateProps((view: LogBoxView): void => view.update())
       .onDestroy((view: LogBoxView): void => view.destroy());
 
+    const constants: Record<string, ESObject> = { 'enabled': expoLogBoxController.isEnabled() };
     return new ExpoModuleDefinition()
       .name('ExpoLogBox')
-      .constants({ enabled: expoLogBoxController.isEnabled() })
+      .constants(constants)
       .asyncFunction(
         'copyTextAsync',
         ExpoFunction.typed1(ExpoValueTypes.string(), async (text: string): Promise<void> => {
