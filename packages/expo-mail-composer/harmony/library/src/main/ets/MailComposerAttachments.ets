@@ -24,6 +24,10 @@ export async function attachmentUri(value: string, context: ExpoModuleContext): 
       }
     }
   } catch (error) {
-    throw new ExpoModuleError('ERR_MAIL_COMPOSER_ATTACHMENT', `Unable to read the attachment: ${(error as Error)?.message ?? String(error)}`, error as Object);
+    throw new ExpoModuleError(
+      'ERR_MAIL_COMPOSER_ATTACHMENT',
+      `Unable to read the attachment: ${(error as Error)?.message ?? String(error)}`,
+      error as Object,
+    );
   }
 }

@@ -1,11 +1,5 @@
 import { AbilityStartFailureCode, bundleManager, common, wantConstant } from '@kit.AbilityKit';
-import {
-  ExpoAppLifecycleState,
-  ExpoFunction,
-  ExpoModule,
-  ExpoModuleDefinition,
-  ExpoModuleError,
-} from '@expo-harmony/expo-modules-core';
+import { ExpoAppLifecycleState, ExpoFunction, ExpoModule, ExpoModuleDefinition, ExpoModuleError } from '@expo-harmony/expo-modules-core';
 
 import { attachmentUri } from './MailComposerAttachments';
 import { MAIL_COMPOSER_OPTIONS, MailComposerOptions } from './MailComposerOptions';
@@ -162,9 +156,7 @@ export class ExpoMailComposerModule extends ExpoModule {
     this.pending = undefined;
 
     request.reject(
-      error instanceof ExpoModuleError
-        ? error
-        : new ExpoModuleError('ERR_MAIL_COMPOSER_COMPOSE', (error as Error)?.message ?? String(error), error),
+      error instanceof ExpoModuleError ? error : new ExpoModuleError('ERR_MAIL_COMPOSER_COMPOSE', (error as Error)?.message ?? String(error), error),
     );
   }
 
