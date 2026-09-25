@@ -20,12 +20,13 @@ enum SymbolType {
   Multicolor = 'multicolor',
 }
 
-const SYMBOL_TYPE = ExpoValueTypes.enumerable<SymbolType>('SymbolType', {
-  monochrome: SymbolType.Monochrome,
-  hierarchical: SymbolType.Hierarchical,
-  palette: SymbolType.Palette,
-  multicolor: SymbolType.Multicolor,
-});
+const SYMBOL_TYPE_VALUES: Record<string, SymbolType> = {
+  'monochrome': SymbolType.Monochrome,
+  'hierarchical': SymbolType.Hierarchical,
+  'palette': SymbolType.Palette,
+  'multicolor': SymbolType.Multicolor,
+};
+const SYMBOL_TYPE = ExpoValueTypes.enumerable<SymbolType>('SymbolType', SYMBOL_TYPE_VALUES);
 const WEIGHTS: Record<string, number> = {
   'unspecified': 400,
   'ultraLight': 100,
