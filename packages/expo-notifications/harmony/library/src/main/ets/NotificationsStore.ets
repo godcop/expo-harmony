@@ -4,7 +4,15 @@ import { notificationManager } from '@kit.NotificationKit';
 import { reminderAgentManager } from '@kit.BackgroundTasksKit';
 import { ExpoModuleError } from '@expo-harmony/expo-modules-core';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { Notification, NotificationResponse, NotificationCategory, ScheduledNotification, MAX_NOTIFICATION_ID, RESPONSE_KEY, parseResponse } from './NotificationTypes';
+import {
+  Notification,
+  NotificationResponse,
+  NotificationCategory,
+  ScheduledNotification,
+  MAX_NOTIFICATION_ID,
+  RESPONSE_KEY,
+  parseResponse,
+} from './NotificationTypes';
 
 const PERMISSION_DENIED = 201;
 
@@ -39,7 +47,10 @@ export class NotificationsStore {
 
   run<T>(operation: () => Promise<T>): Promise<T> {
     const result = this.tail.then(operation);
-    this.tail = result.then((): void => {}, (): void => {});
+    this.tail = result.then(
+      (): void => {},
+      (): void => {},
+    );
 
     return result;
   }
@@ -57,7 +68,11 @@ export class NotificationsStore {
 
   async write<T>(key: string, value: T): Promise<void> {
     if (this.failure !== undefined) {
-      throw new ExpoModuleError('ERR_NOTIFICATIONS_STORAGE', 'Notification storage rollback failed; restart the application before retrying.', this.failure);
+      throw new ExpoModuleError(
+        'ERR_NOTIFICATIONS_STORAGE',
+        'Notification storage rollback failed; restart the application before retrying.',
+        this.failure,
+      );
     }
 
     const previous = this.storage.getSync(key, '');
@@ -71,7 +86,11 @@ export class NotificationsStore {
         await this.storage.flush();
       } catch (rollback) {
         this.failure = rollback as Object;
-        throw new ExpoModuleError('ERR_NOTIFICATIONS_STORAGE', `Could not persist or restore notifications data (${key}); restart the application before retrying.`, rollback as Object);
+        throw new ExpoModuleError(
+          'ERR_NOTIFICATIONS_STORAGE',
+          `Could not persist or restore notifications data (${key}); restart the application before retrying.`,
+          rollback as Object,
+        );
       }
 
       throw new ExpoModuleError('ERR_NOTIFICATIONS_STORAGE', `Could not persist notifications data (${key}).`, error as Object);
@@ -89,7 +108,9 @@ export class NotificationsStore {
   async allocateId(): Promise<number> {
     const active = await notificationManager.getActiveNotifications();
     const occupied = new Set<number>(active.map((entry: notificationManager.NotificationRequest): number => entry.id ?? 0));
-    this.schedules().forEach((entry: ScheduledNotification): void => { occupied.add(entry.notificationId); });
+    this.schedules().forEach((entry: ScheduledNotification): void => {
+      occupied.add(entry.notificationId);
+    });
 
     let next = this.read<number>('nextId', 0);
     do {

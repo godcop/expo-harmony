@@ -2,7 +2,19 @@ import { ExpoModuleError } from '@expo-harmony/expo-modules-core';
 import { common, wantAgent, WantAgent } from '@kit.AbilityKit';
 import { notificationManager } from '@kit.NotificationKit';
 import { NotificationsStore } from './NotificationsStore';
-import { DEFAULT_ACTION, RESPONSE_KEY, MAX_ACTION_BUTTONS, Notification, NotificationResponse, NotificationAction, NotificationCategory, ScheduledNotification, pushNotification, notificationSlot, parseResponse } from './NotificationTypes';
+import {
+  DEFAULT_ACTION,
+  RESPONSE_KEY,
+  MAX_ACTION_BUTTONS,
+  Notification,
+  NotificationResponse,
+  NotificationAction,
+  NotificationCategory,
+  ScheduledNotification,
+  pushNotification,
+  notificationSlot,
+  parseResponse,
+} from './NotificationTypes';
 
 // NotificationFlagStatus is an SDK type but is not re-exported by NotificationKit.
 const FLAG_DEFAULT = 0;
@@ -16,14 +28,22 @@ export function responseParameters(notification: Notification, action: string = 
   return parameters;
 }
 
-async function clickAgent(context: common.UIAbilityContext, notification: Notification, id: number, action: string, index: number): Promise<WantAgent> {
+async function clickAgent(
+  context: common.UIAbilityContext,
+  notification: Notification,
+  id: number,
+  action: string,
+  index: number,
+): Promise<WantAgent> {
   return wantAgent.getWantAgent({
-    wants: [{
-      bundleName: context.abilityInfo.bundleName,
-      abilityName: context.abilityInfo.name,
-      action,
-      parameters: responseParameters(notification, action),
-    }],
+    wants: [
+      {
+        bundleName: context.abilityInfo.bundleName,
+        abilityName: context.abilityInfo.name,
+        action,
+        parameters: responseParameters(notification, action),
+      },
+    ],
     operationType: wantAgent.OperationType.START_ABILITY,
     requestCode: id * (MAX_ACTION_BUTTONS + 1) + index,
     wantAgentFlags: [wantAgent.WantAgentFlags.UPDATE_PRESENT_FLAG],
@@ -40,12 +60,19 @@ export function validateBehavior(value: Record<string, ESObject>): void {
     throw new ExpoModuleError('ERR_NOTIFICATIONS_UNSUPPORTED', 'Android notification priority is not supported on HarmonyOS.');
   }
   if (value.shouldShowBanner === true && value.shouldShowList === false) {
-    throw new ExpoModuleError('ERR_NOTIFICATIONS_UNSUPPORTED', 'Banner-only notifications without a notification-center entry are not supported on HarmonyOS.');
+    throw new ExpoModuleError(
+      'ERR_NOTIFICATIONS_UNSUPPORTED',
+      'Banner-only notifications without a notification-center entry are not supported on HarmonyOS.',
+    );
   }
 }
 
-export async function publishNotification(context: common.UIAbilityContext, store: NotificationsStore,
-  notification: Notification, behavior?: Record<string, ESObject>): Promise<void> {
+export async function publishNotification(
+  context: common.UIAbilityContext,
+  store: NotificationsStore,
+  notification: Notification,
+  behavior?: Record<string, ESObject>,
+): Promise<void> {
   const content = notification.request.content;
   if (behavior !== undefined) {
     validateBehavior(behavior);
@@ -62,7 +89,7 @@ export async function publishNotification(context: common.UIAbilityContext, stor
 
   const active = await notificationManager.getActiveNotifications();
   const previous = active.find((entry: notificationManager.NotificationRequest): boolean => entry.label === notification.request.identifier);
-  const id = previous?.id ?? await store.allocateId();
+  const id = previous?.id ?? (await store.allocateId());
   const category = store.categories().find((entry: NotificationCategory): boolean => entry.identifier === content.categoryIdentifier);
 
   const buttons: notificationManager.NotificationActionButton[] = [];
@@ -84,10 +111,8 @@ export async function publishNotification(context: common.UIAbilityContext, stor
     actionButtons: buttons,
     extraInfo: responseParameters(notification),
     notificationFlags: {
-      soundEnabled: content.sound === null || (behavior !== undefined && behavior.shouldPlaySound !== true)
-        ? FLAG_DISABLED : FLAG_DEFAULT,
-      bannerEnabled: behavior !== undefined && !(behavior.shouldShowBanner ?? behavior.shouldShowAlert ?? false)
-        ? FLAG_DISABLED : FLAG_DEFAULT,
+      soundEnabled: content.sound === null || (behavior !== undefined && behavior.shouldPlaySound !== true) ? FLAG_DISABLED : FLAG_DEFAULT,
+      bannerEnabled: behavior !== undefined && !(behavior.shouldShowBanner ?? behavior.shouldShowAlert ?? false) ? FLAG_DISABLED : FLAG_DEFAULT,
     },
   };
 
@@ -99,7 +124,9 @@ export function presentedNotification(request: notificationManager.NotificationR
   if (typeof serialized === 'string') {
     try {
       return parseResponse(serialized).notification;
-    } catch (_) { /* Notifications from other publishers need not use our metadata. */ }
+    } catch (_) {
+      /* Notifications from other publishers need not use our metadata. */
+    }
   }
 
   const scheduled = schedules.find((entry: ScheduledNotification): boolean => entry.notificationId === request.id);
@@ -108,8 +135,13 @@ export function presentedNotification(request: notificationManager.NotificationR
   const normal = request.content.normal ?? request.content.longText ?? request.content.multiLine;
   // System Push Kit notifications do not expose clickAction.data through this API.
   const data: Record<string, ESObject> = {};
-  const notification = pushNotification(request.label || String(request.id), normal?.title ?? null,
-    normal?.text ?? null, data, request.deliveryTime ?? Date.now());
+  const notification = pushNotification(
+    request.label || String(request.id),
+    normal?.title ?? null,
+    normal?.text ?? null,
+    data,
+    request.deliveryTime ?? Date.now(),
+  );
   notification.request.content['subtitle'] = normal?.additionalText ?? null;
   notification.request.content['sound'] = null;
 
@@ -132,8 +164,15 @@ export function validateActions(actions: NotificationAction[], options?: Record<
     if (action.textInput !== undefined) {
       throw new ExpoModuleError('ERR_NOTIFICATIONS_UNSUPPORTED', 'Text input notification actions are not supported on HarmonyOS.');
     }
-    if (action.options?.opensAppToForeground === false || action.options?.isAuthenticationRequired === true || action.options?.isDestructive === true) {
-      throw new ExpoModuleError('ERR_NOTIFICATIONS_UNSUPPORTED', 'Background, authenticated, or destructive notification actions are not supported on HarmonyOS.');
+    if (
+      action.options?.opensAppToForeground === false ||
+      action.options?.isAuthenticationRequired === true ||
+      action.options?.isDestructive === true
+    ) {
+      throw new ExpoModuleError(
+        'ERR_NOTIFICATIONS_UNSUPPORTED',
+        'Background, authenticated, or destructive notification actions are not supported on HarmonyOS.',
+      );
     }
 
     ids.add(action.identifier);

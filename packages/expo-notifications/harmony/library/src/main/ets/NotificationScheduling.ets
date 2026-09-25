@@ -2,7 +2,15 @@ import { ExpoAppLifecycleState, ExpoModuleContext, ExpoModuleError, ExpoPermissi
 import { reminderAgentManager } from '@kit.BackgroundTasksKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { NotificationsStore } from './NotificationsStore';
-import { notificationContent, identifier, REMINDER_PERMISSION, Notification, NotificationRequest, ScheduledNotification, notificationSlot } from './NotificationTypes';
+import {
+  notificationContent,
+  identifier,
+  REMINDER_PERMISSION,
+  Notification,
+  NotificationRequest,
+  ScheduledNotification,
+  notificationSlot,
+} from './NotificationTypes';
 import { validateTrigger, reminderTrigger, nextTriggerDate } from './NotificationTriggers';
 import { publishNotification, responseParameters } from './NotificationPresentation';
 
@@ -18,8 +26,7 @@ async function cancelSystemReminder(id: number): Promise<void> {
   }
 }
 
-export async function schedule(context: ExpoModuleContext, store: NotificationsStore, id: string,
-  input: ESObject, value: ESObject): Promise<string> {
+export async function schedule(context: ExpoModuleContext, store: NotificationsStore, id: string, input: ESObject, value: ESObject): Promise<string> {
   identifier(id);
 
   const content = notificationContent(input);
@@ -37,14 +44,19 @@ export async function schedule(context: ExpoModuleContext, store: NotificationsS
   }
 
   if (context.systemPermissionStatus(REMINDER_PERMISSION) !== ExpoPermissionStatus.GRANTED) {
-    throw new ExpoModuleError('ERR_NOTIFICATIONS_REMINDER_PERMISSION',
-      'Scheduled notifications require ohos.permission.PUBLISH_AGENT_REMINDER. Declare this system_grant permission in the application manifest.');
+    throw new ExpoModuleError(
+      'ERR_NOTIFICATIONS_REMINDER_PERMISSION',
+      'Scheduled notifications require ohos.permission.PUBLISH_AGENT_REMINDER. Declare this system_grant permission in the application manifest.',
+    );
   }
   if (content.sound !== 'default') {
     throw new ExpoModuleError('ERR_NOTIFICATIONS_UNSUPPORTED', 'Silent agent reminders are not supported on HarmonyOS; use the default sound.');
   }
   if (content.badge !== undefined || content.categoryIdentifier || content.sticky || content.subtitle) {
-    throw new ExpoModuleError('ERR_NOTIFICATIONS_UNSUPPORTED', 'Badge, category, sticky, or subtitle fields on agent reminders are not supported on HarmonyOS.');
+    throw new ExpoModuleError(
+      'ERR_NOTIFICATIONS_UNSUPPORTED',
+      'Badge, category, sticky, or subtitle fields on agent reminders are not supported on HarmonyOS.',
+    );
   }
 
   const reminder = reminderTrigger(trigger, notification.date);
@@ -54,7 +66,7 @@ export async function schedule(context: ExpoModuleContext, store: NotificationsS
   await store.validSchedules();
   const records = store.schedules();
   const old = records.find((entry: ScheduledNotification): boolean => entry.request.identifier === id);
-  const native = old?.notificationId ?? await store.allocateId();
+  const native = old?.notificationId ?? (await store.allocateId());
 
   reminder.notificationId = native;
   reminder.title = content.title ?? '';
@@ -80,7 +92,11 @@ export async function schedule(context: ExpoModuleContext, store: NotificationsS
     try {
       await cancelSystemReminder(handle);
     } catch (rollback) {
-      throw new ExpoModuleError('ERR_NOTIFICATIONS_SCHEDULE_ROLLBACK', `Could not persist or cancel reminder ${handle}; retry cancellation with the Expo identifier.`, rollback as Object);
+      throw new ExpoModuleError(
+        'ERR_NOTIFICATIONS_SCHEDULE_ROLLBACK',
+        `Could not persist or cancel reminder ${handle}; retry cancellation with the Expo identifier.`,
+        rollback as Object,
+      );
     }
 
     throw new ExpoModuleError(error instanceof ExpoModuleError ? error.code : 'ERR_NOTIFICATIONS_STORAGE', (error as Error).message, error as Object);
@@ -96,7 +112,10 @@ export async function cancelScheduled(store: NotificationsStore, id: string): Pr
 
   for (const entry of store.schedules().filter((item: ScheduledNotification): boolean => item.request.identifier === id)) {
     await cancelSystemReminder(entry.reminderId);
-    await store.write('scheduled', store.schedules().filter((item: ScheduledNotification): boolean => item.reminderId !== entry.reminderId));
+    await store.write(
+      'scheduled',
+      store.schedules().filter((item: ScheduledNotification): boolean => item.reminderId !== entry.reminderId),
+    );
   }
 }
 

@@ -55,8 +55,8 @@ export function validateTrigger(value: ESObject): Record<string, ESObject> | nul
 export function nextTriggerDate(trigger: Record<string, ESObject> | null, now: number = Date.now()): number | null {
   if (trigger === null) return null;
 
-  if (trigger.type === 'date') return trigger.timestamp >= now ?
-    Math.ceil(trigger.timestamp / MILLISECONDS_PER_SECOND) * MILLISECONDS_PER_SECOND : null;
+  if (trigger.type === 'date')
+    return trigger.timestamp >= now ? Math.ceil(trigger.timestamp / MILLISECONDS_PER_SECOND) * MILLISECONDS_PER_SECOND : null;
 
   if (trigger.type === 'timeInterval') {
     const timestamp = now + trigger.seconds * MILLISECONDS_PER_SECOND;
@@ -71,16 +71,18 @@ export function nextTriggerDate(trigger: Record<string, ESObject> | null, now: n
   if (trigger.type === 'daily') {
     const today = new Date(date.getFullYear(), date.getMonth(), date.getDate(), trigger.hour as number, trigger.minute as number);
 
-    return today.getTime() >= now ? today.getTime() :
-      new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1, trigger.hour as number, trigger.minute as number).getTime();
+    return today.getTime() >= now
+      ? today.getTime()
+      : new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1, trigger.hour as number, trigger.minute as number).getTime();
   }
 
   if (trigger.type === 'weekly') {
     const offset: number = (trigger.weekday - 1 - date.getDay() + 7) % 7;
     const current = new Date(date.getFullYear(), date.getMonth(), date.getDate() + offset, trigger.hour as number, trigger.minute as number);
 
-    return current.getTime() >= now ? current.getTime() :
-      new Date(date.getFullYear(), date.getMonth(), date.getDate() + offset + 7, trigger.hour as number, trigger.minute as number).getTime();
+    return current.getTime() >= now
+      ? current.getTime()
+      : new Date(date.getFullYear(), date.getMonth(), date.getDate() + offset + 7, trigger.hour as number, trigger.minute as number).getTime();
   }
 
   // Scan real calendar months, skipping absent days rather than overflowing
@@ -89,8 +91,7 @@ export function nextTriggerDate(trigger: Record<string, ESObject> | null, now: n
     const month = new Date(date.getFullYear(), date.getMonth() + offset, 1);
     if (trigger.type === 'yearly' && month.getMonth() !== trigger.month) continue;
 
-    const candidate = new Date(month.getFullYear(), month.getMonth(), trigger.day as number,
-      trigger.hour as number, trigger.minute as number, 0, 0);
+    const candidate = new Date(month.getFullYear(), month.getMonth(), trigger.day as number, trigger.hour as number, trigger.minute as number, 0, 0);
     if (candidate.getMonth() === month.getMonth() && candidate.getTime() >= now) return candidate.getTime();
   }
 
@@ -117,8 +118,12 @@ export function reminderTrigger(trigger: Record<string, ESObject>, now: number):
   const request: reminderAgentManager.ReminderRequestCalendar = {
     reminderType: reminderAgentManager.ReminderType.REMINDER_TYPE_CALENDAR,
     dateTime: {
-      year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate(),
-      hour: date.getHours(), minute: date.getMinutes(), second: date.getSeconds(),
+      year: date.getFullYear(),
+      month: date.getMonth() + 1,
+      day: date.getDate(),
+      hour: date.getHours(),
+      minute: date.getMinutes(),
+      second: date.getSeconds(),
     },
   };
 

@@ -16,11 +16,16 @@ export function notificationSlot(context: common.UIAbilityContext): notification
   const value = context.abilityInfo.metadata?.find((entry): boolean => entry.name === SLOT_METADATA)?.value ?? 'service';
 
   switch (value) {
-    case 'service': return notificationManager.SlotType.SERVICE_INFORMATION;
-    case 'social': return notificationManager.SlotType.SOCIAL_COMMUNICATION;
-    case 'content': return notificationManager.SlotType.CONTENT_INFORMATION;
-    case 'other': return notificationManager.SlotType.OTHER_TYPES;
-    default: throw new ExpoModuleError('ERR_NOTIFICATIONS_INVALID_ARGUMENT', `Invalid defaultSlotType: ${value}.`);
+    case 'service':
+      return notificationManager.SlotType.SERVICE_INFORMATION;
+    case 'social':
+      return notificationManager.SlotType.SOCIAL_COMMUNICATION;
+    case 'content':
+      return notificationManager.SlotType.CONTENT_INFORMATION;
+    case 'other':
+      return notificationManager.SlotType.OTHER_TYPES;
+    default:
+      throw new ExpoModuleError('ERR_NOTIFICATIONS_INVALID_ARGUMENT', `Invalid defaultSlotType: ${value}.`);
   }
 }
 
@@ -54,8 +59,7 @@ export function parseResponse(serialized: string): NotificationResponse {
   return response;
 }
 
-export function pushNotification(id: string, title: string | null, body: string | null,
-  data: Record<string, ESObject>, date: number): Notification {
+export function pushNotification(id: string, title: string | null, body: string | null, data: Record<string, ESObject>, date: number): Notification {
   const content: Record<string, ESObject> = {};
   content['title'] = title;
   content['subtitle'] = null;

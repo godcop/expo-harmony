@@ -6,13 +6,27 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { ExpoAbilityLifecycleSubscriber, ExpoAppLifecycleSubscriber, ExpoModuleError } from '@expo-harmony/expo-modules-core';
 import { NotificationsStore } from './NotificationsStore';
-import { DEFAULT_ACTION, RESPONSE_KEY, PUSH_LISTENER_ACTION, NotificationResponse, record, integer, pushNotification, parseResponse } from './NotificationTypes';
+import {
+  DEFAULT_ACTION,
+  RESPONSE_KEY,
+  PUSH_LISTENER_ACTION,
+  NotificationResponse,
+  record,
+  integer,
+  pushNotification,
+  parseResponse,
+} from './NotificationTypes';
 
 const NOTIFICATION_LAUNCH_REASON = 'ReasonMessage_Notification';
 const SYSTEM_WANT_KEYS = new Set<string>(Object.values(wantConstant.Params));
 
 function report(error: Object): void {
-  hilog.error(0, 'ExpoNotifications', 'Notification lifecycle operation failed (code %{public}s).', String((error as BusinessError).code ?? 'invalid-payload'));
+  hilog.error(
+    0,
+    'ExpoNotifications',
+    'Notification lifecycle operation failed (code %{public}s).',
+    String((error as BusinessError).code ?? 'invalid-payload'),
+  );
 }
 
 function captureResponse(want: Want, store: NotificationsStore): void {
@@ -45,8 +59,12 @@ function captureResponse(want: Want, store: NotificationsStore): void {
 }
 
 export class ExpoNotificationsAbilityLifecycleSubscriber extends ExpoAbilityLifecycleSubscriber {
-  onCreate(want: Want): void { captureResponse(want, NotificationsStore.get(this.context)); }
-  onNewWant(want: Want): void { captureResponse(want, NotificationsStore.get(this.context)); }
+  onCreate(want: Want): void {
+    captureResponse(want, NotificationsStore.get(this.context));
+  }
+  onNewWant(want: Want): void {
+    captureResponse(want, NotificationsStore.get(this.context));
+  }
 }
 
 class PushLifecycle extends AbilityLifecycleCallback {
@@ -80,8 +98,8 @@ class PushLifecycle extends AbilityLifecycleCallback {
               }
             }
 
-            const id = source.notifyId === undefined ? util.generateRandomUUID() :
-              String(integer(source.notifyId, 'Push Kit notifyId', 0, 2147483647));
+            const id =
+              source.notifyId === undefined ? util.generateRandomUUID() : String(integer(source.notifyId, 'Push Kit notifyId', 0, 2147483647));
             const notification = pushNotification(id, source.title ?? null, source.body ?? null, data, Date.now());
 
             store.receive(current.context, notification);
@@ -93,9 +111,11 @@ class PushLifecycle extends AbilityLifecycleCallback {
       }
 
       this.listener = (token: string): void => {
-        store.run(async (): Promise<void> => {
-          if (store.lastToken !== undefined) await store.updateToken(token);
-        }).catch((error: Object): void => report(error));
+        store
+          .run(async (): Promise<void> => {
+            if (store.lastToken !== undefined) await store.updateToken(token);
+          })
+          .catch((error: Object): void => report(error));
       };
       pushService.on('tokenUpdate', ability, this.listener);
     } catch (error) {
