@@ -1107,10 +1107,7 @@ abstract class PlaybackController extends OperationQueue {
     const value: number = bounded(rate, MIN_PLAYBACK_RATE, MAX_PLAYBACK_RATE);
 
     if (value < MIN_NATIVE_PLAYBACK_RATE) {
-      throw new ExpoAudioError(
-        'ERR_AUDIO_PLAYBACK_RATE_UNSUPPORTED',
-        `HarmonyOS cannot represent playback rates below ${MIN_NATIVE_PLAYBACK_RATE}.`,
-      );
+      throw new ExpoAudioError('ERR_AUDIO_PLAYBACK_RATE_UNSUPPORTED', `HarmonyOS cannot represent playback rates below ${MIN_NATIVE_PLAYBACK_RATE}.`);
     }
     if (deviceInfo.sdkApiVersion < 20) {
       const speed: number = legacySpeedValue(nearestLegacySpeed(value));
@@ -1673,8 +1670,9 @@ class PlaylistController extends PlaybackController {
   }
 
   private scheduleCurrentTrackLoad(resume: boolean): void {
-    this.schedule('change playlist track', async (): Promise<void> =>
-      this.replacePlayer(this.tracks[this.indexValue] ?? null, resume && this.intendedPlaying),
+    this.schedule(
+      'change playlist track',
+      async (): Promise<void> => this.replacePlayer(this.tracks[this.indexValue] ?? null, resume && this.intendedPlaying),
     );
   }
 
