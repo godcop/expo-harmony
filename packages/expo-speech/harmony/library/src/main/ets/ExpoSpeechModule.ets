@@ -238,8 +238,8 @@ export class ExpoSpeechModule extends ExpoModule {
   private publish(event: string, id: string, error?: string): void {
     if (this.destroyed || !this.context.isValid) return;
 
-    if (error === undefined) this.sendEvent(event, { id });
-    else this.sendEvent(event, { id, error });
+    const payload: Record<string, ESObject> = error === undefined ? { 'id': id } : { 'id': id, 'error': error };
+    this.sendEvent(event, payload);
   }
 
   private releaseEngine(): void {
