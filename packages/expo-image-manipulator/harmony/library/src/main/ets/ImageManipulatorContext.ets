@@ -84,11 +84,7 @@ class ManipulatorTask {
     this.context.assertActive();
     if (this.closed) throw new ExpoModuleError('ERR_IMAGE_MANIPULATOR_CANCELLED', 'The image manipulation was reset or released.');
     if (this.error !== undefined) {
-      throw new ExpoModuleError(
-        this.error instanceof ExpoModuleError ? this.error.code : 'ERR_IMAGE_MANIPULATOR',
-        this.error.message,
-        this.error,
-      );
+      throw new ExpoModuleError(this.error instanceof ExpoModuleError ? this.error.code : 'ERR_IMAGE_MANIPULATOR', this.error.message, this.error);
     }
     if (this.pixel === undefined) throw new ExpoModuleError('ERR_IMAGE_MANIPULATOR', 'The image has not been loaded.');
 

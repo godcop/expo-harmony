@@ -40,17 +40,19 @@ export const FINITE_NUMBER = new ExpoValueType<number>(
   (value: number): ESObject => value,
 );
 
-export const FLIP_TYPE = ExpoValueTypes.enumerable<FlipType>('FlipType', {
-  vertical: FlipType.VERTICAL,
-  horizontal: FlipType.HORIZONTAL,
-});
+export const FLIP_TYPE_VALUES: Record<string, FlipType> = {
+  'vertical': FlipType.VERTICAL,
+  'horizontal': FlipType.HORIZONTAL,
+};
+export const FLIP_TYPE = ExpoValueTypes.enumerable<FlipType>('FlipType', FLIP_TYPE_VALUES);
 
-const IMAGE_FORMAT = ExpoValueTypes.enumerable<ImageFormat>('ImageFormat', {
-  jpeg: ImageFormat.JPEG,
-  jpg: ImageFormat.JPG,
-  png: ImageFormat.PNG,
-  webp: ImageFormat.WEBP,
-});
+const IMAGE_FORMAT_VALUES: Record<string, ImageFormat> = {
+  'jpeg': ImageFormat.JPEG,
+  'jpg': ImageFormat.JPG,
+  'png': ImageFormat.PNG,
+  'webp': ImageFormat.WEBP,
+};
+const IMAGE_FORMAT = ExpoValueTypes.enumerable<ImageFormat>('ImageFormat', IMAGE_FORMAT_VALUES);
 
 export const RESIZE_OPTIONS = ExpoValueTypes.shapedRecord<ResizeOptions>(
   'ResizeOptions',
