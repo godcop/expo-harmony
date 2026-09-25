@@ -1,4 +1,12 @@
-import { ExpoFunction, ExpoModule, ExpoModuleContext, ExpoModuleDefinition, ExpoModuleError, ExpoValueType, ExpoValueTypes } from '@expo-harmony/expo-modules-core';
+import {
+  ExpoFunction,
+  ExpoModule,
+  ExpoModuleContext,
+  ExpoModuleDefinition,
+  ExpoModuleError,
+  ExpoValueType,
+  ExpoValueTypes,
+} from '@expo-harmony/expo-modules-core';
 import { minorsProtection } from '@kit.AccountKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 
@@ -21,14 +29,12 @@ export class ExpoAgeRangeModule extends ExpoModule {
   }
 
   definition(): ExpoModuleDefinition {
-    return new ExpoModuleDefinition()
-      .name('ExpoAgeRange')
-      .asyncFunction(
-        'requestAgeRangeAsync',
-        ExpoFunction.typed1(REQUEST, async (_options: Object): Promise<Response> => {
-          return await this.request();
-        }),
-      );
+    return new ExpoModuleDefinition().name('ExpoAgeRange').asyncFunction(
+      'requestAgeRangeAsync',
+      ExpoFunction.typed1(REQUEST, async (_options: Object): Promise<Response> => {
+        return await this.request();
+      }),
+    );
   }
 
   private async request(): Promise<Response> {
@@ -60,8 +66,7 @@ export class ExpoAgeRangeModule extends ExpoModule {
         return { lowerBound: null, upperBound: null };
       }
 
-      if (!Number.isSafeInteger(group.lowerAge) || !Number.isSafeInteger(group.upperAge) ||
-        group.lowerAge < 0 || group.upperAge <= group.lowerAge) {
+      if (!Number.isSafeInteger(group.lowerAge) || !Number.isSafeInteger(group.upperAge) || group.lowerAge < 0 || group.upperAge <= group.lowerAge) {
         throw new ExpoModuleError('ERR_AGE_RANGE_UNKNOWN_RESPONSE', 'The Age Range service returned invalid age bounds');
       }
 
