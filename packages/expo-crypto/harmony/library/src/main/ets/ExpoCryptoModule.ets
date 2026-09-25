@@ -341,11 +341,7 @@ export class ExpoCryptoAESModule extends ExpoModule {
 
               return keyClass.instance(new EncryptionKeyObject(context, bytes));
             } catch (error) {
-              throw new CryptoError(
-                'ERR_CRYPTO_AES_KEY',
-                `Unable to generate the AES key. ${errorMessage(error as Object)}`,
-                error as Object,
-              );
+              throw new CryptoError('ERR_CRYPTO_AES_KEY', `Unable to generate the AES key. ${errorMessage(error as Object)}`, error as Object);
             } finally {
               if (bytes !== undefined) secureErase(bytes);
               native?.clearMem();
@@ -673,11 +669,7 @@ function fillRandom(target: IntegerTypedArray): void {
 
     bytes.set(generated);
   } catch (error) {
-    throw new CryptoError(
-      'ERR_CRYPTO_RANDOM',
-      `Unable to generate secure random bytes. ${errorMessage(error as Object)}`,
-      error as Object,
-    );
+    throw new CryptoError('ERR_CRYPTO_RANDOM', `Unable to generate secure random bytes. ${errorMessage(error as Object)}`, error as Object);
   }
 }
 
@@ -693,11 +685,7 @@ async function randomBytesAsync(length: number): Promise<Uint8Array> {
 
     return copyBytes(generated);
   } catch (error) {
-    throw new CryptoError(
-      'ERR_CRYPTO_RANDOM',
-      `Unable to generate secure random bytes. ${errorMessage(error as Object)}`,
-      error as Object,
-    );
+    throw new CryptoError('ERR_CRYPTO_RANDOM', `Unable to generate secure random bytes. ${errorMessage(error as Object)}`, error as Object);
   }
 }
 
@@ -705,11 +693,7 @@ function randomUuid(): string {
   try {
     return util.generateRandomUUID().toLowerCase();
   } catch (error) {
-    throw new CryptoError(
-      'ERR_CRYPTO_RANDOM',
-      `Unable to generate a secure random UUID. ${errorMessage(error as Object)}`,
-      error as Object,
-    );
+    throw new CryptoError('ERR_CRYPTO_RANDOM', `Unable to generate a secure random UUID. ${errorMessage(error as Object)}`, error as Object);
   }
 }
 
@@ -722,11 +706,7 @@ function digestBytes(algorithm: string, data: Uint8Array): Uint8Array {
 
     return copyBytes(digest.digestSync().data);
   } catch (error) {
-    throw new CryptoError(
-      'ERR_CRYPTO_DIGEST',
-      `Unable to compute the ${algorithm} digest. ${errorMessage(error as Object)}`,
-      error as Object,
-    );
+    throw new CryptoError('ERR_CRYPTO_DIGEST', `Unable to compute the ${algorithm} digest. ${errorMessage(error as Object)}`, error as Object);
   }
 }
 
@@ -739,11 +719,7 @@ async function digestBytesAsync(algorithm: string, data: Uint8Array): Promise<Ui
 
     return copyBytes((await digest.digest()).data);
   } catch (error) {
-    throw new CryptoError(
-      'ERR_CRYPTO_DIGEST',
-      `Unable to compute the ${algorithm} digest. ${errorMessage(error as Object)}`,
-      error as Object,
-    );
+    throw new CryptoError('ERR_CRYPTO_DIGEST', `Unable to compute the ${algorithm} digest. ${errorMessage(error as Object)}`, error as Object);
   }
 }
 
@@ -808,11 +784,7 @@ async function encryptAesGcm(plaintext: Uint8Array, key: EncryptionKeyObject, op
       throw new CryptoError(error.code, error.message, error.cause);
     }
 
-    throw new CryptoError(
-      'ERR_CRYPTO_ENCRYPT',
-      `AES-GCM encryption failed. ${errorMessage(error as Object)}`,
-      error as Object,
-    );
+    throw new CryptoError('ERR_CRYPTO_ENCRYPT', `AES-GCM encryption failed. ${errorMessage(error as Object)}`, error as Object);
   } finally {
     if (bytes !== undefined) secureErase(bytes);
     native?.clearMem();
@@ -857,11 +829,7 @@ async function decryptAesGcm(sealed: SealedDataObject, key: EncryptionKeyObject,
       throw new CryptoError(error.code, error.message, error.cause);
     }
 
-    throw new CryptoError(
-      'ERR_CRYPTO_DECRYPT',
-      `AES-GCM authentication failed. ${errorMessage(error as Object)}`,
-      error as Object,
-    );
+    throw new CryptoError('ERR_CRYPTO_DECRYPT', `AES-GCM authentication failed. ${errorMessage(error as Object)}`, error as Object);
   } finally {
     if (bytes !== undefined) secureErase(bytes);
     native?.clearMem();
@@ -874,12 +842,7 @@ function sealedFromCombined(context: ExpoModuleContext, combined: Uint8Array, co
   }
 
   const offset = combined.byteLength - config.tagLength;
-  return new SealedDataObject(
-    context,
-    combined.subarray(0, config.ivLength),
-    combined.subarray(config.ivLength, offset),
-    combined.subarray(offset),
-  );
+  return new SealedDataObject(context, combined.subarray(0, config.ivLength), combined.subarray(config.ivLength, offset), combined.subarray(offset));
 }
 
 function sealedFromParts(context: ExpoModuleContext, iv: Uint8Array, ciphertext: Uint8Array, tag?: TagArgument): SealedDataObject {
