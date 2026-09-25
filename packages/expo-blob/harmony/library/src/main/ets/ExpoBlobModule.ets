@@ -24,17 +24,16 @@ class BlobOptions {
   endings: EndingType = EndingType.Transparent;
 }
 
+const ENDING_TYPE_VALUES: Record<string, EndingType> = {
+  'transparent': EndingType.Transparent,
+  'native': EndingType.Native,
+};
+
 const OPTIONS = ExpoValueTypes.shapedRecord<BlobOptions>(
   'BlobOptions',
-  new ExpoRecordShape().field('type', ExpoValueTypes.string().nullable().optional()).field(
-    'endings',
-    ExpoValueTypes.enumerable<EndingType>('EndingType', {
-      transparent: EndingType.Transparent,
-      native: EndingType.Native,
-    })
-      .nullable()
-      .optional(),
-  ),
+  new ExpoRecordShape()
+    .field('type', ExpoValueTypes.string().nullable().optional())
+    .field('endings', ExpoValueTypes.enumerable<EndingType>('EndingType', ENDING_TYPE_VALUES).nullable().optional()),
   (fields: Record<string, ESObject>): BlobOptions => {
     const options = new BlobOptions();
     options.type = (fields['type'] as string | undefined | null) ?? '';
