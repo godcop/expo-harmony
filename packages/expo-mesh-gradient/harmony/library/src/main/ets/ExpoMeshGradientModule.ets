@@ -30,7 +30,10 @@ class ExpoMeshGradientView extends ExpoView {
   update(): void {
     try {
       this.mesh = createMesh(
-        this.columns, this.rows, this.points, this.colors,
+        this.columns,
+        this.rows,
+        this.points,
+        this.colors,
         this.resolution['x'] ?? DEFAULT_RESOLUTION,
         this.resolution['y'] ?? DEFAULT_RESOLUTION,
         this.smoothsColors,
@@ -62,8 +65,16 @@ class MeshRenderNode extends RenderNode {
 
     try {
       // DST selects vertex colors; the brush still composites them with SRC_OVER.
-      canvas.drawVertices(drawing.VertexMode.TRIANGLES_VERTEXMODE, mesh.positions.length, mesh.positions,
-        mesh.positions, mesh.colors, mesh.indices.length, mesh.indices, drawing.BlendMode.DST);
+      canvas.drawVertices(
+        drawing.VertexMode.TRIANGLES_VERTEXMODE,
+        mesh.positions.length,
+        mesh.positions,
+        mesh.positions,
+        mesh.colors,
+        mesh.indices.length,
+        mesh.indices,
+        drawing.BlendMode.DST,
+      );
     } catch (error) {
       console.warn(`ExpoMeshGradient could not draw the mesh: ${String(error)}`);
     } finally {
@@ -161,21 +172,54 @@ export class ExpoMeshGradientModule extends ExpoModule {
       wrapBuilder(buildMeshGradient),
     )
       .groupView()
-      .prop('columns', ExpoValueTypes.number(), (view: ExpoMeshGradientView, value: number): void => {
-        view.columns = value;
-      }, 0)
-      .prop('rows', ExpoValueTypes.number(), (view: ExpoMeshGradientView, value: number): void => {
-        view.rows = value;
-      }, 0)
-      .prop('points', ExpoValueTypes.array(ExpoValueTypes.array(ExpoValueTypes.number())),
-        (view: ExpoMeshGradientView, value: number[][]): void => { view.points = value; }, [])
-      .prop('colors', ExpoValueTypes.array(ExpoValueTypes.number()),
-        (view: ExpoMeshGradientView, value: number[]): void => { view.colors = value; }, [])
-      .prop('resolution', ExpoValueTypes.record(ExpoValueTypes.number()),
-        (view: ExpoMeshGradientView, value: Record<string, number>): void => { view.resolution = value; }, {})
-      .prop('smoothsColors', ExpoValueTypes.boolean(), (view: ExpoMeshGradientView, value: boolean): void => {
-        view.smoothsColors = value;
-      }, true)
+      .prop(
+        'columns',
+        ExpoValueTypes.number(),
+        (view: ExpoMeshGradientView, value: number): void => {
+          view.columns = value;
+        },
+        0,
+      )
+      .prop(
+        'rows',
+        ExpoValueTypes.number(),
+        (view: ExpoMeshGradientView, value: number): void => {
+          view.rows = value;
+        },
+        0,
+      )
+      .prop(
+        'points',
+        ExpoValueTypes.array(ExpoValueTypes.array(ExpoValueTypes.number())),
+        (view: ExpoMeshGradientView, value: number[][]): void => {
+          view.points = value;
+        },
+        [],
+      )
+      .prop(
+        'colors',
+        ExpoValueTypes.array(ExpoValueTypes.number()),
+        (view: ExpoMeshGradientView, value: number[]): void => {
+          view.colors = value;
+        },
+        [],
+      )
+      .prop(
+        'resolution',
+        ExpoValueTypes.record(ExpoValueTypes.number()),
+        (view: ExpoMeshGradientView, value: Record<string, number>): void => {
+          view.resolution = value;
+        },
+        {},
+      )
+      .prop(
+        'smoothsColors',
+        ExpoValueTypes.boolean(),
+        (view: ExpoMeshGradientView, value: boolean): void => {
+          view.smoothsColors = value;
+        },
+        true,
+      )
       .prop('mask', ExpoValueTypes.boolean(), (_view: ExpoMeshGradientView, _value: boolean): void => {}, false)
       .prop('ignoresSafeArea', ExpoValueTypes.boolean(), (_view: ExpoMeshGradientView, _value: boolean): void => {}, true)
       .onDidUpdateProps((view: ExpoMeshGradientView): void => view.update())

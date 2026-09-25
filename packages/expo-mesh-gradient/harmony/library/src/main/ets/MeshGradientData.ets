@@ -67,8 +67,16 @@ export function createMesh(
   stepsY: number,
   smooth: boolean,
 ): MeshGradientData | undefined {
-  if (!Number.isSafeInteger(columns) || columns < 0 || !Number.isSafeInteger(rows) || rows < 0 ||
-    !Number.isSafeInteger(stepsX) || stepsX < 1 || !Number.isSafeInteger(stepsY) || stepsY < 1) {
+  if (
+    !Number.isSafeInteger(columns) ||
+    columns < 0 ||
+    !Number.isSafeInteger(rows) ||
+    rows < 0 ||
+    !Number.isSafeInteger(stepsX) ||
+    stepsX < 1 ||
+    !Number.isSafeInteger(stepsY) ||
+    stepsY < 1
+  ) {
     throw new Error('ExpoMeshGradient requires non-negative integer dimensions and positive integer resolution.');
   }
 
