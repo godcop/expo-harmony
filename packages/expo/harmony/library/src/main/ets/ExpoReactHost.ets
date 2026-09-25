@@ -3,10 +3,12 @@ import {
   AppLoaderProvider,
   ExpoModuleError,
   ExpoReloadRegistry,
+  HeadlessAppLoaderDelegate,
   ReactActivityHandlerRegistration,
   ReactRuntimeContext,
   ReactNativeRuntime,
   RnohReactRuntime,
+  RnohReactRuntimeOptions,
   RNHeadlessAppLoader,
   RnohContextLifecycle,
   observeRnohDestroy,
@@ -61,22 +63,24 @@ export class ExpoReactHost {
 
     this.options = options;
     this.delegate = new ExpoReactHostDelegate(options.provider.reactNativeHostHandlers, options.provider.runtimeBindings);
-    this.loader = new RNHeadlessAppLoader({
-      workerScriptUrl: options.workerScriptUrl,
-      isAvailable: (): boolean => this.isAvailable(),
-      getRuntime: (): ReactNativeRuntime | undefined => {
-        for (const instance of this.runtimes) {
-          const runtime = this.owners.get(instance);
-          if (runtime !== undefined) return runtime;
-        }
-        return undefined;
-      },
-      hasOtherOwner: (context: common.UIAbilityContext): boolean => ExpoReactHost.hasOtherOwner(context),
-      createRuntime: (core: RNOHCoreContext, context: common.Context): ReactNativeRuntime =>
-        this.runtime(core, this.createRNInstanceOptions(true), (): JSBundleProvider => this.createJSBundleProvider(context, this.debug), false),
-      begin: (context: common.UIAbilityContext): void => this.options.provider.hostState.beginAbility(context, {}),
-      end: (context: common.UIAbilityContext): void => this.options.provider.hostState.finishAbility(context),
-    });
+    this.loader = new RNHeadlessAppLoader(
+      new HostLoaderDelegate(
+        options.workerScriptUrl,
+        (): boolean => this.isAvailable(),
+        (): ReactNativeRuntime | undefined => {
+          for (const instance of this.runtimes) {
+            const runtime = this.owners.get(instance);
+            if (runtime !== undefined) return runtime;
+          }
+          return undefined;
+        },
+        (context: common.UIAbilityContext): boolean => ExpoReactHost.hasOtherOwner(context),
+        (core: RNOHCoreContext, context: common.Context): ReactNativeRuntime =>
+          this.runtime(core, this.createRNInstanceOptions(true), (): JSBundleProvider => this.createJSBundleProvider(context, this.debug), false),
+        (context: common.UIAbilityContext): void => this.options.provider.hostState.beginAbility(context, {}),
+        (context: common.UIAbilityContext): void => this.options.provider.hostState.finishAbility(context),
+      ),
+    );
   }
 
   initialize(context: common.Context): void {
@@ -190,22 +194,25 @@ export class ExpoReactHost {
     replace?: (reason: string) => Promise<RNInstance>,
   ): ReactNativeRuntime {
     const external = typeof (source as RNInstance).getId === 'function';
-    const runtime = new RnohReactRuntime(core, {
-      options: external
-        ? undefined
-        : (): RNInstanceOptions => {
-            const options = source as RNInstanceOptions;
-            // Resolve after the launcher's selection gate, on every reload as well.
-            return withDeveloperSupport(options, this.delegate.useDeveloperSupport(options.enableDebugger ?? this.debug));
-          },
-      instance: external ? (source as RNInstance) : undefined,
-      replace,
-      bundle,
-      prepare: async (instance: RNInstance): Promise<void> => {
-        this.owners.set(instance, runtime);
-        await this.prepareRuntime(instance, core, runtime, ui);
-      },
-    });
+    const runtime = new RnohReactRuntime(
+      core,
+      new HostRuntimeOptions(
+        external
+          ? undefined
+          : (): RNInstanceOptions => {
+              const options = source as RNInstanceOptions;
+              // Resolve after the launcher's selection gate, on every reload as well.
+              return withDeveloperSupport(options, this.delegate.useDeveloperSupport(options.enableDebugger ?? this.debug));
+            },
+        external ? (source as RNInstance) : undefined,
+        replace,
+        bundle,
+        async (instance: RNInstance): Promise<void> => {
+          this.owners.set(instance, runtime);
+          await this.prepareRuntime(instance, core, runtime, ui);
+        },
+      ),
+    );
     if (external) this.owners.set(source as RNInstance, runtime);
     return runtime;
   }
@@ -301,5 +308,83 @@ export class ExpoReactHost {
 
   unload(): Promise<void> {
     return this.owner === undefined ? Promise.resolve() : this.loader.invalidateAppAsync(this.owner);
+  }
+}
+
+class HostLoaderDelegate implements HeadlessAppLoaderDelegate {
+  readonly workerScriptUrl: string;
+  private readonly available: () => boolean;
+  private readonly runtime: () => ReactNativeRuntime | undefined;
+  private readonly otherOwner: (context: common.UIAbilityContext) => boolean;
+  private readonly create: (core: RNOHCoreContext, context: common.Context) => ReactNativeRuntime;
+  private readonly beginAbility: (context: common.UIAbilityContext) => void;
+  private readonly finishAbility: (context: common.UIAbilityContext) => void;
+
+  constructor(
+    workerScriptUrl: string,
+    available: () => boolean,
+    runtime: () => ReactNativeRuntime | undefined,
+    otherOwner: (context: common.UIAbilityContext) => boolean,
+    create: (core: RNOHCoreContext, context: common.Context) => ReactNativeRuntime,
+    beginAbility: (context: common.UIAbilityContext) => void,
+    finishAbility: (context: common.UIAbilityContext) => void,
+  ) {
+    this.workerScriptUrl = workerScriptUrl;
+    this.available = available;
+    this.runtime = runtime;
+    this.otherOwner = otherOwner;
+    this.create = create;
+    this.beginAbility = beginAbility;
+    this.finishAbility = finishAbility;
+  }
+
+  isAvailable(): boolean {
+    return this.available();
+  }
+
+  hasOtherOwner(context: common.UIAbilityContext): boolean {
+    return this.otherOwner(context);
+  }
+
+  getRuntime(): ReactNativeRuntime | undefined {
+    return this.runtime();
+  }
+
+  createRuntime(core: RNOHCoreContext, context: common.Context): ReactNativeRuntime {
+    return this.create(core, context);
+  }
+
+  begin(context: common.UIAbilityContext): void {
+    this.beginAbility(context);
+  }
+
+  end(context: common.UIAbilityContext): void {
+    this.finishAbility(context);
+  }
+}
+
+class HostRuntimeOptions implements RnohReactRuntimeOptions {
+  options?: RNInstanceOptions | (() => RNInstanceOptions);
+  instance?: RNInstance;
+  replace?: (reason: string) => Promise<RNInstance>;
+  bundle?: (() => JSBundleProvider) | undefined;
+  private readonly prepareCallback: (instance: RNInstance) => Promise<void>;
+
+  constructor(
+    options: RNInstanceOptions | (() => RNInstanceOptions) | undefined,
+    instance: RNInstance | undefined,
+    replace: ((reason: string) => Promise<RNInstance>) | undefined,
+    bundle: (() => JSBundleProvider) | undefined,
+    prepare: (instance: RNInstance) => Promise<void>,
+  ) {
+    this.options = options;
+    this.instance = instance;
+    this.replace = replace;
+    this.bundle = bundle;
+    this.prepareCallback = prepare;
+  }
+
+  prepare(instance: RNInstance): Promise<void> {
+    return this.prepareCallback(instance);
   }
 }

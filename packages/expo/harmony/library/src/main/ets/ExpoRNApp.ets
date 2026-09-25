@@ -79,11 +79,52 @@ struct ExpoReactRootView {
     });
   }
 }
+class AppRootViewContext implements ReactRootViewContext {
+  readonly owner: Object;
+  readonly core: RNOHCoreContext;
+  readonly host: ExpoReactHost;
+  readonly instanceConfig: RNInstanceConfig;
+  readonly appKey: string;
+  readonly initialProps: Record<string, string>;
+  readonly jsBundleProvider: JSBundleProvider | undefined;
+  readonly wrappedCustomRNComponentBuilder: WrappedCustomRNComponentBuilder | undefined;
+  readonly onSetUp: (instance: RNInstance) => Promise<void> | void;
+  readonly ready: boolean;
+  readonly isCustomRoot: boolean | undefined;
+  readonly defaultRoot: WrappedBuilder<[ReactRootViewContext]>;
+
+  constructor(
+    owner: Object,
+    core: RNOHCoreContext,
+    host: ExpoReactHost,
+    instanceConfig: RNInstanceConfig,
+    appKey: string,
+    initialProps: Record<string, string>,
+    jsBundleProvider: JSBundleProvider | undefined,
+    wrappedCustomRNComponentBuilder: WrappedCustomRNComponentBuilder | undefined,
+    ready: boolean,
+    isCustomRoot: boolean | undefined,
+    defaultRoot: WrappedBuilder<[ReactRootViewContext]>,
+  ) {
+    this.owner = owner;
+    this.core = core;
+    this.host = host;
+    this.instanceConfig = instanceConfig;
+    this.appKey = appKey;
+    this.initialProps = initialProps;
+    this.jsBundleProvider = jsBundleProvider;
+    this.wrappedCustomRNComponentBuilder = wrappedCustomRNComponentBuilder;
+    this.onSetUp = (): void => {};
+    this.ready = ready;
+    this.isCustomRoot = isCustomRoot;
+    this.defaultRoot = defaultRoot;
+  }
+}
 @Component
 export struct ExpoRNApp {
-  @Require public rnInstanceConfig!: RNInstanceConfig;
+  @Require public rnInstanceConfig: RNInstanceConfig;
   @Require public appKey: string = '';
-  @Require public reactHost!: ExpoReactHost;
+  @Require public reactHost: ExpoReactHost;
   public initialProps: Record<string, string> = {};
   public jsBundleProvider: JSBundleProvider | undefined = undefined;
   public wrappedCustomRNComponentBuilder: WrappedCustomRNComponentBuilder | undefined = undefined;
@@ -174,20 +215,19 @@ export struct ExpoRNApp {
 
   private rootContext(ready: boolean): ReactRootViewContext {
     if (this.core === undefined) throw new ExpoModuleError('ERR_REACT_HOST_CONTEXT', 'The RNOH context is not available.');
-    return {
-      owner: this,
-      core: this.core,
-      host: this.reactHost,
-      instanceConfig: this.instanceConfig(),
-      appKey: this.appKey,
-      initialProps: this.initialProps,
-      jsBundleProvider: this.runtime?.bundle ?? this.jsBundleProvider,
-      wrappedCustomRNComponentBuilder: this.wrappedCustomRNComponentBuilder,
-      onSetUp: (_instance: RNInstance): void => {},
+    return new AppRootViewContext(
+      this,
+      this.core,
+      this.reactHost,
+      this.instanceConfig(),
+      this.appKey,
+      this.initialProps,
+      this.runtime?.bundle ?? this.jsBundleProvider,
+      this.wrappedCustomRNComponentBuilder,
       ready,
-      isCustomRoot: this.selectedRoot !== undefined,
-      defaultRoot: wrapBuilder(buildExpoDefaultRoot),
-    };
+      this.selectedRoot !== undefined,
+      wrapBuilder(buildExpoDefaultRoot),
+    );
   }
 
   private instanceConfig(): RNInstanceConfig {
