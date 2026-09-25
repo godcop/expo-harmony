@@ -120,9 +120,10 @@ class AbilitySystemUIState {
   onConfigurationUpdated(mode: ConfigurationConstant.ColorMode | undefined): void {
     if (this.destroyed || this.style !== 'automatic') return;
 
-    this.mode = mode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK || mode === ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT
-      ? mode
-      : resolvedSystemColorMode(this.context);
+    this.mode =
+      mode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK || mode === ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT
+        ? mode
+        : resolvedSystemColorMode(this.context);
 
     Array.from(this.windows.values()).forEach((target: window.Window): void => {
       this.initializeWindow(target, true, (): boolean => !this.destroyed).catch((error: Object): void => {
@@ -534,9 +535,7 @@ function parseManifestColor(value: string): ParsedBackgroundColor | null {
 function resolvedSystemColorMode(context: common.UIAbilityContext): ConfigurationConstant.ColorMode {
   const mode: number = context.resourceManager.getConfigurationSync().colorMode;
 
-  return mode === resourceManager.ColorMode.DARK
-    ? ConfigurationConstant.ColorMode.COLOR_MODE_DARK
-    : ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT;
+  return mode === resourceManager.ColorMode.DARK ? ConfigurationConstant.ColorMode.COLOR_MODE_DARK : ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT;
 }
 
 function readConfiguration(context: common.UIAbilityContext): SystemUIConfiguration {
