@@ -404,8 +404,13 @@ export class ExpoSharingModule extends ExpoModule {
         }),
       )
       .asyncFunction('isAvailableAsync', async (): Promise<boolean> => {
-        return !this.destroyed && this.context.isValid && !this.context.isHeadless &&
-          this.context.appLifecycleState === ExpoAppLifecycleState.FOREGROUND && canIUse(SHARE_CAPABILITY);
+        return (
+          !this.destroyed &&
+          this.context.isValid &&
+          !this.context.isHeadless &&
+          this.context.appLifecycleState === ExpoAppLifecycleState.FOREGROUND &&
+          canIUse(SHARE_CAPABILITY)
+        );
       })
       .syncFunction('getSharedPayloads', (): SharePayload[] => this.incoming?.getPayloads() ?? [])
       .asyncFunction('getResolvedSharedPayloadsAsync', async (): Promise<ResolvedSharePayload[]> => {
