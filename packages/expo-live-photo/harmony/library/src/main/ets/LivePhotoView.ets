@@ -198,11 +198,7 @@ export class LivePhotoView extends ExpoView {
       const image = localFileUri(source.photoUri, 'photoUri');
       const video = localFileUri(source.pairedVideoUri, 'pairedVideoUri');
 
-      const photo = await photoAccessHelper.MediaAssetManager.loadMovingPhoto(
-        this.context.rnComponentContext.uiAbilityContext,
-        image,
-        video,
-      );
+      const photo = await photoAccessHelper.MediaAssetManager.loadMovingPhoto(this.context.rnComponentContext.uiAbilityContext, image, video);
 
       if (!this.destroyed && id === this.loadId) this.renderPhoto(photo);
     } catch (error) {
@@ -243,7 +239,8 @@ export class LivePhotoView extends ExpoView {
     this.clearRenderedPhoto();
 
     const message = (error as Error).message || String(error);
-    this.sendEvent('onLoadError', { message });
+    const payload: Record<string, ESObject> = { 'message': message };
+    this.sendEvent('onLoadError', payload);
   }
 
   private isCurrent(item: RenderedPhoto): boolean {

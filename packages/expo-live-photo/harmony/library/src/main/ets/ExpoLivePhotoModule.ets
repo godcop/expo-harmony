@@ -24,8 +24,10 @@ const SOURCE_TYPE = ExpoValueTypes.shapedRecord<LivePhotoAsset>(
     return fields;
   },
 );
-const CONTENT_FIT_TYPE = ExpoValueTypes.enumerable<ContentFit>('ContentFit', { contain: ContentFit.Contain, cover: ContentFit.Cover });
-const PLAYBACK_STYLE_TYPE = ExpoValueTypes.enumerable<PlaybackStyle>('PlaybackStyle', { full: PlaybackStyle.Full, hint: PlaybackStyle.Hint });
+const CONTENT_FIT_VALUES: Record<string, ContentFit> = { 'contain': ContentFit.Contain, 'cover': ContentFit.Cover };
+const CONTENT_FIT_TYPE = ExpoValueTypes.enumerable<ContentFit>('ContentFit', CONTENT_FIT_VALUES);
+const PLAYBACK_STYLE_VALUES: Record<string, PlaybackStyle> = { 'full': PlaybackStyle.Full, 'hint': PlaybackStyle.Hint };
+const PLAYBACK_STYLE_TYPE = ExpoValueTypes.enumerable<PlaybackStyle>('PlaybackStyle', PLAYBACK_STYLE_VALUES);
 
 export class ExpoLivePhotoModule extends ExpoModule {
   constructor(context: ExpoModuleContext) {
