@@ -35,29 +35,30 @@ enum ExpoBlurTint {
   SYSTEM_CHROME_MATERIAL_DARK = 'systemChromeMaterialDark',
 }
 
-const BLUR_TINT_TYPE = ExpoValueTypes.enumerable<ExpoBlurTint>('BlurTint', {
-  default: ExpoBlurTint.DEFAULT,
-  extraLight: ExpoBlurTint.EXTRA_LIGHT,
-  light: ExpoBlurTint.LIGHT,
-  dark: ExpoBlurTint.DARK,
-  regular: ExpoBlurTint.REGULAR,
-  prominent: ExpoBlurTint.PROMINENT,
-  systemUltraThinMaterial: ExpoBlurTint.SYSTEM_ULTRA_THIN_MATERIAL,
-  systemThinMaterial: ExpoBlurTint.SYSTEM_THIN_MATERIAL,
-  systemMaterial: ExpoBlurTint.SYSTEM_MATERIAL,
-  systemThickMaterial: ExpoBlurTint.SYSTEM_THICK_MATERIAL,
-  systemChromeMaterial: ExpoBlurTint.SYSTEM_CHROME_MATERIAL,
-  systemUltraThinMaterialLight: ExpoBlurTint.SYSTEM_ULTRA_THIN_MATERIAL_LIGHT,
-  systemThinMaterialLight: ExpoBlurTint.SYSTEM_THIN_MATERIAL_LIGHT,
-  systemMaterialLight: ExpoBlurTint.SYSTEM_MATERIAL_LIGHT,
-  systemThickMaterialLight: ExpoBlurTint.SYSTEM_THICK_MATERIAL_LIGHT,
-  systemChromeMaterialLight: ExpoBlurTint.SYSTEM_CHROME_MATERIAL_LIGHT,
-  systemUltraThinMaterialDark: ExpoBlurTint.SYSTEM_ULTRA_THIN_MATERIAL_DARK,
-  systemThinMaterialDark: ExpoBlurTint.SYSTEM_THIN_MATERIAL_DARK,
-  systemMaterialDark: ExpoBlurTint.SYSTEM_MATERIAL_DARK,
-  systemThickMaterialDark: ExpoBlurTint.SYSTEM_THICK_MATERIAL_DARK,
-  systemChromeMaterialDark: ExpoBlurTint.SYSTEM_CHROME_MATERIAL_DARK,
-});
+const BLUR_TINT_VALUES: Record<string, ExpoBlurTint> = {
+  'default': ExpoBlurTint.DEFAULT,
+  'extraLight': ExpoBlurTint.EXTRA_LIGHT,
+  'light': ExpoBlurTint.LIGHT,
+  'dark': ExpoBlurTint.DARK,
+  'regular': ExpoBlurTint.REGULAR,
+  'prominent': ExpoBlurTint.PROMINENT,
+  'systemUltraThinMaterial': ExpoBlurTint.SYSTEM_ULTRA_THIN_MATERIAL,
+  'systemThinMaterial': ExpoBlurTint.SYSTEM_THIN_MATERIAL,
+  'systemMaterial': ExpoBlurTint.SYSTEM_MATERIAL,
+  'systemThickMaterial': ExpoBlurTint.SYSTEM_THICK_MATERIAL,
+  'systemChromeMaterial': ExpoBlurTint.SYSTEM_CHROME_MATERIAL,
+  'systemUltraThinMaterialLight': ExpoBlurTint.SYSTEM_ULTRA_THIN_MATERIAL_LIGHT,
+  'systemThinMaterialLight': ExpoBlurTint.SYSTEM_THIN_MATERIAL_LIGHT,
+  'systemMaterialLight': ExpoBlurTint.SYSTEM_MATERIAL_LIGHT,
+  'systemThickMaterialLight': ExpoBlurTint.SYSTEM_THICK_MATERIAL_LIGHT,
+  'systemChromeMaterialLight': ExpoBlurTint.SYSTEM_CHROME_MATERIAL_LIGHT,
+  'systemUltraThinMaterialDark': ExpoBlurTint.SYSTEM_ULTRA_THIN_MATERIAL_DARK,
+  'systemThinMaterialDark': ExpoBlurTint.SYSTEM_THIN_MATERIAL_DARK,
+  'systemMaterialDark': ExpoBlurTint.SYSTEM_MATERIAL_DARK,
+  'systemThickMaterialDark': ExpoBlurTint.SYSTEM_THICK_MATERIAL_DARK,
+  'systemChromeMaterialDark': ExpoBlurTint.SYSTEM_CHROME_MATERIAL_DARK,
+};
+const BLUR_TINT_TYPE = ExpoValueTypes.enumerable<ExpoBlurTint>('BlurTint', BLUR_TINT_VALUES);
 
 @Observed
 class ExpoBlurView extends ExpoView {
