@@ -764,12 +764,7 @@ class TaskManagerQueueRepository {
     return acquired;
   }
 
-  static async markExpiring(
-    context: common.Context,
-    owner: string,
-    type: string,
-    id: string,
-  ): Promise<PendingExecutionRequest | undefined> {
+  static async markExpiring(context: common.Context, owner: string, type: string, id: string): Promise<PendingExecutionRequest | undefined> {
     let found: PendingExecutionRequest | undefined;
 
     await TaskManagerStorageLock.serialize(async (): Promise<void> => {
@@ -1484,8 +1479,7 @@ class ExpoTaskManagerScope {
       if (durable === undefined) return;
 
       const consumer = ExpoTaskManagerRegistry.consumer(durable.taskType);
-      const compatible =
-        consumer !== undefined && consumer.consumerId === durable.consumerId && consumer.consumerVersion === durable.consumerVersion;
+      const compatible = consumer !== undefined && consumer.consumerId === durable.consumerId && consumer.consumerVersion === durable.consumerVersion;
 
       await this.expireTaskType(durable.taskType, durable.id, compatible);
       await TaskManagerQueueRepository.acknowledge(app, durable, REQUEST_PHASE_EXPIRING);
