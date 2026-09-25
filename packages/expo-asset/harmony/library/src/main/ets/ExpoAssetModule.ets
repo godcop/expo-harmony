@@ -279,12 +279,15 @@ export class ExpoAssetModule extends ExpoModule {
         }
 
         // The download may finish before its listeners are registered.
-        task.getTaskInfo().then((info: request.DownloadInfo): void => {
-          if (info.status === request.SESSION_SUCCESSFUL) complete();
-          else if (info.status === request.SESSION_FAILED) fail(info.failedReason);
-        }).catch((error: Object): void => {
-          cancel(new ExpoAssetError('ERR_ASSET_DOWNLOAD_FAILED', cleanErrorMessage(error)));
-        });
+        task
+          .getTaskInfo()
+          .then((info: request.DownloadInfo): void => {
+            if (info.status === request.SESSION_SUCCESSFUL) complete();
+            else if (info.status === request.SESSION_FAILED) fail(info.failedReason);
+          })
+          .catch((error: Object): void => {
+            cancel(new ExpoAssetError('ERR_ASSET_DOWNLOAD_FAILED', cleanErrorMessage(error)));
+          });
       } catch (error) {
         cancel(new ExpoAssetError('ERR_ASSET_DOWNLOAD_FAILED', cleanErrorMessage(error as Object)));
       }
