@@ -150,8 +150,10 @@ export class ExpoViewAdapterRegistry {
     });
 
     return (): void => {
-      ExpoViewAdapterRegistry.rejectMountWaiters(instanceId, (waiter: ExpoViewMountWaiter): boolean =>
-        waiter.runtimeEpoch === runtimeEpoch && componentNames.includes(waiter.componentName));
+      ExpoViewAdapterRegistry.rejectMountWaiters(
+        instanceId,
+        (waiter: ExpoViewMountWaiter): boolean => waiter.runtimeEpoch === runtimeEpoch && componentNames.includes(waiter.componentName),
+      );
 
       const current = ExpoViewAdapterRegistry.scopedAdapters.get(instanceId);
       componentNames.forEach((componentName: string): void => {
@@ -414,13 +416,19 @@ export class ExpoViewAdapterRegistry {
         tag,
         runtimeEpoch,
         componentName,
-        resolve: (): void => { if (cleanup()) resolve(); },
-        reject: (error: Error): void => { if (cleanup()) reject(error); },
+        resolve: (): void => {
+          if (cleanup()) resolve();
+        },
+        reject: (error: Error): void => {
+          if (cleanup()) reject(error);
+        },
       };
 
       waiters.add(waiter);
       timer = setTimeout((): void => {
-        waiter.reject(new ExpoModuleError('ERR_VIEW_NOT_MOUNTED', `Timed out waiting for Expo view tag ${tag} to mount in RN instance ${instanceId}.`) as Error);
+        waiter.reject(
+          new ExpoModuleError('ERR_VIEW_NOT_MOUNTED', `Timed out waiting for Expo view tag ${tag} to mount in RN instance ${instanceId}.`) as Error,
+        );
       }, VIEW_MOUNT_TIMEOUT_MS);
     });
 

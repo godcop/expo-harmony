@@ -22,7 +22,7 @@ export function buildExpoView(ctx: ComponentBuilderContext) {
 
 @Component
 struct ExpoView {
-  @Require public ctx!: RNComponentContext;
+  @Require public ctx: RNComponentContext;
   @Require public tag: number = 0;
   @Require public fabricComponentName: string = '';
   private logicalComponentName: string = '';
