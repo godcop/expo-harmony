@@ -67,13 +67,7 @@ class SplashScreenResources {
   readonly valid: boolean;
   readonly imageWidth: number;
 
-  constructor(
-    background: number,
-    image: DrawableDescriptor | undefined,
-    resize: SplashScreenResizeMode,
-    width: number,
-    valid: boolean,
-  ) {
+  constructor(background: number, image: DrawableDescriptor | undefined, resize: SplashScreenResizeMode, width: number, valid: boolean) {
     this.backgroundColor = background;
     this.image = image;
     this.resizeMode = resize;
