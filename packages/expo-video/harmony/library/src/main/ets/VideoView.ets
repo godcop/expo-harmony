@@ -196,7 +196,6 @@ export class VideoView extends ExpoView implements VideoObserver {
     this.screen.update(this, false);
   }
 }
-
 @Builder
 export function buildVideoView(context: ExpoViewContentContext) {
   VideoViewContent({ state: context.nativeView as VideoView });
@@ -215,7 +214,7 @@ struct VideoViewContent {
   build() {
     Stack() {
       if (!this.state.fullscreen) {
-        VideoSurface({ state: this.state })
+        VideoSurface({ state: this.state });
       }
     }
     .width('100%')
@@ -254,7 +253,7 @@ struct VideoSurface {
   private surfaceHeight(): number {
     if (!this.state.videoWidth || !this.state.videoHeight) return this.areaHeight;
 
-    return this.surfaceWidth() * this.state.videoHeight / this.state.videoWidth;
+    return (this.surfaceWidth() * this.state.videoHeight) / this.state.videoWidth;
   }
 
   private timecode(seconds: number): string {
@@ -283,7 +282,7 @@ struct VideoSurface {
             this.surface = this.controller.getXComponentSurfaceId();
             this.state.attach(this.surface);
           })
-          .onDestroy((): void => this.state.detach(this.surface));
+          .onDestroy((): void => this.state.detach(this.surface))
       }
       .width('100%')
       .height('100%')
@@ -331,12 +330,13 @@ struct VideoSurface {
                   else this.state.enterFullscreen();
                 });
             }
-          }
-          .width('100%')
+          }.width('100%')
 
           Row({ space: 8 }) {
             if (this.state.showsTimecodes) {
-              Text(this.timecode(this.state.position)).fontColor(Color.White).fontSize(12)
+              Text(this.timecode(this.state.position))
+                .fontColor(Color.White)
+                .fontSize(12);
             }
             Slider({ value: this.seeking ? this.seekValue : this.state.position, min: 0, max: Math.max(1, this.state.duration), step: 0.1 })
               .layoutWeight(1)
@@ -345,9 +345,11 @@ struct VideoSurface {
                 this.seekValue = value;
                 this.seeking = mode === SliderChangeMode.Begin || mode === SliderChangeMode.Moving;
                 if (mode === SliderChangeMode.End || mode === SliderChangeMode.Click) this.state.player?.seek(value);
-              });
+              })
             if (this.state.showsTimecodes) {
-              Text(this.timecode(this.state.duration)).fontColor(Color.White).fontSize(12)
+              Text(this.timecode(this.state.duration))
+                .fontColor(Color.White)
+                .fontSize(12);
             }
           }
         }

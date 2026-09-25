@@ -439,10 +439,7 @@ export class VideoPlayer extends ExpoSharedObject implements VideoAudioParticipa
       if (!this.active(load)) return;
       if (state === 'initialized') load.initialized?.();
       else if (state === 'error') {
-        this.fail(
-          load,
-          load.nativeError ?? (new ExpoModuleError('ERR_VIDEO_PLAYBACK', 'The native video player entered the error state.') as Error),
-        );
+        this.fail(load, load.nativeError ?? (new ExpoModuleError('ERR_VIDEO_PLAYBACK', 'The native video player entered the error state.') as Error));
       } else if (state === 'playing') this.setPlaying(!load.buffering);
       else if (state === 'paused' || state === 'completed') this.setPlaying(false);
     });
@@ -520,13 +517,11 @@ export class VideoPlayer extends ExpoSharedObject implements VideoAudioParticipa
     });
 
     player.on('trackChange', (): void => {
-      if (this.active(load) && load.prepared)
-        this.schedule(load, async (native: media.AVPlayer): Promise<void> => this.updateTracks(load, native));
+      if (this.active(load) && load.prepared) this.schedule(load, async (native: media.AVPlayer): Promise<void> => this.updateTracks(load, native));
     });
 
     player.on('trackInfoUpdate', (): void => {
-      if (this.active(load) && load.prepared)
-        this.schedule(load, async (native: media.AVPlayer): Promise<void> => this.updateTracks(load, native));
+      if (this.active(load) && load.prepared) this.schedule(load, async (native: media.AVPlayer): Promise<void> => this.updateTracks(load, native));
     });
 
     player.on('audioInterrupt', (event: audio.InterruptEvent): void => {
@@ -569,8 +564,7 @@ export class VideoPlayer extends ExpoSharedObject implements VideoAudioParticipa
 
   seek(seconds: number): void {
     requireFinite(seconds, 'currentTime', -Number.MAX_VALUE);
-    if (this.isLive)
-      throw new ExpoModuleError('ERR_VIDEO_UNSUPPORTED', 'Seeking a live stream is not supported by expo-video on HarmonyOS.');
+    if (this.isLive) throw new ExpoModuleError('ERR_VIDEO_UNSUPPORTED', 'Seeking a live stream is not supported by expo-video on HarmonyOS.');
 
     this.pendingSeek = Math.max(0, seconds);
     this.subtitle = '';
@@ -698,10 +692,8 @@ export class VideoPlayer extends ExpoSharedObject implements VideoAudioParticipa
 
   setRate(value: number): void {
     requireFinite(value, 'playbackRate', MIN_PLAYBACK_RATE);
-    if (value > MAX_PLAYBACK_RATE)
-      throw new ExpoModuleError('ERR_VIDEO_INVALID_ARGUMENT', 'HarmonyOS playbackRate must be between 0.125 and 4.');
-    if (this.isLive)
-      throw new ExpoModuleError('ERR_VIDEO_UNSUPPORTED', 'Changing live playback speed is not supported by expo-video on HarmonyOS.');
+    if (value > MAX_PLAYBACK_RATE) throw new ExpoModuleError('ERR_VIDEO_INVALID_ARGUMENT', 'HarmonyOS playbackRate must be between 0.125 and 4.');
+    if (this.isLive) throw new ExpoModuleError('ERR_VIDEO_UNSUPPORTED', 'Changing live playback speed is not supported by expo-video on HarmonyOS.');
     if (value === this.playbackRate) return;
 
     const oldPlaybackRate = this.playbackRate;
@@ -893,9 +885,7 @@ export class VideoPlayer extends ExpoSharedObject implements VideoAudioParticipa
     this.availableAudioTracks = audios;
     this.availableSubtitleTracks = subtitles;
     this.availableVideoTracks = videos;
-    this.audioTrack = this.audioDisabled
-      ? null
-      : (audios.find((track: MediaTrack): boolean => selected.includes(Number(track.id))) ?? null);
+    this.audioTrack = this.audioDisabled ? null : (audios.find((track: MediaTrack): boolean => selected.includes(Number(track.id))) ?? null);
     this.subtitleTrack = this.subtitlesDisabled
       ? null
       : (subtitles.find((track: MediaTrack): boolean => selected.includes(Number(track.id))) ?? null);

@@ -61,14 +61,10 @@ export function validateSource(source: VideoSource | null): void {
   if (source === null) return;
 
   if (!source.uri)
-    throw new ExpoModuleError(
-      'ERR_VIDEO_INVALID_SOURCE',
-      'The source must contain a URI resolved by the official expo-video JS implementation.',
-    );
+    throw new ExpoModuleError('ERR_VIDEO_INVALID_SOURCE', 'The source must contain a URI resolved by the official expo-video JS implementation.');
 
   if (source.drm !== undefined) throw new ExpoModuleError('ERR_VIDEO_UNSUPPORTED', 'DRM is not supported by expo-video on HarmonyOS.');
-  if (source.useCaching)
-    throw new ExpoModuleError('ERR_VIDEO_UNSUPPORTED', 'Persistent video caching is not supported by expo-video on HarmonyOS.');
+  if (source.useCaching) throw new ExpoModuleError('ERR_VIDEO_UNSUPPORTED', 'Persistent video caching is not supported by expo-video on HarmonyOS.');
   if (source.contentType === 'smoothStreaming')
     throw new ExpoModuleError('ERR_VIDEO_UNSUPPORTED', 'SmoothStreaming is not supported by expo-video on HarmonyOS.');
 
@@ -76,10 +72,7 @@ export function validateSource(source: VideoSource | null): void {
     throw new ExpoModuleError('ERR_VIDEO_INVALID_SOURCE', 'Invalid video contentType.');
   }
   if (source.contentType && source.contentType !== 'auto')
-    throw new ExpoModuleError(
-      'ERR_VIDEO_UNSUPPORTED',
-      'Forcing a content type is not supported by expo-video on HarmonyOS; use auto detection.',
-    );
+    throw new ExpoModuleError('ERR_VIDEO_UNSUPPORTED', 'Forcing a content type is not supported by expo-video on HarmonyOS; use auto detection.');
 }
 
 export function isRemote(uri: string): boolean {
@@ -159,8 +152,7 @@ export function openVideoFile(context: ExpoModuleContext, uri: string): VideoFil
     context.assertFileAccess(file.path);
 
     const stat = fs.statSync(file.fd);
-    if (!stat.isFile() || stat.size <= 0)
-      throw new ExpoModuleError('ERR_VIDEO_INVALID_SOURCE', 'The video file is empty or is not a regular file.');
+    if (!stat.isFile() || stat.size <= 0) throw new ExpoModuleError('ERR_VIDEO_INVALID_SOURCE', 'The video file is empty or is not a regular file.');
 
     return new VideoFile(file, 0, stat.size);
   } catch (error) {

@@ -75,12 +75,10 @@ const BUTTONS = record<ButtonOptions>(
     .field('showPlayPause', OPTIONAL_BOOLEAN)
     .field('showBottomBar', OPTIONAL_BOOLEAN),
 );
-const POSITION = record<ContentPosition>(
-  'ContentPosition',
-  new ExpoRecordShape().field('dx', OPTIONAL_NUMBER).field('dy', OPTIONAL_NUMBER),
-);
+const POSITION = record<ContentPosition>('ContentPosition', new ExpoRecordShape().field('dx', OPTIONAL_NUMBER).field('dy', OPTIONAL_NUMBER));
 const SCRUBBING = ExpoValueTypes.record(ExpoValueTypes.boolean());
-const FIT = ExpoValueTypes.enumerable<string>('VideoContentFit', { contain: 'contain', cover: 'cover', fill: 'fill' });
+const FIT_VALUES: Record<string, string> = { 'contain': 'contain', 'cover': 'cover', 'fill': 'fill' };
+const FIT = ExpoValueTypes.enumerable<string>('VideoContentFit', FIT_VALUES);
 
 export class ExpoVideoModule extends ExpoModule {
   private readonly players: Set<VideoPlayer> = new Set<VideoPlayer>();
@@ -106,12 +104,7 @@ export class ExpoVideoModule extends ExpoModule {
           VIDEO_SOURCE,
           ExpoValueTypes.boolean().optional(),
           BUILDER.nullable().optional(),
-          (
-            context: ExpoModuleContext,
-            source: VideoSource | null,
-            _synchronous?: boolean,
-            options?: PlayerBuilderOptions | null,
-          ): VideoPlayer => {
+          (context: ExpoModuleContext, source: VideoSource | null, _synchronous?: boolean, options?: PlayerBuilderOptions | null): VideoPlayer => {
             const instance = new VideoPlayer(context, source, options ?? {}, this.session, (value: VideoPlayer): void => {
               this.players.delete(value);
             });
@@ -228,8 +221,7 @@ export class ExpoVideoModule extends ExpoModule {
         ExpoValueTypes.boolean(),
         (): boolean => true,
         (_player: VideoPlayer, value: boolean): void => {
-          if (!value)
-            throw new ExpoModuleError('ERR_VIDEO_UNSUPPORTED', 'Disabling pitch correction is not supported by expo-video on HarmonyOS.');
+          if (!value) throw new ExpoModuleError('ERR_VIDEO_UNSUPPORTED', 'Disabling pitch correction is not supported by expo-video on HarmonyOS.');
         },
       )
       .property(
@@ -237,8 +229,7 @@ export class ExpoVideoModule extends ExpoModule {
         ExpoValueTypes.boolean(),
         (): boolean => false,
         (_player: VideoPlayer, value: boolean): void => {
-          if (value)
-            throw new ExpoModuleError('ERR_VIDEO_UNSUPPORTED', 'Now Playing notification is not supported by expo-video on HarmonyOS.');
+          if (value) throw new ExpoModuleError('ERR_VIDEO_UNSUPPORTED', 'Now Playing notification is not supported by expo-video on HarmonyOS.');
         },
       )
       .property(
@@ -263,8 +254,7 @@ export class ExpoVideoModule extends ExpoModule {
         (): number => 0,
         (_player: VideoPlayer, value: number): void => {
           requireFinite(value, 'targetOffsetFromLive');
-          if (value !== 0)
-            throw new ExpoModuleError('ERR_VIDEO_UNSUPPORTED', 'Live target offset is not supported by expo-video on HarmonyOS.');
+          if (value !== 0) throw new ExpoModuleError('ERR_VIDEO_UNSUPPORTED', 'Live target offset is not supported by expo-video on HarmonyOS.');
         },
       )
       .property(
@@ -293,10 +283,7 @@ export class ExpoVideoModule extends ExpoModule {
       )
       .asyncFunction(
         'replaceAsync',
-        ExpoFunction.ownedTyped1(
-          VIDEO_SOURCE,
-          (player: VideoPlayer, source: VideoSource | null): Promise<void> => player.replaceAsync(source),
-        ),
+        ExpoFunction.ownedTyped1(VIDEO_SOURCE, (player: VideoPlayer, source: VideoSource | null): Promise<void> => player.replaceAsync(source)),
       )
       .asyncFunction(
         'generateThumbnailsAsync',
@@ -392,8 +379,7 @@ export class ExpoVideoModule extends ExpoModule {
         'startsPictureInPictureAutomatically',
         ExpoValueTypes.boolean(),
         (_view: VideoView, value: boolean): void => {
-          if (value)
-            throw new ExpoModuleError('ERR_VIDEO_UNSUPPORTED', 'Automatic Picture in Picture is not supported by expo-video on HarmonyOS.');
+          if (value) throw new ExpoModuleError('ERR_VIDEO_UNSUPPORTED', 'Automatic Picture in Picture is not supported by expo-video on HarmonyOS.');
         },
         false,
       )
