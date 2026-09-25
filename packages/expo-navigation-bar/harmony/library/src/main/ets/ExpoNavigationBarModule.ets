@@ -27,18 +27,21 @@ type NavigationBarButtonStyle = 'light' | 'dark';
 type NavigationBarPosition = 'relative' | 'absolute';
 type NavigationBarVisibility = 'visible' | 'hidden';
 
-const BUTTON_STYLE_TYPE = ExpoValueTypes.enumerable<NavigationBarButtonStyle>('navigation bar button style', {
-  light: 'light',
-  dark: 'dark',
-});
-const POSITION_TYPE = ExpoValueTypes.enumerable<NavigationBarPosition>('navigation bar position', {
-  relative: 'relative',
-  absolute: 'absolute',
-});
-const VISIBILITY_TYPE = ExpoValueTypes.enumerable<NavigationBarVisibility>('navigation bar visibility', {
-  visible: 'visible',
-  hidden: 'hidden',
-});
+const BUTTON_STYLE_VALUES: Record<string, NavigationBarButtonStyle> = {
+  'light': 'light',
+  'dark': 'dark',
+};
+const BUTTON_STYLE_TYPE = ExpoValueTypes.enumerable<NavigationBarButtonStyle>('navigation bar button style', BUTTON_STYLE_VALUES);
+const POSITION_VALUES: Record<string, NavigationBarPosition> = {
+  'relative': 'relative',
+  'absolute': 'absolute',
+};
+const POSITION_TYPE = ExpoValueTypes.enumerable<NavigationBarPosition>('navigation bar position', POSITION_VALUES);
+const VISIBILITY_VALUES: Record<string, NavigationBarVisibility> = {
+  'visible': 'visible',
+  'hidden': 'hidden',
+};
+const VISIBILITY_TYPE = ExpoValueTypes.enumerable<NavigationBarVisibility>('navigation bar visibility', VISIBILITY_VALUES);
 
 class ExpoNavigationBarError extends ExpoModuleError {
   constructor(code: string, message: string) {
@@ -183,11 +186,7 @@ class AbilityNavigationBarState {
     if (position !== null)
       await this.applyOption(CONFIG_POSITION, (): Promise<void> => target.setWindowLayoutFullScreen(position === 'absolute'), check);
     if (color !== null)
-      await this.applyOption(
-        CONFIG_BACKGROUND,
-        (): Promise<void> => target.setWindowSystemBarProperties({ navigationBarColor: color }),
-        check,
-      );
+      await this.applyOption(CONFIG_BACKGROUND, (): Promise<void> => target.setWindowSystemBarProperties({ navigationBarColor: color }), check);
     if (style !== null) await this.applyOption(CONFIG_BUTTON_STYLE, (): Promise<void> => applyButtonStyle(target, style), check);
     if (visibility !== null)
       await this.applyOption(CONFIG_VISIBILITY, (): Promise<void> => setNavigationBarVisibility(target, visibility === 'visible'), check);
