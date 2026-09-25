@@ -1,11 +1,4 @@
-import {
-  ExpoFunction,
-  ExpoModule,
-  ExpoModuleDefinition,
-  ExpoModuleError,
-  ExpoValueTypes,
-  fileUriFromPath,
-} from '@expo-harmony/expo-modules-core';
+import { ExpoFunction, ExpoModule, ExpoModuleDefinition, ExpoModuleError, ExpoValueTypes, fileUriFromPath } from '@expo-harmony/expo-modules-core';
 import { util } from '@kit.ArkTS';
 import { fileIo } from '@kit.CoreFileKit';
 import { image } from '@kit.ImageKit';
@@ -25,16 +18,14 @@ interface VideoThumbnailsResult {
 
 export class ExpoVideoThumbnailsModule extends ExpoModule {
   override definition(): ExpoModuleDefinition {
-    return new ExpoModuleDefinition()
-      .name('ExpoVideoThumbnails')
-      .asyncFunction(
-        'getThumbnail',
-        ExpoFunction.typed2(
-          ExpoValueTypes.string(),
-          VIDEO_THUMBNAILS_OPTIONS,
-          (source: string, options: VideoThumbnailsOptions): Promise<VideoThumbnailsResult> => this.getThumbnail(source, options),
-        ),
-      );
+    return new ExpoModuleDefinition().name('ExpoVideoThumbnails').asyncFunction(
+      'getThumbnail',
+      ExpoFunction.typed2(
+        ExpoValueTypes.string(),
+        VIDEO_THUMBNAILS_OPTIONS,
+        (source: string, options: VideoThumbnailsOptions): Promise<VideoThumbnailsResult> => this.getThumbnail(source, options),
+      ),
+    );
   }
 
   private async getThumbnail(source: string, options: VideoThumbnailsOptions): Promise<VideoThumbnailsResult> {
