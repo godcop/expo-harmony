@@ -15,15 +15,18 @@ let operations: Promise<void> = Promise.resolve();
 
 function serialized<T>(operation: () => Promise<T>): Promise<T> {
   const result = operations.then(operation);
-  operations = result.then((): void => {}, (): void => {});
+  operations = result.then(
+    (): void => {},
+    (): void => {},
+  );
 
   return result;
 }
 
 export function isHardwareAttestationSupported(): boolean {
-  return canIUse('SystemCapability.Security.Huks.Core') &&
-    canIUse('SystemCapability.Security.Huks.Extension') &&
-    canIUse('SystemCapability.Security.Cert');
+  return (
+    canIUse('SystemCapability.Security.Huks.Core') && canIUse('SystemCapability.Security.Huks.Extension') && canIUse('SystemCapability.Security.Cert')
+  );
 }
 
 function checkedAlias(name: string): string {
@@ -33,7 +36,10 @@ function checkedAlias(name: string): string {
 
   const alias = KEY_PREFIX + name;
   if (name.length === 0 || new util.TextEncoder().encodeInto(alias).length > MAX_KEY_ALIAS_BYTES) {
-    throw new ExpoAppIntegrityError(IntegrityErrorCode.INVALID_INPUT, 'The key alias must be nonempty and fit within the HUKS 128-byte limit, including the module prefix.');
+    throw new ExpoAppIntegrityError(
+      IntegrityErrorCode.INVALID_INPUT,
+      'The key alias must be nonempty and fit within the HUKS 128-byte limit, including the module prefix.',
+    );
   }
 
   return alias;
@@ -65,8 +71,7 @@ async function certificatesToBase64(chain: string[] | undefined, encoding: buffe
       const bytes = buffer.from(value, encoding);
       const certificate = await cert.createX509Cert({
         data: Uint8Array.from(bytes.values()),
-        encodingFormat: value.startsWith('-----BEGIN CERTIFICATE-----')
-          ? cert.EncodingFormat.FORMAT_PEM : cert.EncodingFormat.FORMAT_DER,
+        encodingFormat: value.startsWith('-----BEGIN CERTIFICATE-----') ? cert.EncodingFormat.FORMAT_PEM : cert.EncodingFormat.FORMAT_DER,
       });
       const encoded = await certificate.getEncoded();
       result.push(buffer.from(encoded.data).toString('base64'));
@@ -161,9 +166,16 @@ export class HardwareAttestation {
         const store = await preferences.getPreferences(this.context, { name: PREFERENCES_NAME });
         const value = await store.get(alias, []);
 
-        if (!await huks.hasKeyItem(alias, KEY_OPTIONS) || !Array.isArray(value) ||
-          value.length === 0 || !value.every((item: Object): boolean => typeof item === 'string' && item.length > 0)) {
-          throw new ExpoAppIntegrityError(IntegrityErrorCode.CERTIFICATE_CHAIN_INVALID, 'No attestation certificate chain exists for this key alias.');
+        if (
+          !(await huks.hasKeyItem(alias, KEY_OPTIONS)) ||
+          !Array.isArray(value) ||
+          value.length === 0 ||
+          !value.every((item: Object): boolean => typeof item === 'string' && item.length > 0)
+        ) {
+          throw new ExpoAppIntegrityError(
+            IntegrityErrorCode.CERTIFICATE_CHAIN_INVALID,
+            'No attestation certificate chain exists for this key alias.',
+          );
         }
 
         return await certificatesToBase64(value as string[], 'base64');

@@ -20,8 +20,10 @@ export class ExpoAppIntegrityError extends ExpoModuleError {
       message += ` ${cause.message}`;
     } else if (cause !== undefined) {
       const error = cause as BusinessError;
-      if (error.code === huks.HuksExceptionErrCode.HUKS_ERR_CODE_NOT_SUPPORTED_API ||
-        error.code === huks.HuksExceptionErrCode.HUKS_ERR_CODE_FEATURE_NOT_SUPPORTED) {
+      if (
+        error.code === huks.HuksExceptionErrCode.HUKS_ERR_CODE_NOT_SUPPORTED_API ||
+        error.code === huks.HuksExceptionErrCode.HUKS_ERR_CODE_FEATURE_NOT_SUPPORTED
+      ) {
         resolved = IntegrityErrorCode.HARDWARE_NOT_SUPPORTED;
       }
       message += ` HarmonyOS error (${error.code}): ${error.message}`;
