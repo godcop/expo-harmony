@@ -6,7 +6,7 @@ import {
   parseDictionary, parseItem, parseList, serializeDictionary, serializeItem, serializeList,
 } from '@expo-harmony/expo-structured-headers';
 import {
-  UpdatesControllerRegistry, UpdatesStateChangeSubscription,
+  UpdatesControllerRegistry, UpdatesStateChangeListener, UpdatesStateChangeSubscription,
 } from '@expo-harmony/expo-updates-interface';
 import { checkJSON, readJSON } from './JSONUtilsDemo';
 import { checkImages, readImage } from './ImageLoaderDemo';
@@ -50,11 +50,11 @@ export class RuntimeDemoModule extends ExpoModule {
       .syncFunction('readUpdates', (): string => this.readUpdates())
       .onStartObserving((_event: string): void => {
         this.subscription?.remove();
-        this.subscription = UpdatesControllerRegistry.controller?.subscribeToUpdatesStateChanges({
-          updatesStateDidChange: (event: Record<string, ESObject>): void => {
-            this.sendEvent('onUpdatesStateChange', { event: JSON.stringify(event) });
-          },
+        const forwarder = new UpdatesStateForwarder((event: Record<string, ESObject>): void => {
+          const payload: Record<string, ESObject> = { 'event': JSON.stringify(event) };
+          this.sendEvent('onUpdatesStateChange', payload);
         });
+        this.subscription = UpdatesControllerRegistry.controller?.subscribeToUpdatesStateChanges(forwarder);
       })
       .onStopObserving((_event: string): void => this.stop())
       .onDestroy((): void => this.stop());
@@ -64,7 +64,7 @@ export class RuntimeDemoModule extends ExpoModule {
     const controller = UpdatesControllerRegistry.controller;
     if (!controller) throw new ExpoModuleError('ERR_DEMO_UPDATES_UNAVAILABLE', 'No Updates controller is registered.');
 
-    const subscription = controller.subscribeToUpdatesStateChanges({ updatesStateDidChange: (): void => {} });
+    const subscription = controller.subscribeToUpdatesStateChanges(new UpdatesStateForwarder((): void => {}));
 
     try {
       return JSON.stringify({
@@ -84,5 +84,17 @@ export class RuntimeDemoModule extends ExpoModule {
   private stop(): void {
     this.subscription?.remove();
     this.subscription = undefined;
+  }
+}
+
+class UpdatesStateForwarder implements UpdatesStateChangeListener {
+  private readonly forward: (event: Record<string, ESObject>) => void;
+
+  constructor(forward: (event: Record<string, ESObject>) => void) {
+    this.forward = forward;
+  }
+
+  updatesStateDidChange(event: Record<string, ESObject>): void {
+    this.forward(event);
   }
 }

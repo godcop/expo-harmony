@@ -14,7 +14,8 @@ export class ShowcaseCounter extends ExpoSharedObject {
   }
 
   emitValueChanged(): void {
-    this.sendEvent('onValueChanged', { value: this.value });
+    const payload: Record<string, ESObject> = { 'value': this.value };
+    this.sendEvent('onValueChanged', payload);
   }
 }
 

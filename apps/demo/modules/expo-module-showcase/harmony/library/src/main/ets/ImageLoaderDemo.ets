@@ -18,10 +18,28 @@ async function load(context: ExpoModuleContext, uri: string, editing: boolean, c
   }
 
   return new Promise<image.PixelMap>((resolve, reject): void => {
-    const listener: ImageLoaderResultListener = { onSuccess: resolve, onFailure: reject };
+    const listener = new PromiseResultListener(resolve, reject);
     if (editing) loader.loadImageForManipulationFromURL(uri, listener);
     else loader.loadImageForDisplayFromURL(uri, listener);
   });
+}
+
+class PromiseResultListener implements ImageLoaderResultListener {
+  private readonly resolve: (pixel: image.PixelMap) => void;
+  private readonly reject: (cause: Error) => void;
+
+  constructor(resolve: (pixel: image.PixelMap) => void, reject: (cause: Error) => void) {
+    this.resolve = resolve;
+    this.reject = reject;
+  }
+
+  onSuccess(pixel: image.PixelMap): void {
+    this.resolve(pixel);
+  }
+
+  onFailure(cause: Error): void {
+    this.reject(cause);
+  }
 }
 
 export async function readImage(context: ExpoModuleContext, uri: string, editing: boolean, callback: boolean): Promise<string> {

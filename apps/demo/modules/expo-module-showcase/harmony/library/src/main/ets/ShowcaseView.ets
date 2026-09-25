@@ -14,7 +14,8 @@ class ShowcaseView extends ExpoView {
 
   increment(delta: number, source: string): number {
     this.value += delta;
-    this.sendEvent('onValueChanged', { label: this.label, value: this.value, source });
+    const payload: Record<string, ESObject> = { 'label': this.label, 'value': this.value, 'source': source };
+    this.sendEvent('onValueChanged', payload);
     return this.value;
   }
 }

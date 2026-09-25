@@ -67,7 +67,8 @@ export class ExpoModuleShowcaseModule extends ExpoModule {
       })
       .syncFunction('emitEvent', ExpoFunction.typed1(ExpoValueTypes.string(), (value: string): void => {
         this.sequence += 1;
-        this.sendEvent('onShowcaseEvent', { value, sequence: this.sequence, platform: 'harmony' });
+        const payload: Record<string, ESObject> = { 'value': value, 'sequence': this.sequence, 'platform': 'harmony' };
+        this.sendEvent('onShowcaseEvent', payload);
       }))
       .syncFunction('returnSameSharedCounter', ExpoFunction.typed1(counter.valueType(),
         (object: ShowcaseCounter): ShowcaseCounter => object).returns(counter.valueType()))
