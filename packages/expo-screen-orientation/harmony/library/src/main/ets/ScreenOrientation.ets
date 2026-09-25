@@ -132,7 +132,7 @@ export function readOrientation(win: window.Window): Orientation {
 
 function matchWindowShape(orientation: Orientation, rect: window.Rect): Orientation {
   const portrait = orientation === Orientation.PORTRAIT_UP || orientation === Orientation.PORTRAIT_DOWN;
-  if (orientation === Orientation.UNKNOWN || (rect.width !== rect.height && portrait !== (rect.height > rect.width))) {
+  if (orientation === Orientation.UNKNOWN || (rect.width !== rect.height && portrait !== rect.height > rect.width)) {
     return Orientation.UNKNOWN;
   }
 
