@@ -10,10 +10,11 @@ export enum ImageFormat {
   JPEG = 'jpeg',
 }
 
-const STRING_FORMAT = ExpoValueTypes.enumerable<StringFormat>('StringFormat', {
-  plainText: StringFormat.PlainText,
-  html: StringFormat.HTML,
-});
+const STRING_FORMAT_VALUES: Record<string, StringFormat> = {
+  'plainText': StringFormat.PlainText,
+  'html': StringFormat.HTML,
+};
+const STRING_FORMAT = ExpoValueTypes.enumerable<StringFormat>('StringFormat', STRING_FORMAT_VALUES);
 
 function stringOptions(name: string, field: string): ExpoValueType<StringFormat> {
   return ExpoValueTypes.shapedRecord<StringFormat>(
@@ -36,10 +37,12 @@ export class GetImageOptions {
   jpegQuality: number = 1;
 }
 
+const IMAGE_FORMAT_VALUES: Record<string, ImageFormat> = { 'png': ImageFormat.PNG, 'jpeg': ImageFormat.JPEG };
+
 export const GET_IMAGE_OPTIONS = ExpoValueTypes.shapedRecord<GetImageOptions>(
   'GetImageOptions',
   new ExpoRecordShape()
-    .field('format', ExpoValueTypes.enumerable<ImageFormat>('ImageFormat', { png: ImageFormat.PNG, jpeg: ImageFormat.JPEG }).optional())
+    .field('format', ExpoValueTypes.enumerable<ImageFormat>('ImageFormat', IMAGE_FORMAT_VALUES).optional())
     .field('jpegQuality', ExpoValueTypes.number().optional()),
   (fields: Record<string, ESObject>): GetImageOptions => {
     const options = new GetImageOptions();

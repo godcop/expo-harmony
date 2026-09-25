@@ -51,7 +51,8 @@ export class ExpoClipboardModule extends ExpoModule {
       if (this.board.hasDataType(pasteboard.MIMETYPE_PIXELMAP)) types.push(ContentType.Image);
       if (this.board.hasDataType(pasteboard.MIMETYPE_TEXT_URI)) types.push(ContentType.URL);
 
-      this.sendEvent(CLIPBOARD_CHANGED_EVENT, { contentTypes: types });
+      const payload: Record<string, ESObject> = { 'contentTypes': types };
+      this.sendEvent(CLIPBOARD_CHANGED_EVENT, payload);
     } catch (error) {
       this.warn('inspect clipboard changes', error);
     }
