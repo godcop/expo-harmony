@@ -17,7 +17,7 @@
 
 [![G-Star Selected by AtomGit](https://atomgit.com/baoshuo/expo-harmony/star/new_badge.svg)](https://atomgit.com/baoshuo/expo-harmony)
 
-本库目前适配：Expo SDK 55 + RNOH 0.84.1。
+本库目前适配 Expo SDK 55 + RNOH 0.84.1。对于 Expo SDK 57 + RNOH 0.86 的适配，待 RNOH 上游相关三方库完成适配后会尽快跟进。
 
 ## Supported Libraries
 
