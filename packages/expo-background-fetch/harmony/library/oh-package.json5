@@ -19,6 +19,6 @@
   "license": "MIT",
   "dependencies": {
     "@expo-harmony/expo-modules-core": "55.0.26-harmony.0",
-    "@expo-harmony/expo-task-manager": "55.0.16-harmony.5"
+    "@expo-harmony/expo-task-manager": "55.0.20-harmony.0"
   }
 }

@@ -9,6 +9,9 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "jsEngine": "hermes",
+    "experiments": {
+      "outOfTreePlatforms": true
+    },
     "platforms": [
       "ios",
       "android",

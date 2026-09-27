@@ -32,9 +32,9 @@
     "@expo-harmony/expo-module-scripts": "workspace:*",
     "@expo-harmony/expo-modules-core": "workspace:*",
     "@react-native-oh/react-native-harmony": "0.84.1",
-    "expo": "55.0.26",
+    "expo": "55.0.31",
     "expo-brightness": "55.0.17",
-    "expo-modules-core": "55.0.25",
+    "expo-modules-core": "55.0.26",
     "react": "19.2.3",
     "react-native": "0.84.1"
   },

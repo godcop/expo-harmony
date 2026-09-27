@@ -1,6 +1,6 @@
 {
   "name": "@expo-harmony/expo-build-properties",
-  "version": "55.0.14-harmony.1",
+  "version": "55.0.18-harmony.0",
   "keywords": [
     "react-native",
     "expo",
@@ -37,7 +37,7 @@
     "@expo/config": "55.0.17"
   },
   "peerDependencies": {
-    "expo": "55.0.26"
+    "expo": "55.0.31"
   },
   "devDependencies": {
     "@types/node": "18.19.0",

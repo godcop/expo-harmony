@@ -27,8 +27,8 @@
   "peerDependencies": {
     "@expo-harmony/expo-modules-core": "workspace:*",
     "@expo/dom-webview": "55.0.6",
-    "expo": "55.0.26",
-    "expo-modules-core": "55.0.25",
+    "expo": "55.0.31",
+    "expo-modules-core": "55.0.26",
     "react": "^19.2.0",
     "react-native": "^0.83.6 || ^0.84.1"
   },
@@ -37,8 +37,8 @@
     "@expo-harmony/expo-modules-core": "workspace:*",
     "@expo/dom-webview": "55.0.6",
     "@react-native-oh/react-native-harmony": "0.84.1",
-    "expo": "55.0.26",
-    "expo-modules-core": "55.0.25",
+    "expo": "55.0.31",
+    "expo-modules-core": "55.0.26",
     "react": "19.2.3",
     "react-native": "0.84.1"
   },
