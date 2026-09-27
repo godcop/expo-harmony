@@ -21,7 +21,9 @@ export interface HarmonyMetroRuntime {
 }
 
 export async function resolveRuntimeVersionAsync(root: string, config: ExpoConfigWithHarmony, app): Promise<string> {
-  if (typeof config.runtimeVersion === 'object' && config.runtimeVersion?.policy === 'nativeVersion') {
+  const runtimeVersion = config.harmony?.runtimeVersion ?? config.runtimeVersion;
+
+  if (typeof runtimeVersion === 'object' && runtimeVersion?.policy === 'nativeVersion') {
     if (typeof app?.versionName !== 'string' || !app.versionName
       || !Number.isSafeInteger(app.versionCode) || app.versionCode < 1) {
       throw new HarmonyCliError(
@@ -34,8 +36,12 @@ export async function resolveRuntimeVersionAsync(root: string, config: ExpoConfi
     return `${app.versionName}(${app.versionCode})`;
   }
 
-  if (typeof config.runtimeVersion === 'object' && config.runtimeVersion?.policy === 'fingerprint') {
+  if (typeof runtimeVersion === 'object' && runtimeVersion?.policy === 'fingerprint') {
     return (await fingerprintHarmonyAsync(root)).hash;
+  }
+
+  if (typeof runtimeVersion === 'object' && runtimeVersion?.policy === 'appVersion') {
+    return config.harmony?.versionName ?? config.version ?? '1.0.0';
   }
 
   const require = createRequire(path.join(root, 'package.json'));
@@ -43,7 +49,7 @@ export async function resolveRuntimeVersionAsync(root: string, config: ExpoConfi
   const { getRuntimeVersionAsync } = expo('@expo/config-plugins/build/utils/Updates');
   const version = await getRuntimeVersionAsync(root, {
     ...config,
-    runtimeVersion: config.runtimeVersion ?? { policy: 'sdkVersion' },
+    runtimeVersion: runtimeVersion ?? { policy: 'sdkVersion' },
   }, 'harmony');
 
   if (typeof version !== 'string' || !version) {

@@ -34,6 +34,9 @@ export interface HarmonyConfig {
   vendor?: string;
   versionCode?: number;
   versionName?: string;
+  runtimeVersion?: string | {
+    policy: 'nativeVersion' | 'sdkVersion' | 'appVersion' | 'fingerprint';
+  };
   /** @deprecated Configure targetSdkVersion in @expo-harmony/expo-build-properties. */
   targetApiVersion?: number;
   targetSdkVersion?: number | string;
