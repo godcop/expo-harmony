@@ -1,7 +1,7 @@
 {
   "modelVersion": "5.0.0",
   "name": "@expo-harmony-internal/expo-updates-interface",
-  "version": "55.1.6-harmony.2",
+  "version": "55.1.6-harmony.3",
   "description": "HarmonyOS port of expo-updates-interface",
   "keywords": [
     "react-native",
