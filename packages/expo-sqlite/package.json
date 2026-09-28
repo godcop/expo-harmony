@@ -22,7 +22,7 @@
     "harmony:clean": "expo-harmony-module prepare --clean-only",
     "harmony:build": "expo-harmony-module prepare",
     "prepack": "node scripts/prepack.cjs",
-    "harmony:prepare": "python3 scripts/prepare-native.py"
+    "harmony:prepare": "node scripts/prepare-native.cjs"
   },
   "peerDependencies": {
     "@expo-harmony/expo-modules-core": "workspace:*",

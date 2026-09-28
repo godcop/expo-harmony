@@ -12,7 +12,7 @@ function run(command, args) {
   if (result.status !== 0) throw new Error(`${command} failed (${result.status ?? result.signal})`);
 }
 
-run('python3', ['scripts/prepare-native.py']);
+run(process.execPath, [path.join(__dirname, 'prepare-native.cjs')]);
 
 const generated = path.join(root, 'harmony/generated');
 const manifest = JSON.parse(fs.readFileSync(path.join(generated, 'manifest.json'), 'utf8'));
