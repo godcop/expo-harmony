@@ -1,6 +1,6 @@
 {
   "name": "@expo-harmony/expo-sqlite",
-  "version": "55.0.20-harmony.1",
+  "version": "55.0.20-harmony.2",
   "description": "HarmonyOS port of expo-sqlite",
   "keywords": [
     "react-native",
@@ -18,7 +18,7 @@
   "license": "MIT",
   "main": "Index.ets",
   "dependencies": {
-    "@expo-harmony/expo-modules-core": "55.0.26-harmony.1",
+    "@expo-harmony/expo-modules-core": "55.0.26-harmony.2",
     "@rnoh/react-native-openharmony": "0.84.1"
   }
 }

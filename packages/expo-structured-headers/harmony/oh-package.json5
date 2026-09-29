@@ -1,7 +1,7 @@
 {
   "modelVersion": "5.0.0",
   "name": "@expo-harmony-internal/expo-structured-headers",
-  "version": "55.0.2-harmony.3",
+  "version": "55.0.2-harmony.4",
   "description": "HarmonyOS port of expo-structured-headers",
   "keywords": [
     "react-native",

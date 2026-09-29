@@ -1,6 +1,6 @@
 {
   "name": "@expo-harmony/expo__pkcs12",
-  "version": "0.4.2-harmony.2",
+  "version": "0.4.2-harmony.3",
   "description": "HarmonyOS port of @expo/pkcs12",
   "keywords": [
     "react-native",
