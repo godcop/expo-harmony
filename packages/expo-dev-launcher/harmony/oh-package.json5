@@ -14,7 +14,7 @@
     "@expo-harmony/expo-modules-core": "55.0.26-harmony.1",
     "@expo-harmony/expo-manifests": "55.0.21-harmony.1",
     "@expo-harmony/expo-updates-interface": "55.1.6-harmony.3",
-    "@expo-harmony/expo-eas-client": "55.0.5-harmony.1",
+    "@expo-harmony/expo-eas-client": "55.0.5-harmony.4",
     "@rnoh/react-native-openharmony": "0.84.1"
   }
 }
