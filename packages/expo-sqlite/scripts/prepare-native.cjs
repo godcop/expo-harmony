@@ -102,6 +102,9 @@ function sdkTool(sdk, relative) {
 function posixPath(file) {
   if (!WINDOWS) return file;
   const full = path.resolve(file);
+  if (!/^[a-z]:\\/i.test(full)) {
+    throw new Error(`Unsupported MSYS path: ${file}. Use a drive-letter path.`);
+  }
   return `/${full[0].toLowerCase()}/${full.slice(3).replaceAll('\\', '/')}`;
 }
 
@@ -113,7 +116,10 @@ function posixPath(file) {
 function sdkAlias(sdk, cache) {
   if (!WINDOWS || !sdk.includes(' ')) return sdk;
 
-  const link = path.join(cache, 'sdk');
+  // Separate aliases survive SDK switches without changing links in use by
+  // concurrent builds or having to remove dangling junctions for an older SDK.
+  const key = crypto.createHash('sha256').update(sdk).digest('hex').slice(0, 12);
+  const link = path.join(cache, `sdk-${key}`);
   // A junction inside a spaced repository path would defeat the purpose.
   if (link.includes(' ')) {
     throw new Error(`SDK alias still contains a space: ${link}. Move the repository to a path without spaces.`);
@@ -129,8 +135,9 @@ function sdkAlias(sdk, cache) {
     }
   }
 
-  // Never remove the existing link: a mistake here would delete the SDK.
-  if (resolvePath(link) !== resolvePath(sdk)) return sdk;
+  if (resolvePath(link) !== resolvePath(sdk)) {
+    throw new Error(`SDK alias ${link} does not point to ${sdk}.`);
+  }
   return link;
 }
 
